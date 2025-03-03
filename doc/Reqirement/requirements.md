@@ -54,7 +54,7 @@ The use case diagram consists of the following functions:
 - Stop: The elevator stops upon initial state or when it reaches the target floor and the user steps out.
 
 ### UML Activity Diagram
-The interaction between passengers and the elevator can be depicted through the following two UML diagrams: an Activity Diagram and a Sequence Diagram.
+![UAD](./imgs/activity.png)
 
 ### UML Sequence Diagram
 
