@@ -41,17 +41,17 @@ The domain focuses on managing two elevators as they respond to user commands (o
 ## UML 
 
 ### Use Case Diagram
-The use case diagram includes several fundamental functions:
-- Enter the elevator: This use case begins when the passenger approaches and enters the elevator, initiating interaction with the system.
-- Leave the elevator: This occurs when the passenger exits the elevator at their desired floor.
-- Push up/down button: Represents the action of the passenger pressing the button to select the floor they wish to travel to.
-- Push open/close button: Involves the passenger pressing the button to open or close the elevator doors manually.
-- Push emergency button: This use case is activated when the passenger uses the emergency button, typically to alert for help or report an issue.
-- Open the door: The system enables the doors to open, either automatically upon reaching a floor or in response to a button press.
-- Close the door: Corresponds to the elevator doors closing, either automatically after a delay or through a button press.
-- Moving upward: The elevator ascends to a higher floor as requested by the passenger.
-- Moving downward: The elevator descends to a lower floor as requested by the passenger.
-- Stopped moving: The elevator ceases movement, typically upon reaching the selected floor or due to an emergency or malfunction.
+![UCD](./imgs/use_case_dia.png)
+The use case diagram consists of the following functions:
+- Enter elevator: Interaction begins when the user steps inside.
+- Exit elevator: The ride ends once the user reaches the desired floor and exits.
+- Press up/down button: The passenger selects a floor by pressing the corresponding button.
+- Press open/close button: The user opens or closes the doors manually via button press.
+- Open door: The system automatically or manually opens the doors upon arrival or request.
+- Close door: The system automatically or manually close the doors aftera delay or request.
+- Move up: The elevator goes up for the targeted higher floor .
+- Move down: The elevator goes down for the targeted lower floor.
+- Stop: The elevator stops upon initial state or when it reaches the target floor and the user steps out.
 
 ### UML Activity Diagram
 The interaction between passengers and the elevator can be depicted through the following two UML diagrams: an Activity Diagram and a Sequence Diagram.
