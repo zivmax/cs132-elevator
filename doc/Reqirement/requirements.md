@@ -58,7 +58,7 @@ The use case diagram consists of the following functions:
 
 ### UML Sequence Diagram
 
----
+
 
 ## Detailed Requirement
 
