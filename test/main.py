@@ -1,6 +1,6 @@
 import sys
 import os
-import Server
+import server
 import time
 import random
 from enum import IntEnum
@@ -42,7 +42,7 @@ class Passenger:
         return self._elevator_code
 
 
-def testing(server:Server.ZmqServerThread):
+def testing(server:server.ZmqServerThread):
     def is_received_new_message(oldTimeStamp:int, oldServerMessage:str, Msgunprocessed:bool = False)->bool:
         if(Msgunprocessed):
             return True
@@ -155,7 +155,7 @@ def testing(server:Server.ZmqServerThread):
 
 
 if __name__ == "__main__":
-    my_server = Server.ZmqServerThread()
+    my_server = server.ZmqServerThread()
     while(True):
         if(len(my_server.clients_addr) == 0):
             continue
