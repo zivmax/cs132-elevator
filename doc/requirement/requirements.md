@@ -71,31 +71,31 @@ Overall, the main participants in this elevator system are the passengers and th
 
 ### Passengers’ Perspective
 1. For passengers, they should be able to:  
-   1.1 Know the floor information where the elevator is located.  
-   1.2 Understand the current operating status of the elevator (ascending/descending/stationary).  
-   1.3 Outside the elevator, press the corresponding floor button according to their destination floor, thereby controlling the elevator to reach the current floor of the passenger, and convey this information to the panel.  
-   1.4 When the elevator reaches the passenger's floor, they can control the opening and closing of the elevator doors at that floor, with the highest priority given to the operations performed by passengers on that floor.  
-   1.5 Inside the elevator, they can press the button for their destination floor to control the elevator to travel to the corresponding floor, and convey this information to the panel.  
-   1.6 Press the emergency help button at any time, and convey this information to the panel.
+   1. Know the floor information where the elevator is located.  
+   1. Understand the current operating status of the elevator (ascending/descending/stationary).  
+   1. Outside the elevator, press the corresponding floor button according to their destination floor, thereby controlling the elevator to reach the current floor of the passenger, and convey this information to the panel.  
+   1. When the elevator reaches the passenger's floor, they can control the opening and closing of the elevator doors at that floor, with the highest priority given to the operations performed by passengers on that floor.  
+   1. Inside the elevator, they can press the button for their destination floor to control the elevator to travel to the corresponding floor, and convey this information to the panel.  
+   1. Press the emergency help button at any time, and convey this information to the panel.  
 
 ### Visual Components
-2. For the panel:  
-   2.1 The buttons for controlling the opening and closing of the elevator doors are ineffective during the operation of the elevator.  
-   2.2 Receive all relevant information conveyed by passengers through the panel, and pass this information to the elevator control system.  
-   2.3 Instantly display the current floor information of the elevator, the current operating status of the elevator (ascending/descending/stationary), and whether the elevator is malfunctioning, etc., and pass this information to the elevator control system.
+1. For the panel:  
+   1. The buttons for controlling the opening and closing of the elevator doors are ineffective during the operation of the elevator.  
+   1. Receive all relevant information conveyed by passengers through the panel, and pass this information to the elevator control system.  
+   1. Instantly display the current floor information of the elevator, the current operating status of the elevator (ascending/descending/stationary), and whether the elevator is malfunctioning, etc., and pass this information to the elevator control system.  
 
 ### Elevator’s Perspective
-3. For the elevator itself, it should be able to:  
-   3.1 Receive signals from the elevator control system to ascend/descend/stay stationary.  
-   3.2 Receive signals from the elevator control system to open/close doors.  
-   3.3 Upload all current status of the elevator to the elevator control system.  
-   3.4 Stop operating and close the doors when receiving an emergency stop signal.
+1. For the elevator itself, it should be able to:  
+   1. Receive signals from the elevator control system to ascend/descend/stay stationary.  
+   1. Receive signals from the elevator control system to open/close doors.  
+   1. Upload all current status of the elevator to the elevator control system.  
+   1. Stop operating and close the doors when receiving an emergency stop signal.  
 
 ### Control System
-4. For the elevator control system, it should be able to:  
-   4.1 Receive and process all information about the elevator's floor position and current operating status from the panel. When multiple users control the elevator concurrently, it should select the optimal algorithm to schedule the elevators, including:  
-   4.2 When there are multiple passenger requests, the elevator should first go to the floor where the nearest passenger is located and take them to their destination, minimizing the waiting time for passengers.  
-   4.3 When responding to multiple passenger requests, the elevator can use an intelligent route planning algorithm to choose the appropriate stopping sequence and route, transporting passengers to their destinations in the fastest time possible, thus minimizing the total journey time.  
-   4.4 Adjust the elevator's door opening and closing status, and the direction of travel.  
-   4.5 Adjust the speed of the elevator based on the position of the target floor and the distance from the current floor to the target floor (reflected in the time required for elevator travel).  
-   4.6 Immediately stop the elevator operation upon receiving an emergency signal from the panel and report any malfunction through the panel.
+1. For the elevator control system, it should be able to:  
+   1. Receive and process all information about the elevator's floor position and current operating status from the panel. When multiple users control the elevator concurrently, it should select the optimal algorithm to schedule the elevators, including:  
+      1. When there are multiple passenger requests, the elevator should first go to the floor where the nearest passenger is located and take them to their destination, minimizing the waiting time for passengers.  
+      1. When responding to multiple passenger requests, the elevator can use an intelligent route planning algorithm to choose the appropriate stopping sequence and route, transporting passengers to their destinations in the fastest time possible, thus minimizing the total journey time.  
+   1. Adjust the elevator's door opening and closing status, and the direction of travel.  
+   1. Adjust the speed of the elevator based on the position of the target floor and the distance from the current floor to the target floor (reflected in the time required for elevator travel).  
+   1. Immediately stop the elevator operation upon receiving an emergency signal from the panel and report any malfunction through the panel.  
