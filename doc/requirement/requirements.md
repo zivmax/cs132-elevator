@@ -3,6 +3,8 @@
 Team 18 Project：Elevator
 Made by : Guo YU
 
+---
+
 ## Table of Contents
 - [Requirement Document](#requirement-document)
   - [Table of Contents](#table-of-contents)
