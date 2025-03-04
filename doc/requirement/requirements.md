@@ -1,23 +1,25 @@
 # Requirement Document
 
 Team 18 Project：Elevator
-Made by : Guo Yu
+Made by : Guo YU
 
 ## Table of Contents
-- [Introduction](#introduction)
-  - [Overview](#overview)
-  - [Basic Requirement](#basic-requirement)
-  - [Product Line Analysis](#product-line-analysis)
-- [UML](#uml)
-  - [Use Case Diagram](#use-case-diagram)
-  - [UML Activity Diagram](#uml-activity-diagram)
-  - [UML Sequence Diagram](#uml-sequence-diagram)
-- [Detailed Requirement](#detailed-requirement)
-  - [Overview](#overview)
-  - [Passengers’ Perspective](#passengers-perspective)
-  - [Visual Components](#visual-components)
-  - [Elevator’s Perspective](#elevators-perspective)
-  - [Control System](#control-system)
+- [Requirement Document](#requirement-document)
+  - [Table of Contents](#table-of-contents)
+  - [Introduction](#introduction)
+    - [Overview](#overview)
+    - [Basic Requirements](#basic-requirements)
+    - [Product Line Analysis](#product-line-analysis)
+  - [UML](#uml)
+    - [Use Case Diagram](#use-case-diagram)
+    - [UML Activity Diagram](#uml-activity-diagram)
+    - [UML Sequence Diagram](#uml-sequence-diagram)
+  - [Detailed Requirement](#detailed-requirement)
+    - [Overview](#overview-1)
+    - [Passengers’ Perspective](#passengers-perspective)
+    - [Visual Components](#visual-components)
+    - [Elevator’s Perspective](#elevators-perspective)
+    - [Control System](#control-system)
 
 ---
 

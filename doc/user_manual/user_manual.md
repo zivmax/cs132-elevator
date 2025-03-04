@@ -1,6 +1,6 @@
 # User Manual 
 Team 18 Project Elevator
-Made by LinZheng Tang
+Made by Lin-Zheng TANG
 
 ---
 
@@ -10,14 +10,16 @@ This document describes how to set up, run, and interact with a simulated elevat
 
 ## Content
 - [User Manual](#user-manual)
-  - [Environment Setup](#1-environment-setup)
-  - [Code Structure](#2-code-structure)
-  - [Running the Code](#3-running-the-code)
-  - [Operations and Events](#4-operations-and-events)
-    - [User Operations](#41-user-operations-your-system-sends)
-    - [System Operations](#42-system-operations-your-system)
-  - [Initial System State](#5-initial-system-state)
-  - [Important Considerations](#6-important-considerations-added-for-clarity)
+  - [Elevator System Simulation and Testing](#elevator-system-simulation-and-testing)
+  - [Content](#content)
+  - [1. Environment Setup](#1-environment-setup)
+  - [2. Code Structure](#2-code-structure)
+  - [3. Running the Code](#3-running-the-code)
+  - [4. Operations and Events](#4-operations-and-events)
+    - [4.1 User Operations (Your System Sends)](#41-user-operations-your-system-sends)
+    - [4.2 System Events (Your System Receives)](#42-system-events-your-system-receives)
+  - [5. Initial System State](#5-initial-system-state)
+  - [6. Important Considerations (Added for clarity)](#6-important-considerations-added-for-clarity)
 
 
 ---
