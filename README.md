@@ -45,9 +45,9 @@ Follow these steps to run the simulation and tests:
 
 The system uses strings to represent operations (actions initiated by users) and events (notifications from the system).
 
-### 4.1 User Operations (Your System Sends)
+### 4.1 User Operations (Your System Receives)
 
-These are the commands your elevator system can send to the test environment:
+These are the commands your elevator system will receive from the test environment:
 
 - `"open_door"`: Opens the door of the _currently targeted_ elevator (see `floor_arrived` event). You should determine which elevator to open the door for based on the current state of your system.
 - `"close_door"`: Closes the door of the _currently targeted_ elevator.
@@ -63,9 +63,9 @@ These are the commands your elevator system can send to the test environment:
   - Example: `"select_floor@2#1"` - User in elevator #1 selects floor 2.
 - `"reset"`: Resets your elevator system to its initial state (both elevators at floor 1, doors closed).
 
-### 4.2 System Events (Your System Receives)
+### 4.2 System Events (Your System Sends)
 
-These are the events your elevator system will receive from the test environment:
+These are the events your elevator system can send to the test environment:
 
 - `"door_opened": [elevator]` : Indicates that the door of the specified elevator has opened.
   - `elevator`: A string representing the elevator number: `"1"`, `"2"`.
