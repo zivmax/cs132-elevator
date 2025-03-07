@@ -72,6 +72,7 @@ if __name__ == "__main__":
                 target_elevator_id = scheduler.last_elevator
                 target_elevator = scheduler.elevators[target_elevator_id]
                 if target_elevator.state == ElevatorState.STOPPED_DOOR_CLOSED:
+                    zmqThread.sendMsg(f"door_opened#{target_elevator_id}")
                     target_elevator.state = ElevatorState.STOPPED_OPENING_DOOR
 
             elif serverMessage == "close_door":
