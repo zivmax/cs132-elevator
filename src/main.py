@@ -4,7 +4,8 @@ import sys
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from net_client import ZmqClientThread
-from elevator import ElevatorState, Scheduler
+from elevator import ElevatorState
+from scheduler import Scheduler
 
 
 # This function determines whether a new message has been received
