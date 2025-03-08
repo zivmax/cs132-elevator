@@ -1,27 +1,11 @@
 import os
-from net_client import ZmqClientThread
 import time
-from enum import IntEnum
+import sys
 
-##Example Code For Elevator Project
-# Feel free to rewrite this file!
-
-
-############ Elevator state ############
-# Feel free to design the states of your elevator system.
-class ElevatorState(IntEnum):
-    up = 0
-    down = 1
-    stopped_door_closed = 2
-    stopped_door_opened = 3
-    stopped_opening_door = 4
-
-
-# This function is just a prototype; it has no actual functionality
-def elevator_control_function():
-    for i in range(1, 100):  # some functions may cost time.
-        i += 1
-    return None
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from net_client import ZmqClientThread
+from elevator import ElevatorState
+from scheduler import Scheduler
 
 
 # This function determines whether a new message has been received
@@ -41,123 +25,154 @@ def is_received_new_message(
 
 
 if __name__ == "__main__":
-
-    ############ Connect the Server ############
-    identity = "TeamX"  # write your team name here.
+    # Connect to the server
+    identity = "Team18"  # Your team name
     zmqThread = ZmqClientThread(identity=identity)
 
-    ############ Initialize Elevator System ############
-    timeStamp = -1  # Used when receiving new message
-    serverMessage = ""  # Used when receiving new message
-    messageUnprocessed = False  # Used when receiving new message
-    elevatorState = ElevatorState.stopped_door_closed  # Initialize your elevator system
+    # Initialize tracking variables
+    timeStamp = -1
+    serverMessage = ""
+    messageUnprocessed = False
 
+    # Initialize elevator scheduler
+    scheduler = Scheduler()
+
+    # Elevator control loop
     while True:
+        # Check for new messages
+        if is_received_new_message(timeStamp, serverMessage, messageUnprocessed):
+            if not messageUnprocessed:
+                timeStamp = zmqThread.messageTimeStamp
+                serverMessage = zmqThread.receivedMessage
+                print(f"Received: {serverMessage}")  # Debug
+            messageUnprocessed = False
 
-        ############ Your timed automata design ############
-        ##Example for the naive testcase
+            # Process messages
+            if serverMessage.startswith("call_up@"):
+                floor = serverMessage.split("@")[1]
+                scheduler.call_up(floor)
 
-        match elevatorState:  # Available on Python 3.10+
-            case ElevatorState.stopped_door_closed:
-                if is_received_new_message(
-                    timeStamp, serverMessage, messageUnprocessed
-                ):
-                    if not messageUnprocessed:
-                        timeStamp = zmqThread.messageTimeStamp
-                        serverMessage = zmqThread.receivedMessage
-                    messageUnprocessed = False
+            elif serverMessage.startswith("call_down@"):
+                floor = serverMessage.split("@")[1]
+                scheduler.call_down(floor)
 
-                    if serverMessage == "call_up@1":
+            elif serverMessage.startswith("select_floor@"):
+                parts = serverMessage.split("@")[1].split("#")
+                floor = parts[0]
+                elevator_id = parts[1]
+                scheduler.select_floor(floor, elevator_id)
+
+            elif serverMessage == "reset":
+                scheduler.reset()
+                timeStamp = -1
+                serverMessage = ""
+                messageUnprocessed = False
+
+            elif serverMessage == "open_door":
+                target_elevator_id = scheduler.last_elevator
+                target_elevator = scheduler.elevators[target_elevator_id]
+                if target_elevator.state == ElevatorState.STOPPED_DOOR_CLOSED:
+                    target_elevator.state = ElevatorState.STOPPED_OPENING_DOOR
+
+            elif serverMessage == "close_door":
+                target_elevator_id = scheduler.last_elevator
+                target_elevator = scheduler.elevators[target_elevator_id]
+                if target_elevator.state == ElevatorState.STOPPED_DOOR_OPENED:
+                    zmqThread.sendMsg(f"door_closed#{target_elevator_id}")
+                    target_elevator.state = ElevatorState.STOPPED_DOOR_CLOSED
+
+        # Process each elevator based on its state
+        for elevator_id, elevator in scheduler.elevators.items():
+            match elevator.state:
+                case ElevatorState.STOPPED_DOOR_CLOSED:
+                    # If we have target floors, start moving
+                    if elevator.target_floors:
+                        elevator.direction = elevator.decide_direction()
+                        if elevator.direction == "up":
+                            elevator.state = ElevatorState.UP
+                        elif elevator.direction == "down":
+                            elevator.state = ElevatorState.DOWN
+                        elif elevator.direction is None:
+                            # No direction, stop at current floor
+                            zmqThread.sendMsg(
+                                f"floor_arrived@,{elevator.current_floor},#{elevator_id}"
+                            )
+                            elevator.state = ElevatorState.STOPPED_OPENING_DOOR
+
+                case ElevatorState.UP:
+                    # Simulate elevator moving up
+                    next_floor = scheduler.next_floor(elevator_id)
+                    if next_floor is not None:
+                        # Check if we're at the next floor or need to move
+                        if elevator.current_floor < next_floor:
+                            # Moving to next floor up
+                            new_floor = elevator.current_floor + 1
+                            zmqThread.sendMsg(
+                                f"floor_arrived@up,{new_floor}#{elevator_id}"
+                            )
+                            elevator.current_floor = new_floor
+
+                            # Check if we should stop at this floor
+                            if scheduler.floor_arrived("up", new_floor, elevator_id):
+                                elevator.state = ElevatorState.STOPPED_OPENING_DOOR
+                        else:
+                            # We've reached or passed our target
+                            elevator.state = ElevatorState.STOPPED_OPENING_DOOR
+                    else:
+                        # No more targets, stop at current floor
                         zmqThread.sendMsg(
-                            "up_floor_arrived@1#1"
-                        )  # assume the elevator #1 stopped at floor 1.
-                        elevator_control_function()
-                        messageUnprocessed = True
-                        elevatorState = ElevatorState.stopped_opening_door
+                            f"floor_arrived@,{elevator.current_floor},#{elevator_id}"
+                        )
+                        elevator.direction = None
+                        elevator.state = ElevatorState.STOPPED_OPENING_DOOR
 
-                    if serverMessage == "select_floor@3#1":
-                        elevator_control_function()
-                        messageUnprocessed = True
-                        elevatorState = ElevatorState.up
+                case ElevatorState.DOWN:
+                    # Simulate elevator moving down
+                    next_floor = scheduler.next_floor(elevator_id)
+                    if next_floor is not None:
+                        # Check if we're at the next floor or need to move
+                        if elevator.current_floor > next_floor:
+                            # Moving to next floor down
+                            new_floor = elevator.current_floor - 1
+                            zmqThread.sendMsg(
+                                f"floor_arrived@down,{new_floor}#{elevator_id}"
+                            )
+                            elevator.current_floor = new_floor
 
-                    if serverMessage == "reset":
-                        timeStamp = -1  # Used when receiving new message
-                        serverMessage = ""  # Used when receiving new message
-                        messageUnprocessed = False  # Used when receiving new message
-                        elevatorState = (
-                            ElevatorState.stopped_door_closed
-                        )  # Initialize your elevator system
+                            # Check if we should stop at this floor
+                            if scheduler.floor_arrived("down", new_floor, elevator_id):
+                                elevator.state = ElevatorState.STOPPED_OPENING_DOOR
+                        else:
+                            # We've reached or passed our target
+                            elevator.state = ElevatorState.STOPPED_OPENING_DOOR
+                    else:
+                        # No more targets, stop at current floor
+                        zmqThread.sendMsg(
+                            f"floor_arrived@,{elevator.current_floor},#{elevator_id}"
+                        )
+                        elevator.direction = None
+                        elevator.state = ElevatorState.STOPPED_OPENING_DOOR
 
-                else:
-                    continue
+                case ElevatorState.STOPPED_OPENING_DOOR:
+                    # Open the door
+                    zmqThread.sendMsg(f"door_opened#{elevator_id}")
+                    elevator.state = ElevatorState.STOPPED_DOOR_OPENED
+                    # Start a timer to close the door after a delay
+                    elevator.door_timer = time.time()
 
-            case ElevatorState.stopped_opening_door:
-                if is_received_new_message(
-                    timeStamp, serverMessage, messageUnprocessed
-                ):
-                    elevator_control_function()
-                    messageUnprocessed = True
-                    zmqThread.sendMsg("door_opened#1")
-                    elevatorState = ElevatorState.stopped_door_opened
+                case ElevatorState.STOPPED_DOOR_OPENED:
+                    # After a delay, close the door
+                    if (
+                        time.time() - getattr(elevator, "door_timer", 0) > 2.0
+                    ):  # 2 second delay
+                        zmqThread.sendMsg(f"door_closed#{elevator_id}")
+                        elevator.state = ElevatorState.STOPPED_DOOR_CLOSED
 
-                if serverMessage == "reset":
-                    timeStamp = -1  # Used when receiving new message
-                    serverMessage = ""  # Used when receiving new message
-                    messageUnprocessed = False  # Used when receiving new message
-                    elevatorState = (
-                        ElevatorState.stopped_door_closed
-                    )  # Initialize your elevator system
+                        # Check for new direction
+                        elevator.direction = elevator.decide_direction()
+                        if elevator.direction == "up":
+                            elevator.state = ElevatorState.UP
+                        elif elevator.direction == "down":
+                            elevator.state = ElevatorState.DOWN
 
-            case ElevatorState.stopped_door_opened:
-                if is_received_new_message(
-                    timeStamp, serverMessage, messageUnprocessed
-                ):
-                    if not messageUnprocessed:
-                        timeStamp = zmqThread.messageTimeStamp
-                        serverMessage = zmqThread.receivedMessage
-                    messageUnprocessed = False
-
-                    if serverMessage == "call_up@1":
-                        elevator_control_function()
-                        zmqThread.sendMsg("door_closed#1")
-                        elevatorState = ElevatorState.stopped_door_closed
-
-                    if serverMessage == "reset":
-                        timeStamp = -1  # Used when receiving new message
-                        serverMessage = ""  # Used when receiving new message
-                        messageUnprocessed = False  # Used when receiving new message
-                        elevatorState = (
-                            ElevatorState.stopped_door_closed
-                        )  # Initialize your elevator system
-                else:
-                    continue
-
-            case ElevatorState.up:
-                if is_received_new_message(
-                    timeStamp, serverMessage, messageUnprocessed
-                ):
-                    if not messageUnprocessed:
-                        timeStamp = zmqThread.messageTimeStamp
-                        serverMessage = zmqThread.receivedMessage
-                    messageUnprocessed = True
-
-                    elevator_control_function()
-                    zmqThread.sendMsg("floor_arrived@3#1")
-                    elevatorState = ElevatorState.stopped_opening_door
-
-                    if serverMessage == "reset":
-                        timeStamp = -1  # Used when receiving new message
-                        serverMessage = ""  # Used when receiving new message
-                        messageUnprocessed = False  # Used when receiving new message
-                        elevatorState = (
-                            ElevatorState.stopped_door_closed
-                        )  # Initialize your elevator system
-                pass
-            case ElevatorState.down:
-                pass
-
-        time.sleep(0.01)
-
-    """
-    For Other kinds of available serverMessage, see readMe.txt
-    """
+        time.sleep(0.1)  # Small delay to prevent high CPU usage

@@ -1,6 +1,29 @@
-# Elevator System Simulation and Testing
+# User Manual 
+
+Team 18 Project Elevator
+Made by Lin-Zheng TANG
+
+---
+
+## Elevator System Simulation and Testing
 
 This document describes how to set up, run, and interact with a simulated elevator system, along with its testing framework. The system uses ZeroMQ (pyzmq) for inter-process communication.
+
+## Content
+- [User Manual](#user-manual)
+  - [Elevator System Simulation and Testing](#elevator-system-simulation-and-testing)
+  - [Content](#content)
+  - [1. Environment Setup](#1-environment-setup)
+  - [2. Code Structure](#2-code-structure)
+  - [3. Running the Code](#3-running-the-code)
+  - [4. Operations and Events](#4-operations-and-events)
+    - [4.1 User Operations (Your System Sends)](#41-user-operations-your-system-sends)
+    - [4.2 System Events (Your System Receives)](#42-system-events-your-system-receives)
+  - [5. Initial System State](#5-initial-system-state)
+  - [6. Important Considerations (Added for clarity)](#6-important-considerations-added-for-clarity)
+
+
+---
 
 ## 1. Environment Setup
 
@@ -45,9 +68,9 @@ Follow these steps to run the simulation and tests:
 
 The system uses strings to represent operations (actions initiated by users) and events (notifications from the system).
 
-### 4.1 User Operations (Your System Receives)
+### 4.1 User Operations (Your System Sends)
 
-These are the commands your elevator system will receive from the test environment:
+These are the commands your elevator system can send to the test environment:
 
 - `"open_door"`: Opens the door of the _currently targeted_ elevator (see `floor_arrived` event). You should determine which elevator to open the door for based on the current state of your system.
 - `"close_door"`: Closes the door of the _currently targeted_ elevator.
@@ -63,9 +86,9 @@ These are the commands your elevator system will receive from the test environme
   - Example: `"select_floor@2#1"` - User in elevator #1 selects floor 2.
 - `"reset"`: Resets your elevator system to its initial state (both elevators at floor 1, doors closed).
 
-### 4.2 System Events (Your System Sends)
+### 4.2 System Events (Your System Receives)
 
-These are the events your elevator system can send to the test environment:
+These are the events your elevator system will receive from the test environment:
 
 - `"door_opened": [elevator]` : Indicates that the door of the specified elevator has opened.
   - `elevator`: A string representing the elevator number: `"1"`, `"2"`.
