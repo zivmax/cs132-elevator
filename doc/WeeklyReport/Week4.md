@@ -15,4 +15,3 @@ Guo Yu:
 
 Linzheng Tang:
 - Build the GitLab environment
-- Start the construction of the backend interface
