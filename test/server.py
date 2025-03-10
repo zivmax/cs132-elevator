@@ -20,7 +20,7 @@ class ZmqServerThread(threading.Thread):
         if server_port is not None:
             self.port = server_port
 
-        print("Start hosting at port:{port}".format(port=self._port))
+        print(f"Start hosting at port:{self._port}")
         self.start()
 
     @property
@@ -60,7 +60,7 @@ class ZmqServerThread(threading.Thread):
 
         if server_port is not None:
             self.port = server_port
-        self.socket.bind("tcp://{0}:{1}".format("127.0.0.1", self.port))
+        self.socket.bind(f"tcp://{'127.0.0.1'}:{self.port}")
 
         while True:
             [address, contents] = self.socket.recv_multipart()
@@ -69,11 +69,11 @@ class ZmqServerThread(threading.Thread):
             self.clients_addr.add(address_str)
             self.messageTimeStamp = int(round(time.time() * 1000))  # UNIX Time Stamp
             self.receivedMessage = contents_str
-            print("Client:[%s] message:%s\n" % (address_str, contents_str))
+            print(f"Client:[{address_str}] message:{contents_str}\n")
 
     def send_string(self, address: str, msg: str = ""):
         if not self.socket.closed:
-            print("Server:[%s] message:%s\n" % (str(address), str(msg)))
+            print(f"Server:[{str(address)}] message:{str(msg)}\n")
             self.socket.send_multipart(
                 [address.encode(), msg.encode()]
             )  # send msg to address
