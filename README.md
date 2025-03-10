@@ -1,3 +1,9 @@
+# System Behaviour
+  - 2 Elevators in all
+  - Automatically close the door
+  - Schedule the elevator for best efficiency according expected time cost.
+  - Any other behaviour a elevator system will have in real life.
+
 # Available operation/event
   ## available user operation
   - "open_door", For example, `open_door#1` means a user in the elevator1 press the open door button.
