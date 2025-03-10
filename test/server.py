@@ -69,7 +69,7 @@ class ZmqServerThread(threading.Thread):
             self.clients_addr.add(address_str)
             self.messageTimeStamp = int(round(time.time() * 1000))  # UNIX Time Stamp
             self.receivedMessage = contents_str
-            print("client:[%s] message:%s\n" % (address_str, contents_str))
+            print("Client:[%s] message:%s\n" % (address_str, contents_str))
 
     def send_string(self, address: str, msg: str = ""):
         if not self.socket.closed:
