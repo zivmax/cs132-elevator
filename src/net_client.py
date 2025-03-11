@@ -20,11 +20,11 @@ class ZmqClientThread(threading.Thread):
         self._messageTimeStamp: int = None  # UNIX Time Stamp, should be int
 
         self._socket.connect(
-            "tcp://{0}:{1}".format(serverIp, port)
+            f"tcp://{serverIp}:{port}"
         )  # Both ("tcp://localhost:27132") and ("tcp://127.0.0.1:27132") are OK
 
         self.sendMsg(
-            "Client[{0}] is online".format(self._identity)
+            f"Client[{self._identity}] is online"
         )  ##Telling server I'm online
         self.start()  # start the client thread
 
@@ -58,7 +58,7 @@ class ZmqClientThread(threading.Thread):
                 message = socket.recv()  # recv_multipart
                 message_str = message.decode()
                 print(
-                    "Message from server: " + message_str
+                    f"Message from server: {message_str}"
                 )  # Helpful for debugging. You can comment out this statement.
                 self.receivedMessage = message_str
                 self.messageTimeStamp = int(
