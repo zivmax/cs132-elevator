@@ -1,4 +1,4 @@
-# Team17 Project Elevator 
+# Team-17 Project Elevator 
 
 ## Week 4 Meeting Report (Initial meeting)
 

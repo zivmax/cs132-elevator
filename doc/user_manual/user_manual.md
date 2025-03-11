@@ -1,6 +1,7 @@
 # User Manual 
-Team 18 Project Elevator
-Made by LinZheng Tang
+- Team-17 Project: Elevator
+
+- Made by LinZheng Tang
 
 ---
 
