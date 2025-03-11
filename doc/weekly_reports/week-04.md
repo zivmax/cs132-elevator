@@ -2,9 +2,9 @@
 
 ## Week 4 Meeting Report (Initial meeting)
 
-Requirement: Guo Yu 2022533174<br>
-Development: Linzheng Tang 2022533087<br>
-Validation: Guo Yu 2022533174
+- Requirement: Guo Yu 2022533174
+- Development: Linzheng Tang 2022533087
+- Validation: Guo Yu 2022533174
 
 Date: 2025-3-10
 
