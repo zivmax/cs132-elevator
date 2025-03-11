@@ -1,6 +1,7 @@
 # System Behaviour
   - 2 Elevators in all
-  - Automatically close the door
+  - Automatically close the door if user don't close it.
+  - Response with floor arrived before open door arriving a floor calling up/down.
   - Schedule the elevator for best efficiency according expected time cost.
   - Any other behaviour a elevator system will have in real life.
 
@@ -20,3 +21,24 @@
 
 # Elevator system initial assumption
 Assume that both elevators(#1, #2) initially stop on the first floor and the doors are closed. 
+
+# System Design
+
+- A `Elevator` class, 
+  - It will handle all the operation itself, including:
+    - Multi target floor assignment planning, by changing the state of the elevator. 
+    - User indoor floor selection.
+    - Open and close door automatically besides manual control.
+    - Changing the current state like `MOVING_UP`, `STOPPED` etc..
+  - It will receives command from the dispatcher, including:
+    - `X_floor` assigning from the dispatcher.
+  - It will sends event signal to the user test server, including:
+    - `door_opened`
+    - `door_closed`
+    - `floor_arrived`
+- A `Dispatcher` class,
+  - It will receive and parse the request from the user test server, and assign the target called floor task to the most suitable elevator.
+- A `Engine` class,
+  - Move the elevators floor by floor according to their states, in every update loop.
+- A `World` class,
+  - Manage all other instances update.
