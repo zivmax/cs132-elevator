@@ -41,4 +41,5 @@ Assume that both elevators(#1, #2) initially stop on the first floor and the doo
 - A `Engine` class,
   - Move the elevators floor by floor according to their states, in every update loop.
 - A `World` class,
-  - Manage all other instances update.
+  - Simluate the world.
+  - Manage all instances's update.
