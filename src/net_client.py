@@ -2,22 +2,23 @@ import zmq
 import os
 import threading
 import time
+from typing import Optional
 
 
 class ZmqClientThread(threading.Thread):
 
-    def __init__(self, serverIp="127.0.0.1", port="27132", identity="GroupX"):
+    def __init__(self, serverIp: str = "127.0.0.1", port: str = "27132", identity: str = "GroupX") -> None:
         threading.Thread.__init__(self)
-        self._context = zmq.Context()
-        self._socket = self._context.socket(zmq.DEALER)
-        self._serverIp = serverIp
-        self._identity = identity
-        self._port = port
+        self._context: zmq.Context = zmq.Context()
+        self._socket: zmq.Socket = self._context.socket(zmq.DEALER)
+        self._serverIp: str = serverIp
+        self._identity: str = identity
+        self._port: str = port
         self._socket.setsockopt_string(
             zmq.IDENTITY, identity
         )  # default encoding is UTF-8 #Set your IDENTITY before connection.
-        self._receivedMessage: str = None
-        self._messageTimeStamp: int = None  # UNIX Time Stamp, should be int
+        self._receivedMessage: Optional[str] = None
+        self._messageTimeStamp: Optional[int] = None  # UNIX Time Stamp, should be int
 
         self._socket.connect(
             f"tcp://{serverIp}:{port}"
@@ -36,7 +37,7 @@ class ZmqClientThread(threading.Thread):
             return self._messageTimeStamp
 
     @messageTimeStamp.setter
-    def messageTimeStamp(self, value: int):
+    def messageTimeStamp(self, value: int) -> None:
         self._messageTimeStamp = value
 
     @property
@@ -47,16 +48,16 @@ class ZmqClientThread(threading.Thread):
             return self._receivedMessage
 
     @receivedMessage.setter
-    def receivedMessage(self, value: str):
+    def receivedMessage(self, value: str) -> None:
         self._receivedMessage = value
 
     # Listen from the server
     # You can rewrite this part as long as it can receive messages from server.
-    def __launch(self, socket):
+    def __launch(self, socket: zmq.Socket) -> None:
         while True:
             if not socket.closed:
-                message = socket.recv()  # recv_multipart
-                message_str = message.decode()
+                message: bytes = socket.recv()  # recv_multipart
+                message_str: str = message.decode()
                 print(
                     f"Message from server: {message_str}"
                 )  # Helpful for debugging. You can comment out this statement.
@@ -69,12 +70,12 @@ class ZmqClientThread(threading.Thread):
                 break
 
     # Override the function in threading.Thread
-    def run(self):
+    def run(self) -> None:
         self.__launch(self._socket)
 
     # Send messages to the server
     # You can rewrite this part as long as you can send messages to server.
-    def sendMsg(self, data: str):
+    def sendMsg(self, data: str) -> None:
         if not self._socket.closed:
             self._socket.send_string(data)
         else:

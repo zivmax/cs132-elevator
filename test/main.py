@@ -4,6 +4,8 @@ import server
 import time
 import random
 from enum import IntEnum
+from typing import List, Optional, Dict, Any
+
 
 #######   ELEVATOR PROJECT    #######
 
@@ -20,36 +22,36 @@ class PassengerState(IntEnum):
 
 
 class Passenger:
-    def __init__(self, start_floor, target_floor, name="test"):
+    def __init__(self, start_floor: int, target_floor: int, name: str = "test") -> None:
         self.start_floor: int = start_floor
         self.target_floor: int = target_floor
-        self.direction = "up" if self.target_floor > self.start_floor else "down"
-        self._elevator_code = -1
-        self.current_floor = start_floor
-        self.finished = False if self.target_floor != self.start_floor else True
-        self.finished_print = False
-        self.name = name
-        self.matching_signal = (
+        self.direction: str = "up" if self.target_floor > self.start_floor else "down"
+        self._elevator_code: int = -1
+        self.current_floor: int = start_floor
+        self.finished: bool = False if self.target_floor != self.start_floor else True
+        self.finished_print: bool = False
+        self.name: str = name
+        self.matching_signal: str = (
             f"up_floor_arrived@{self.current_floor}"
             if self.direction == "up"
             else f"down_floor_arrived@{self.current_floor}"
         )
-        self.state = PassengerState.OUT_ELEVATOR_0_AT_OTHER_FLOOR
+        self.state: PassengerState = PassengerState.OUT_ELEVATOR_0_AT_OTHER_FLOOR
 
-    def change_state(self, target_state: PassengerState) -> str:
+    def change_state(self, target_state: PassengerState) -> None:
         self.state = target_state
 
-    def is_finished(self):
+    def is_finished(self) -> bool:
         return self.finished
 
-    def set_elevator_code(self, value):
+    def set_elevator_code(self, value: int) -> None:
         self._elevator_code = value
 
-    def get_elevator_code(self):
+    def get_elevator_code(self) -> int:
         return self._elevator_code
 
 
-def testing(server: server.ZmqServerThread):
+def testing(server: server.ZmqServerThread) -> None:
     def is_received_new_message(
         oldTimeStamp: int, oldServerMessage: str, Msgunprocessed: bool = False
     ) -> bool:
@@ -65,11 +67,11 @@ def testing(server: server.ZmqServerThread):
                 return True
 
     ############ Initialize Passengers ############
-    passengers = [Passenger(1, 3, "A")]  ##There can be many passengers in testcase.
-    timeStamp = -1  # default time stamp is -1
-    clientMessage = ""  # default received message is ""
-    messageUnprocessed = False  # Used when receiving new message
-    count = 0
+    passengers: List[Passenger] = [Passenger(1, 3, "A")]  ##There can be many passengers in testcase.
+    timeStamp: int = -1  # default time stamp is -1
+    clientMessage: str = ""  # default received message is ""
+    messageUnprocessed: bool = False  # Used when receiving new message
+    count: int = 0
     server.send_string(server.bindedClient, "reset")  # Reset the client
     time.sleep(1)
 
@@ -208,7 +210,7 @@ def testing(server: server.ZmqServerThread):
 
 
 if __name__ == "__main__":
-    my_server = server.ZmqServerThread()
+    my_server: server.ZmqServerThread = server.ZmqServerThread()
     while True:
         if len(my_server.clients_addr) == 0:
             continue
@@ -216,8 +218,8 @@ if __name__ == "__main__":
             print("more than 1 client address stored. server will exit")
             sys.exit()
         else:
-            addr = list(my_server.clients_addr)[0]
-            msg = input(f"Initiate evaluation for {addr}?: (y/n)\n")
+            addr: str = list(my_server.clients_addr)[0]
+            msg: str = input(f"Initiate evaluation for {addr}?: (y/n)\n")
             if msg == "y":
                 my_server.bindedClient = addr
                 testing(my_server)
