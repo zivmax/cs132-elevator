@@ -1,10 +1,3 @@
-# System Behaviour
-  - 2 Elevators in all
-  - Automatically close the door if user don't close it.
-  - Response with floor arrived before open door arriving a floor calling up/down.
-  - Schedule the elevator for best efficiency according expected time cost.
-  - Any other behaviour a elevator system will have in real life.
-
 # Available Request/Response
   ## Available User Requests
   - "open_door", For example, `open_door#1` means a user in the elevator1 press the open door button.
@@ -22,24 +15,41 @@
 # Elevator system initial assumption
 Assume that both elevators(#1, #2) initially stop on the first floor and the doors are closed. 
 
+# System Behaviour
+  - 2 Elevators in all
+  - Automatically close the door if user don't close it.
+  - Response with floor arrived before open door arriving a floor calling up/down.
+  - Schedule the elevator for best efficiency according expected whole system time cost.
+  - Any other behaviour a elevator system will have in real life.
+
 # System Design
 
-- A `Elevator` class, 
-  - It will handle all the operation itself, including:
-    - Multi target floor assignment planning, by changing the state of the elevator. 
-    - User indoor floor selection.
-    - Open and close door automatically besides manual control.
-    - Changing the current state like `MOVING_UP`, `STOPPED` etc..
-  - It will receives command from the dispatcher, including:
-    - `X_floor` assigning from the dispatcher.
+*The main principle of the system design is actually game dev design.*
+
+- A `Elevator` class: 
+  - It will handle its own operation itself, including:
+    - Handling user indoor floor selection.
+    - Open and close door automatically besides manual control when target floor arrived.
+  - It will execute transporting process according to a `target_floor` like list which is manipulated by the dispatcher.
+    - In this part, the elevator should perform strictly follow the order of the floors in the list.
+  - The elevator can't move itself, it has to sending moving request to the `Engine` class, the `Engine` class will handling the changes of the state indicates which floor the elevator are currently being.
   - It will sends event signal to the user test server, including:
     - `door_opened`
     - `door_closed`
     - `floor_arrived`
-- A `Dispatcher` class,
+
+- A `Dispatcher` class:
   - It will receive and parse the request from the user test server, and assign the target called floor task to the most suitable elevator.
-- A `Engine` class,
-  - Move the elevators floor by floor according to their states, in every update loop.
-- A `World` class,
+  - It will manipulate the `target_floor` like list of the `Elevator` class, including:
+    - Adding floor
+    - Removing floor
+    - Sorting floor (Not neccessarily to be sorted numerically, for example [4, 5, 1] should be faster than [4, 1, 5], if 2 user calls the elevator in the floor 4 and want to get floor 1 and 5 separately)
+  - All the decision should targeting making the system more efficently.
+  
+- A `Engine` class:
+  - `Engine` will determine the changes of next floor state of each elevator according to a state like `MOVING_UP` or `STOPPED`.
+  - The update of the floor state of each elevator should be floor by floor.
+
+- A `World` class:
   - Simluate the world.
-  - Manage all instances's update.
+  - Call the `update` method of each instances. 
