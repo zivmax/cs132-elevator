@@ -2,7 +2,8 @@ import zmq
 import os
 import threading
 import time
-from typing import Optional
+from typing import Optional, List, Tuple
+from collections import deque
 
 
 class ZmqClientThread(threading.Thread):
@@ -17,8 +18,15 @@ class ZmqClientThread(threading.Thread):
         self._socket.setsockopt_string(
             zmq.IDENTITY, identity
         )  # default encoding is UTF-8 #Set your IDENTITY before connection.
+        
+        # Instead of single message, use queues to store multiple messages
+        self._messageQueue: deque = deque()
+        self._timestampQueue: deque = deque()
+        self._lock = threading.Lock()  # Thread safety for queue operations
+
+        # Keep the original variables for backwards compatibility
         self._receivedMessage: Optional[str] = None
-        self._messageTimeStamp: Optional[int] = None  # UNIX Time Stamp, should be int
+        self._messageTimeStamp: Optional[int] = None
 
         self._socket.connect(
             f"tcp://{serverIp}:{port}"
@@ -51,6 +59,27 @@ class ZmqClientThread(threading.Thread):
     def receivedMessage(self, value: str) -> None:
         self._receivedMessage = value
 
+    # Get all messages in the queue
+    def get_all_messages(self) -> List[Tuple[str, int]]:
+        with self._lock:
+            return list(zip(self._messageQueue, self._timestampQueue))
+
+    # Get the latest message without removing it
+    def peek_latest_message(self) -> Tuple[str, int]:
+        with self._lock:
+            if self._messageQueue:
+                return (self._messageQueue[-1], self._timestampQueue[-1])
+            return ("", -1)
+
+    # Get and remove the oldest message (FIFO)
+    def get_next_message(self) -> Tuple[str, int]:
+        with self._lock:
+            if self._messageQueue:
+                message = self._messageQueue.popleft()
+                timestamp = self._timestampQueue.popleft()
+                return (message, timestamp)
+            return ("", -1)
+
     # Listen from the server
     # You can rewrite this part as long as it can receive messages from server.
     def __launch(self, socket: zmq.Socket) -> None:
@@ -61,10 +90,16 @@ class ZmqClientThread(threading.Thread):
                 print(
                     f"Message from server: {message_str}"
                 )  # Helpful for debugging. You can comment out this statement.
+                
+                # Add to queue and also maintain compatibility with old code
+                timestamp = int(round(time.time() * 1000))  # UNIX Time Stamp
+                with self._lock:
+                    self._messageQueue.append(message_str)
+                    self._timestampQueue.append(timestamp)
+                
+                # Keep the previous behavior for backward compatibility
                 self.receivedMessage = message_str
-                self.messageTimeStamp = int(
-                    round(time.time() * 1000)
-                )  # UNIX Time Stamp
+                self.messageTimeStamp = timestamp
             else:
                 print("socket is closed,can't receive any message...")
                 break

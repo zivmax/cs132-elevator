@@ -267,10 +267,16 @@ class Dispatcher:
         self.last_message_timestamp: int = -1
     
     def update(self) -> None:
-        # Check for new messages
-        if self.world.client.messageTimeStamp != self.last_message_timestamp:
-            self.last_message_timestamp = self.world.client.messageTimeStamp
-            message: str = self.world.client.receivedMessage
+        # Process all pending messages in the queue
+        while True:
+            message, timestamp = self.world.client.get_next_message()
+            if message == "" or timestamp == -1:
+                break  # No more messages in the queue
+            
+            # Update timestamp for backward compatibility
+            self.last_message_timestamp = timestamp
+            
+            # Handle the message
             if message:
                 self.handle_request(message)
     
