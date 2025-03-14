@@ -58,6 +58,7 @@ class Elevator:
             # Check if we've reached a target floor
             if self.current_floor in self.target_floors:
                 self.target_floors.remove(self.current_floor)
+                print(f"Elevator {self.id} target sequence: {self.target_floors}")
                 self.open_door()
             else:
                 # Continue movement if we have more floors to visit
@@ -68,6 +69,8 @@ class Elevator:
             # Send floor arrival notification first
             direction_str: str = "up_" # Default to up
             self.world.send_message(f"{direction_str}floor_arrived@{self.current_floor}#{self.id}")
+            self.target_floors.remove(self.current_floor)
+            print(f"Elevator {self.id} target sequence: {self.target_floors}")
             # Then open door
             self.open_door()
             return
