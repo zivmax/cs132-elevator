@@ -52,27 +52,15 @@ class Elevator:
             self.floor_changed = False
             
             # Notify that we've arrived at a floor
-            direction_str: str = "up_" if self.state == ElevatorState.MOVING_UP else "down_" if self.state == ElevatorState.MOVING_DOWN else "up_" # Default to up
-            self.world.send_message(f"{direction_str}floor_arrived@{self.current_floor}#{self.id}")
+            self._handle_floor_arrival()
             
-            # Check if we've reached a target floor
-            if self.current_floor in self.target_floors:
-                self.target_floors.remove(self.current_floor)
-                print(f"Elevator {self.id} target sequence: {self.target_floors}")
-                self.open_door()
-            else:
-                # Continue movement if we have more floors to visit
+            # Continue movement if we haven't reached a target floor
+            if self.current_floor not in self.target_floors:
                 self.request_movement_if_needed()
-                # If elevator is already at this floor and door is closed, open door
-
+        
+        # If elevator is at a target floor with closed doors, handle arrival
         elif self.current_floor in self.target_floors and self.door_state == DoorState.CLOSED:
-            # Send floor arrival notification first
-            direction_str: str = "up_" # Default to up
-            self.world.send_message(f"{direction_str}floor_arrived@{self.current_floor}#{self.id}")
-            self.target_floors.remove(self.current_floor)
-            print(f"Elevator {self.id} target sequence: {self.target_floors}")
-            # Then open door
-            self.open_door()
+            self._handle_floor_arrival()
             return
         
         # Handle automatic door closing
@@ -101,6 +89,20 @@ class Elevator:
         elif self.state == ElevatorState.DOOR_CLOSED:
             # Request movement if we have target floors
             self.request_movement_if_needed()
+
+    def _handle_floor_arrival(self) -> None:
+        """Handle logic for arriving at a floor"""
+        # Determine direction string based on current state
+        direction_str: str = "up_" if self.state == ElevatorState.MOVING_UP else "down_" if self.state == ElevatorState.MOVING_DOWN else "up_"
+        
+        # Notify arrival
+        self.world.send_message(f"{direction_str}floor_arrived@{self.current_floor}#{self.id}")
+        
+        # If this is a target floor, remove it and open door
+        if self.current_floor in self.target_floors:
+            self.target_floors.remove(self.current_floor)
+            print(f"Elevator {self.id} target sequence: {self.target_floors}")
+            self.open_door()
 
     def request_movement_if_needed(self) -> None:
         """Request movement from the Engine if there are target floors"""
