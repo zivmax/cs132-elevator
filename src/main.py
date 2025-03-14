@@ -52,7 +52,7 @@ class Elevator:
             self.floor_changed = False
             
             # Notify that we've arrived at a floor
-            direction_str: str = "up_" if self.state == ElevatorState.MOVING_UP else "down_" if self.state == ElevatorState.MOVING_DOWN else ""
+            direction_str: str = "up_" if self.state == ElevatorState.MOVING_UP else "down_" if self.state == ElevatorState.MOVING_DOWN else "up_" # Default to up
             self.world.send_message(f"{direction_str}floor_arrived@{self.current_floor}#{self.id}")
             
             # Check if we've reached a target floor
@@ -62,6 +62,15 @@ class Elevator:
             else:
                 # Continue movement if we have more floors to visit
                 self.request_movement_if_needed()
+                # If elevator is already at this floor and door is closed, open door
+
+        elif self.current_floor in self.target_floors and self.door_state == DoorState.CLOSED:
+            # Send floor arrival notification first
+            direction_str: str = "up_" # Default to up
+            self.world.send_message(f"{direction_str}floor_arrived@{self.current_floor}#{self.id}")
+            # Then open door
+            self.open_door()
+            return
         
         # Handle automatic door closing
         if self.door_state == DoorState.OPEN:
@@ -310,17 +319,8 @@ class Dispatcher:
         """Add target floor to elevator and optimize the sequence"""
         elevator = self.world.elevators[elevator_idx]
         
-        # If elevator is already at this floor and door is closed, open door
-        if floor == elevator.current_floor and elevator.door_state == DoorState.CLOSED:
-            # Send floor arrival notification first
-            direction_str: str = ""
-            self.world.send_message(f"{direction_str}floor_arrived@{elevator.current_floor}#{elevator.id}")
-            # Then open door
-            elevator.open_door()
-            return
-        
         # Skip if already in target list or currently at this floor
-        if floor in elevator.target_floors or (floor == elevator.current_floor and elevator.door_state != DoorState.CLOSED):
+        if floor in elevator.target_floors:
             return
         
         # Add floor to target list
@@ -328,6 +328,7 @@ class Dispatcher:
         
         # Optimize the sequence for efficiency
         self._optimize_target_sequence(elevator)
+        print(f"Elevator {elevator.id} target sequence: {elevator.target_floors}")
         
         # If door is open, close it to start moving
         if elevator.door_state == DoorState.OPEN:
@@ -415,13 +416,13 @@ class World:
         time.sleep(1)  # Give time for the client to connect
     
     def update(self) -> None:
-        # Update components in the correct order
         self.dispatcher.update()  # Process user requests
-        self.engine.update()      # Process movement
-        
-        # Update elevators last
+
         for elevator in self.elevators:
             elevator.update()
+        
+        self.engine.update()      # Process movement
+        
     
     def send_message(self, message: str) -> None:
         self.client.sendMsg(message)
