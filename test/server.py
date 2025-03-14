@@ -3,32 +3,33 @@ import zmq
 import threading
 import sys
 import os
+from typing import Set, Optional, Any, List, Tuple
 
 
 class ZmqServerThread(threading.Thread):
-    _port = 27132
-    clients_addr = set()
+    _port: int = 27132
+    clients_addr: Set[str] = set()
 
-    def __init__(self, server_port: int = None) -> None:
+    def __init__(self, server_port: Optional[int] = None) -> None:
         threading.Thread.__init__(self)
-        self.context = zmq.Context()
-        self.socket = self.context.socket(zmq.ROUTER)
-        self.bindedClient = None
-        self._receivedMessage: str = None
-        self._messageTimeStamp: int = None  # UNIX Time Stamp, should be int
+        self.context: zmq.Context = zmq.Context()
+        self.socket: zmq.Socket = self.context.socket(zmq.ROUTER)
+        self.bindedClient: Optional[str] = None
+        self._receivedMessage: Optional[str] = None
+        self._messageTimeStamp: Optional[int] = None  # UNIX Time Stamp, should be int
 
         if server_port is not None:
             self.port = server_port
 
-        print("Start hosting at port:{port}".format(port=self._port))
+        print(f"Start hosting at port:{self._port}")
         self.start()
 
     @property
-    def port(self):
+    def port(self) -> int:
         return self._port
 
     @port.setter
-    def port(self, value: int):
+    def port(self, value: int) -> None:
         if value < 0 or value > 65535:
             raise ValueError("score must between 0 ~ 65535!")
         self._port = value
@@ -41,7 +42,7 @@ class ZmqServerThread(threading.Thread):
             return self._messageTimeStamp
 
     @messageTimeStamp.setter
-    def messageTimeStamp(self, value: int):
+    def messageTimeStamp(self, value: int) -> None:
         self._messageTimeStamp = value
 
     @property
@@ -52,28 +53,30 @@ class ZmqServerThread(threading.Thread):
             return self._receivedMessage
 
     @receivedMessage.setter
-    def receivedMessage(self, value: str):
+    def receivedMessage(self, value: str) -> None:
         self._receivedMessage = value
 
     # start listening
-    def hosting(self, server_port: int = None) -> None:
+    def hosting(self, server_port: Optional[int] = None) -> None:
 
         if server_port is not None:
             self.port = server_port
-        self.socket.bind("tcp://{0}:{1}".format("127.0.0.1", self.port))
+        self.socket.bind(f"tcp://{'127.0.0.1'}:{self.port}")
 
         while True:
-            [address, contents] = self.socket.recv_multipart()
-            address_str = address.decode()
-            contents_str = contents.decode()
+            address_and_contents: List[bytes] = self.socket.recv_multipart()
+            address: bytes = address_and_contents[0]
+            contents: bytes = address_and_contents[1]
+            address_str: str = address.decode()
+            contents_str: str = contents.decode()
             self.clients_addr.add(address_str)
             self.messageTimeStamp = int(round(time.time() * 1000))  # UNIX Time Stamp
             self.receivedMessage = contents_str
-            print("client:[%s] message:%s\n" % (address_str, contents_str))
+            print(f"Client:[{address_str}] message:{contents_str}\n")
 
-    def send_string(self, address: str, msg: str = ""):
+    def send_string(self, address: str, msg: str = "") -> None:
         if not self.socket.closed:
-            print("Server:[%s] message:%s\n" % (str(address), str(msg)))
+            print(f"Server:[{str(address)}] message:{str(msg)}\n")
             self.socket.send_multipart(
                 [address.encode(), msg.encode()]
             )  # send msg to address
@@ -81,5 +84,5 @@ class ZmqServerThread(threading.Thread):
             print("socket is closed,can't send message...")
 
     # override
-    def run(self):
+    def run(self) -> None:
         self.hosting()

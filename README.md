@@ -1,96 +1,55 @@
-# Elevator System Simulation and Testing
+# Available Request/Response
+  ## Available User Requests
+  - "open_door", For example, `open_door#1` means a user in the elevator1 press the open door button.
+  - "close_door", For example, `close_door#2` means a user in the elevator2 press the close door button.
+  - "call_up": ["-1", "1", "2"], For example, `call_up@1` means a user on the first floor presses the button to call the elevator to go upwards.
+  - "call_down": ["3", "2", "1"], For instance, `call_down@3` signifies a user on the third floor pressing the button to call the elevator to go downwards.
+  - "select_floor": ["-1#1", "-1#2", "1#1", "1#2", "2#1", "2#2", "3#1", "3#2"], For example, `select_floor@2#1` means a user in elevator #1 selects to go to the second floor.
+  - "reset": When your elevator system receives a reset signal, it should reset the elevator's state machine to its initial state
 
-This document describes how to set up, run, and interact with a simulated elevator system, along with its testing framework. The system uses ZeroMQ (pyzmq) for inter-process communication.
+  ## Available System Responses
+  - "door_opened": ["#1", "#2"], `door_opened#1` means the doors of elevator #1 have opened.
+  - "door_closed": ["#1", "#2"], `door_closed#1` means the doors of elevator #1 have closed.
+  - "floor_arrived":["up","down",""],["-1","1","2","3"],["#1", "#2"] "up_floor_1_arrived#1", indicating that elevator #1 has arrived at the first floor while moving upwards. "floor_1_arrived#1",indicating that elevator #1 has stopped at the first floor.
 
-## 1. Environment Setup
+# Elevator system initial assumption
+Assume that both elevators(#1, #2) initially stop on the first floor and the doors are closed. 
 
-- **Python:** Version 3.10 or higher.
-- **Dependencies:** Install the required dependencies using pip:
-  - `pip install -r requirements.txt`
+# System Behaviour
+  - 2 Elevators in all
+  - Automatically close the door if user don't close it.
+  - Response with floor arrived before open door arriving a floor calling up/down.
+  - Schedule the elevator for best efficiency according expected whole system time cost.
+  - Any other behaviour a elevator system will have in real life.
 
-## 2. Code Structure
+# System Design
 
-The project is organized into the following directories and files:
+*The main principle of the system design is actually game dev design.*
 
-- `/src/` - Contains your elevator control logic.
+- A `Elevator` class: 
+  - It will handle its own operation itself, including:
+    - Handling user indoor floor selection.
+    - Open and close door automatically besides manual control when target floor arrived.
+  - It will execute transporting process according to a `target_floor` like list which is manipulated by the dispatcher.
+    - In this part, the elevator should perform strictly follow the order of the floors in the list.
+  - The elevator can't move itself, it has to sending moving request to the `Engine` class, the `Engine` class will handling the changes of the state indicates which floor the elevator are currently being.
+  - It will sends event signal to the user test server, including:
+    - `door_opened`
+    - `door_closed`
+    - `floor_arrived`
 
-  - `net_client.py`: Handles communication with the testing server (from `/test/`). _You generally don't need to modify this._
-  - `main.py`: This is the main file for _your_ elevator control system. Modify this file to implement your logic.
+- A `Dispatcher` class:
+  - It will receive and parse the request from the user test server, and assign the target called floor task to the most suitable elevator.
+  - It will manipulate the `target_floor` like list of the `Elevator` class, including:
+    - Adding floor
+    - Removing floor
+    - Sorting floor (Not neccessarily to be sorted numerically, for example [4, 5, 1] should be faster than [4, 1, 5], if 2 user calls the elevator in the floor 4 and want to get floor 1 and 5 separately)
+  - All the decision should targeting making the system more efficently.
+  
+- A `Engine` class:
+  - `Engine` will determine the changes of next floor state of each elevator according to a state like `MOVING_UP` or `STOPPED`.
+  - The update of the floor state of each elevator should be floor by floor.
 
-- `/test/` - Contains the testing framework.
-  - `main.py`: The main file for the test case runner. This interacts with your system and sends/receives events.
-  - `server.py`: Handles communication with your `net_client.py`. _You generally don't need to modify this._
-
-## 3. Running the Code
-
-Follow these steps to run the simulation and tests:
-
-1.  **Start the Test Server:**
-
-    - Open a terminal.
-    - Navigate to the `/test/` directory.
-    - Run: `python main.py`
-
-2.  **Start Your Elevator System:**
-
-    - Open a _separate_ terminal.
-    - Navigate to the `/src/` directory.
-    - Run: `python main.py`
-
-3.  **Run the Test Case:**
-    - In the terminal where you ran `/test/main.py`, you should see a prompt.
-    - Type `y` and press Enter to start the naive test case.
-
-## 4. Operations and Events
-
-The system uses strings to represent operations (actions initiated by users) and events (notifications from the system).
-
-### 4.1 User Operations (Your System Receives)
-
-These are the commands your elevator system will receive from the test environment:
-
-- `"open_door"`: Opens the door of the _currently targeted_ elevator (see `floor_arrived` event). You should determine which elevator to open the door for based on the current state of your system.
-- `"close_door"`: Closes the door of the _currently targeted_ elevator.
-- `"call_up": [floor]` : Simulates a user pressing the "up" button on the specified floor.
-  - `floor`: A string representing the floor number: `"-1"`, `"1"`, `"2"`.
-  - Example: `"call_up@1"` - User on floor 1 presses the "up" button.
-- `"call_down": [floor]` : Simulates a user pressing the "down" button on the specified floor.
-  - `floor`: A string representing the floor number: `"3"`, `"2"`, `"1"`.
-  - Example: `"call_down@3"` - User on floor 3 presses the "down" button.
-- `"select_floor": [floor#elevator]` : Simulates a user inside an elevator selecting a destination floor.
-  - `floor`: A string representing the floor number: `"-1"`, `"1"`, `"2"`, `"3"`.
-  - `elevator`: A string representing the elevator number: `"1"`, `"2"`.
-  - Example: `"select_floor@2#1"` - User in elevator #1 selects floor 2.
-- `"reset"`: Resets your elevator system to its initial state (both elevators at floor 1, doors closed).
-
-### 4.2 System Events (Your System Sends)
-
-These are the events your elevator system can send to the test environment:
-
-- `"door_opened": [elevator]` : Indicates that the door of the specified elevator has opened.
-  - `elevator`: A string representing the elevator number: `"1"`, `"2"`.
-  - Example: `"door_opened#1"` - Elevator #1's door has opened.
-- `"door_closed": [elevator]` : Indicates that the door of the specified elevator has closed.
-  - `elevator`: A string representing the elevator number: `"1"`, `"2"`.
-  - Example: `"door_closed#1"` - Elevator #1's door has closed.
-- `"floor_arrived": [direction], [floor], [elevator]` : Indicates that an elevator has arrived at a floor.
-  - `direction`: A string: `"up"`, `"down"`, or `""` (empty string for stopped). Indicates the direction the elevator was traveling.
-  - `floor`: A string representing the floor number: `"-1"`, `"1"`, `"2"`, `"3"`.
-  - `elevator`: A string representing the elevator number: `"1"`, `"2"`.
-  - Example: `"floor_arrived@up,1,#1"` - Elevator #1 arrived at floor 1 while moving upwards.
-  - Example: `"floor_arrived@,1,#1"` - Elevator #1 arrived at floor 1 and is now stopped.
-
-## 5. Initial System State
-
-- Both elevators (#1 and #2) start on the **first floor (1)**.
-- The doors of both elevators are initially **closed**.
-
-## 6. Important Considerations (Added for clarity)
-
-- **Targeted Elevator:** The `"open_door"` and `"close_door"` commands operate on the elevator that is currently considered "targeted". This is typically the elevator that most recently triggered a `"floor_arrived"` event. Your logic needs to track which elevator is at which floor.
-- **State Management:** Your `main.py` will need to maintain the state of each elevator (current floor, direction, door status, requested floors).
-- **Event Handling:** Your code should listen for events from the `Server.py` (via `NetClient.py`) and update the elevator state accordingly. It should then send appropriate commands back to the server.
-- **Error Handling:** Consider adding error handling (e.g., what happens if you try to open a door that's already open?). The provided instructions don't specify error behavior, so you have some flexibility in how you handle these situations.
-- **String Formatting**: I've used the "@" character to join parts of the operation/event strings.
-
-This refactored version should be much easier to understand and use as a guide for developing your elevator system. Good luck!
+- A `World` class:
+  - Simluate the world.
+  - Call the `update` method of each instances. 
