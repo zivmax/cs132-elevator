@@ -339,40 +339,7 @@ class Dispatcher:
     
     def _optimize_target_sequence(self, elevator: Elevator) -> None:
         """Optimize the sequence of target floors for efficiency"""
-        if not elevator.target_floors or len(elevator.target_floors) <= 1:
-            return
-            
-        # Determine current direction if elevator is moving
-        current_direction = None
-        if elevator.state == ElevatorState.MOVING_UP:
-            current_direction = "up"
-        elif elevator.state == ElevatorState.MOVING_DOWN:
-            current_direction = "down"
-            
-        # If elevator has a direction, prioritize floors in that direction first
-        if current_direction == "up":
-            # Serve floors above current floor first, in ascending order
-            above_floors = sorted([f for f in elevator.target_floors if f > elevator.current_floor])
-            below_floors = sorted([f for f in elevator.target_floors if f < elevator.current_floor])
-            elevator.target_floors = above_floors + below_floors
-        elif current_direction == "down":
-            # Serve floors below current floor first, in descending order
-            above_floors = sorted([f for f in elevator.target_floors if f > elevator.current_floor])
-            below_floors = sorted([f for f in elevator.target_floors if f < elevator.current_floor], reverse=True)
-            elevator.target_floors = below_floors + above_floors
-        else:
-            # If idle, pick the closest direction
-            closest_floor = min(elevator.target_floors, key=lambda f: abs(elevator.current_floor - f))
-            if closest_floor > elevator.current_floor:
-                # Move up first
-                above_floors = sorted([f for f in elevator.target_floors if f > elevator.current_floor])
-                below_floors = sorted([f for f in elevator.target_floors if f < elevator.current_floor], reverse=True)
-                elevator.target_floors = above_floors + below_floors
-            else:
-                # Move down first
-                above_floors = sorted([f for f in elevator.target_floors if f > elevator.current_floor])
-                below_floors = sorted([f for f in elevator.target_floors if f < elevator.current_floor], reverse=True)
-                elevator.target_floors = below_floors + above_floors
+        pass
 
 class Engine:
     def __init__(self, world: 'World') -> None:
