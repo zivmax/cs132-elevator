@@ -1,10 +1,10 @@
-# Team18 Project Elevator 
+# Team17 Project 1 Elevator
 
 ## Week 4 Meeting Report (Initial meeting)
 
 Requirement: Guo Yu 2022533174<br>
 Development: Linzheng Tang 2022533087<br>
-Validation: Guo Yu 2022533174
+Validation: Fengrui Liu 2021531057<br>
 
 Date: 2025-3-10
 
@@ -12,6 +12,7 @@ Date: 2025-3-10
 
 Guo Yu:
 - Complete the UML use case / activity diagram
+- Design User Interface
 
-Linzheng Tang:
+Linzheng Tang / Fengrui Liu:
 - Build the GitLab environment
