@@ -69,24 +69,15 @@ The use case diagram consists of the following functions:
 - **Which Direction?**: The user selects the direction by pressing either the Up or Down button.
 - **Enter The Elevator?**: The user decides whether to enter the elevator.
   - **Yes**: The user enters the elevator and selects a floor.
-  - **No**: The user does not enter the elevator, and the process ends.
+  - **No**: The user does not enter the elevator, and the process circles back to chosing direction.
 - **Select Floor**: The user selects the desired floor.
-- **Press Open Button**: The user presses the button to open the elevator door.
-- **Press Close Button**: The user presses the button to close the elevator door.
 - **Is current floor the target floor?**: The elevator checks if it has reached the target floor.
   - **Yes**: The elevator opens the door.
   - **No**: The elevator moves to the target floor.
-- **Currently/Stop?**: The elevator checks if it is stopped.
-  - **Yes**: The elevator checks if the door is open.
-  - **No**: The elevator continues moving.
-- **Door Open?**: The elevator checks if the door is open.
-  - **Yes**: The elevator closes the door.
-  - **No**: The elevator waits for the door to open.
-- **Close Door**: The elevator closes the door.
-- **Move to target floor**: The elevator moves to the selected floor.
+- **Is currently stop**: The elevator only opens the door when it stops.
 - **Exit?**: The user decides whether to exit the elevator.
-  - **Yes**: The user exits the elevator.
-  - **No**: The user remains in the elevator.
+  - **Yes**: The user exits the elevator, process ends.
+  - **No**: The user remains in the elevator, and the process circles back to chosing floor.
 - **Waiting for the door to open/close**: The user waits for the door to open or close.
 
 ![UAD](./imgs/activity/activity.png)
@@ -105,36 +96,42 @@ elevator -> engine
 
 ## Detailed Requirement
 
-### Overview
-Overall, the main participants in this elevator system are the passengers and the elevator. The specific interaction process between them can be divided into interactions with the panel and the elevator control system.
+### General Requirement
 
-### Passengers’ Perspective
-1. For passengers, they should be able to:  
-   1. Know the floor information where the elevator is located.  
-   1. Understand the current operating status of the elevator (ascending/descending/stationary).  
-   1. Outside the elevator, press the corresponding floor button according to their destination floor, thereby controlling the elevator to reach the current floor of the passenger, and convey this information to the panel.  
-   1. When the elevator reaches the passenger's floor, they can control the opening and closing of the elevator doors at that floor, with the highest priority given to the operations performed by passengers on that floor.  
-   1. Inside the elevator, they can press the button for their destination floor to control the elevator to travel to the corresponding floor, and convey this information to the panel.  
-   1. Press the emergency help button at any time, and convey this information to the panel.  
+The elevator system primarily involves two key entities: passengers and the elevator itself. Their interaction occurs through two main interfaces: the control panels (both inside the elevator and at floor landings) and the underlying elevator control system that manages movement and scheduling.
+
+### Passengers’ Requirement
+
+A passengers should be able to:  
+
+- View the current elevator location.
+- See the elevator's current movement direction.
+- Request elevator service by pressing up/down buttons on external floor panels.
+- Control doors at their current floor by pressing door open/close buttons (such commands outrankautomated door operations).
+- Select their destination floor using the internalelevator panel once inside.  
+
+
+### Elevator Compartment’s Requirement
+
+An elevator compartment should be able to:
+
+- Recieve commands from the passengers through buttons (i.e. open/close door, designate floors)
+- Automatically close/open door when passenger enters/exits the elevator
+- Take order from the control system and move to the target floor
+
+### Elevator Control System’s Requirement
+
+The system should be able to:  
+
+- Recieve signals from elevator compartments (i.e. open/close door, designate floors)
+- Dispatch and order the elevator compartments:
+   - Send the nearest idle elevator for time saving purposes.
+   - Resolve the conflict when multiple passengers request elevator service
+   - Optimal elevator route scheduling.
+
+
+
+
+
 
 ### Visual Components
-1. For the panel:  
-   1. The buttons for controlling the opening and closing of the elevator doors are ineffective during the operation of the elevator.  
-   1. Receive all relevant information conveyed by passengers through the panel, and pass this information to the elevator control system.  
-   1. Instantly display the current floor information of the elevator, the current operating status of the elevator (ascending/descending/stationary), and whether the elevator is malfunctioning, etc., and pass this information to the elevator control system.  
-
-### Elevator’s Perspective
-1. For the elevator itself, it should be able to:  
-   1. Receive signals from the elevator control system to ascend/descend/stay stationary.  
-   1. Receive signals from the elevator control system to open/close doors.  
-   1. Upload all current status of the elevator to the elevator control system.  
-   1. Stop operating and close the doors when receiving an emergency stop signal.  
-
-### Control System
-1. For the elevator control system, it should be able to:  
-   1. Receive and process all information about the elevator's floor position and current operating status from the panel. When multiple users control the elevator concurrently, it should select the optimal algorithm to schedule the elevators, including:  
-      1. When there are multiple passenger requests, the elevator should first go to the floor where the nearest passenger is located and take them to their destination, minimizing the waiting time for passengers.  
-      1. When responding to multiple passenger requests, the elevator can use an intelligent route planning algorithm to choose the appropriate stopping sequence and route, transporting passengers to their destinations in the fastest time possible, thus minimizing the total journey time.  
-   1. Adjust the elevator's door opening and closing status, and the direction of travel.  
-   1. Adjust the speed of the elevator based on the position of the target floor and the distance from the current floor to the target floor (reflected in the time required for elevator travel).  
-   1. Immediately stop the elevator operation upon receiving an emergency signal from the panel and report any malfunction through the panel.  
