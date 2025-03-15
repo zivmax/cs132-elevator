@@ -60,7 +60,7 @@ The use case diagram consists of the following functions:
 ### UML Activity Diagram
 ![UAD](./imgs/activity.png)
 
-### UML Sequence Diagram
+### UML Class Diagram
 
 
 
