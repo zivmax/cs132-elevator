@@ -50,6 +50,7 @@ The domain focuses on managing two elevators as they respond to user commands (o
 ### Use Case Diagram
 
 The use case diagram consists of the following functions:
+
 - **Enter Elevator**: The interaction starts when a user steps inside the elevator.
 - **Exit Elevator**: The ride concludes once the user reaches their desired floor and exits the elevator.
 - **Press Up/Down Button**: A passenger selects a floor by pressing the corresponding button to go up or down.
@@ -82,17 +83,6 @@ The use case diagram consists of the following functions:
 
 ![UAD](./imgs/activity/activity.png)
 
-### UML Class Diagram
-
-- The system consists of four classes, dispatcher, client, elevator, and engine.
-- In the elevator's lifecycle, each blocks are update and evaluate the current status information, in the order of client -> dispatcher -> every
-elevator -> engine
-- The elevator class mimics the elevator compartment, which needs to be pulled up or down by the tie rope system controlled by the engine.
-
-- The dispatcher processes the requests received through the client, decides the optimal elevator to dispatch and order the engine accordingly.
-
-![UCD](./imgs/class_plot/class.drawio.png)
-
 
 ## Detailed Requirement
 
@@ -100,38 +90,34 @@ elevator -> engine
 
 The elevator system primarily involves two key entities: passengers and the elevator itself. Their interaction occurs through two main interfaces: the control panels (both inside the elevator and at floor landings) and the underlying elevator control system that manages movement and scheduling.
 
-### Passengers’ Requirement
+### 1. Passengers’ Requirement
 
 A passengers should be able to:  
 
-- View the current elevator location.
-- See the elevator's current movement direction.
-- Request elevator service by pressing up/down buttons on external floor panels.
-- Control doors at their current floor by pressing door open/close buttons (such commands outrankautomated door operations).
-- Select their destination floor using the internalelevator panel once inside.  
+ 1. View the current elevator location.
+ 2. See the elevator's current movement direction.
+ 3. Request elevator service by pressing up/down buttons on external floor panels.
+ 4. Control doors at their current floor by pressing door open/close buttons (such commands outrankautomated door operations).
+ 5. Select their destination floor using the internalelevator panel once inside.  
 
 
-### Elevator Compartment’s Requirement
+### 2. Elevator Compartment’s Requirement
 
 An elevator compartment should be able to:
 
-- Recieve commands from the passengers through buttons (i.e. open/close door, designate floors)
-- Automatically close/open door when passenger enters/exits the elevator
-- Take order from the control system and move to the target floor
+  1. Recieve commands from the passengers through buttons (i.e. open/close door, designate floors)
+  2. Automatically close/open door when passenger enters/exits the elevator
+  3. Take order from the control system and move to the target floor
 
-### Elevator Control System’s Requirement
+### 3. Elevator Control System’s Requirement
 
 The system should be able to:  
 
-- Recieve signals from elevator compartments (i.e. open/close door, designate floors)
-- Dispatch and order the elevator compartments:
-   - Send the nearest idle elevator for time saving purposes.
-   - Resolve the conflict when multiple passengers request elevator service
-   - Optimal elevator route scheduling.
-
-
-
-
+1. Recieve signals from elevator compartments (i.e. open/close door, designate floors)
+2. Dispatch and order the elevator compartments:
+   1. Send the nearest idle elevator for time saving purposes.
+   2. Resolve the conflict when multiple passengers request elevator service
+   3. Optimal elevator route scheduling.
 
 
 ### Visual Components
