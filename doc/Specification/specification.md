@@ -1,3 +1,17 @@
+# Specification Documentation
+
+- Team: 17
+- Project: Elevator
+
+## Elevator System 
+
+This documentation shows the specific development process, project structure and software APIs for the elevator system.
+
+## Content
+
+- [UML Class Diagram](#uml-class-diagram)
+
+
 ### UML Class Diagram
 
 - The system consists of four classes, dispatcher, client, elevator, and engine.
