@@ -107,7 +107,8 @@ An elevator compartment should be able to:
 
   1. Recieve commands from the passengers through buttons (i.e. open/close door, designate floors)
   2. Automatically close/open door when passenger enters/exits the elevator
-  3. Take order from the control system and move to the target floor
+  3. Response with floor arrived before open door arriving a floor calling up/down.
+  4. Take order from the control system and move to the target floor
 
 ### 3. Elevator Control System’s Requirement
 
@@ -115,7 +116,7 @@ The system should be able to:
 
 1. Recieve signals from elevator compartments (i.e. open/close door, designate floors)
 2. Dispatch and order the elevator compartments:
-   1. Send the nearest idle elevator for time saving purposes.
+   1. Schedule the elevator for best efficiency according expected whole system time cost.
    2. Resolve the conflict when multiple passengers request elevator service
    3. Optimal elevator route scheduling.
 
