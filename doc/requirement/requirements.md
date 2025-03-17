@@ -1,8 +1,9 @@
 # Requirement Document
 
-Team 18 Project：Elevator
+- Team 17 
+- Project：Elevator
 
-Made by : Guo YU
+- Made by : Guo YU
 
 ---
 
