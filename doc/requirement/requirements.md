@@ -15,10 +15,9 @@ Made by : Guo YU
 - [UML](#uml)
   - [Use Case Diagram](#use-case-diagram)
   - [UML Activity Diagram](#uml-activity-diagram)
-  - [UML Class Diagram](#uml-class-diagram)
 - [Detailed Requirement](#detailed-requirement)
   - [General Requirement](#general-requirement)
-  - [Passengers’ Requirement](#passengers-requirement)
+  - [Passengers’ Perspective](#passengers-perspective)
   - [Elevator Compartment’s Requirement](#elevator-compartments-requirement)
   - [Elevator Control System’s Requirement](#elevator-control-systems-requirement)
   - [Visual Components](#visual-components)
@@ -90,7 +89,7 @@ The use case diagram consists of the following functions:
 
 The elevator system primarily involves two key entities: passengers and the elevator itself. Their interaction occurs through two main interfaces: the control panels (both inside the elevator and at floor landings) and the underlying elevator control system that manages movement and scheduling.
 
-### 1. Passengers’ Requirement
+### Passengers’ Perspective
 
 A passengers should be able to:  
 
@@ -101,7 +100,7 @@ A passengers should be able to:
  5. Select their destination floor using the internalelevator panel once inside.  
 
 
-### 2. Elevator Compartment’s Requirement
+### Elevator Compartment’s Requirement
 
 An elevator compartment should be able to:
 
@@ -110,7 +109,7 @@ An elevator compartment should be able to:
   3. Response with floor arrived before open door arriving a floor calling up/down.
   4. Take order from the control system and move to the target floor
 
-### 3. Elevator Control System’s Requirement
+### Elevator Control System’s Requirement
 
 The system should be able to:  
 
