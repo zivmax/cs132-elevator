@@ -14,7 +14,7 @@
   - [Basic Requirements](#basic-requirements)
   - [Product Line Analysis](#product-line-analysis)
 - [UML](#uml)
-  - [Use Case Diagram](#use-case-diagram)
+  - [UML Use Case Diagram](#uml-use-case-diagram)
   - [UML Activity Diagram](#uml-activity-diagram)
 - [Detailed Requirement](#detailed-requirement)
   - [General Requirement](#general-requirement)
@@ -47,7 +47,7 @@ The domain focuses on managing two elevators as they respond to user commands (o
 
 ## UML 
 
-### Use Case Diagram
+### UML Use Case Diagram
 
 The use case diagram consists of the following functions:
 
