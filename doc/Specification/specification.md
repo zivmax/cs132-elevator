@@ -5,7 +5,7 @@
 
 ## Elevator System 
 
-This documentation shows the specific development process, project structure and software APIs for the elevator system.
+This documentation shows the specific development process, project structure and software APIs of the elevator system.
 
 ## Content
 
