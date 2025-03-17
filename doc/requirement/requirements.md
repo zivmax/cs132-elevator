@@ -30,14 +30,7 @@
 ### Overview
 
 This project aims to develop a software which controls two elevators' movement under various user operations and system events. 
-
-### Basic Requirements
-
-- Both elevators start at the ground floor with doors closed.  
-- Doors open automatically when the elevator is called via "up" or "down" button.  
-- Inside each elevator, floor buttons light up when pressed, indicating the target floor.  
-- The control panel displays current floor and direction.  
-- Upon reaching the target floor, floor buttons reset, doors open, and the trip ends.  
+  
 
 ### Product Line Analysis
 
@@ -86,9 +79,11 @@ The use case diagram consists of the following functions:
 
 ## Detailed Requirement
 
-### General Requirement
+### General
 
 The elevator system primarily involves two key entities: passengers and the elevator itself. Their interaction occurs through two main interfaces: the control panels (both inside the elevator and at floor landings) and the underlying elevator control system that manages movement and scheduling.
+
+
 
 ### Passengers’ Perspective
 

@@ -37,6 +37,11 @@ The User interacts the elevator compartment and its door directly, their possibl
   - **OPENING**: The door is in the process of opening
   - **CLOSING**: The door is in the process of closing
 
+- Both elevators initially idle at the ground floor with doors closed.  
+- Doors open automatically when the elevator is called via "up" or "down" button.  
+- Inside each elevator, floor buttons light up when pressed, indicating the target floor.
+- Upon reaching the target floor, floor buttons reset, doors open, and the trip ends.
+
 ### System Class Structure
 
 The system consists of four classes, dispatcher, client, elevator, and engine. In the system's lifecycle, each block will update and evaluate the current status information. The detailed design will be shown through the UML class diagram below
