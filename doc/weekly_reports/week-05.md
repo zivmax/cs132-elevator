@@ -4,7 +4,7 @@
 
 - Requirement: Guo Yu 2022533174
 - Development: Linzheng Tang 2022533087
-- Fengrui Liu 2021531057
+- Validation: KeHao Huang 2021533190
 
 Date: 2025-3-17
 
