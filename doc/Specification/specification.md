@@ -46,7 +46,7 @@ The User interacts the elevator compartment and its door directly, their possibl
 
 The system consists of four classes, dispatcher, client, elevator, and engine. In the system's lifecycle, each block will update and evaluate the current status information. The detailed design will be shown through the UML class diagram below
 
-![UCD](./imgs/class_plot/image.png)
+![UCD](./imgs/class_plot/class.png)
 
 #### General class design
 
