@@ -8,7 +8,9 @@ from collections import deque
 
 class ZmqClientThread(threading.Thread):
 
-    def __init__(self, serverIp: str = "127.0.0.1", port: str = "27132", identity: str = "GroupX") -> None:
+    def __init__(
+        self, serverIp: str = "127.0.0.1", port: str = "27132", identity: str = "GroupX"
+    ) -> None:
         threading.Thread.__init__(self)
         self._context: zmq.Context = zmq.Context()
         self._socket: zmq.Socket = self._context.socket(zmq.DEALER)
@@ -18,7 +20,7 @@ class ZmqClientThread(threading.Thread):
         self._socket.setsockopt_string(
             zmq.IDENTITY, identity
         )  # default encoding is UTF-8 #Set your IDENTITY before connection.
-        
+
         # Instead of single message, use queues to store multiple messages
         self._messageQueue: deque = deque()
         self._timestampQueue: deque = deque()
@@ -32,9 +34,7 @@ class ZmqClientThread(threading.Thread):
             f"tcp://{serverIp}:{port}"
         )  # Both ("tcp://localhost:27132") and ("tcp://127.0.0.1:27132") are OK
 
-        self.sendMsg(
-            f"Client[{self._identity}] is online"
-        )  ##Telling server I'm online
+        self.sendMsg(f"Client[{self._identity}] is online")  ##Telling server I'm online
         self.start()  # start the client thread
 
     @property
@@ -90,13 +90,13 @@ class ZmqClientThread(threading.Thread):
                 print(
                     f"Message from server: {message_str}"
                 )  # Helpful for debugging. You can comment out this statement.
-                
+
                 # Add to queue and also maintain compatibility with old code
                 timestamp = int(round(time.time() * 1000))  # UNIX Time Stamp
                 with self._lock:
                     self._messageQueue.append(message_str)
                     self._timestampQueue.append(timestamp)
-                
+
                 # Keep the previous behavior for backward compatibility
                 self.receivedMessage = message_str
                 self.messageTimeStamp = timestamp

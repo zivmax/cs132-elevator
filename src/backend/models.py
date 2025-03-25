@@ -1,5 +1,6 @@
 from enum import Enum, auto
 
+
 # Elevator States
 class ElevatorState(Enum):
     IDLE = auto()
@@ -10,6 +11,7 @@ class ElevatorState(Enum):
     DOOR_CLOSING = auto()
     DOOR_CLOSED = auto()
 
+
 # Door States
 class DoorState(Enum):
     OPEN = auto()
@@ -17,8 +19,8 @@ class DoorState(Enum):
     OPENING = auto()
     CLOSING = auto()
 
+
 class MoveRequest:
     def __init__(self, elevator_id: int, direction: str):
         self.elevator_id = elevator_id
         self.direction = direction  # "up" or "down"
-
