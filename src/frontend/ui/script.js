@@ -158,12 +158,16 @@ function updateElevatorUI(data) {
     document.getElementById(`elevator-${elevatorId}-door`).textContent = doorState;
     document.getElementById(`elevator-${elevatorId}-targets`).textContent = targetFloors.map(floor => floor === 0 ? "-1" : floor).join(', ');
     
-    // Update active floor buttons
+    // Update active floor buttons - fix to ensure ALL buttons are properly set
     const controlPanel = document.getElementById(`panel-${elevatorId}`);
     if (controlPanel) {
         const buttons = controlPanel.querySelectorAll('.floor-buttons button');
         buttons.forEach(button => {
-            const buttonFloor = parseInt(button.textContent);
+            // Need to convert "-1" text to 0 for basement floor
+            let buttonFloor = button.textContent;
+            buttonFloor = buttonFloor === "-1" ? 0 : parseInt(buttonFloor);
+            
+            // Set or remove active class based on targetFloors list
             if (targetFloors.includes(buttonFloor)) {
                 button.classList.add('active');
             } else {
@@ -196,6 +200,7 @@ function highlightElevatorButton(floor, elevatorId) {
         buttons.forEach(button => {
             if (parseInt(button.textContent) === floor) {
                 button.classList.add('active');
+                // Don't remove the highlight - let the backend response handle it via updateElevatorUI
             }
         });
     }
