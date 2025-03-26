@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elevator Simulation</title>
+    <link rel="icon" href="assets/elevator.png" type="image/x-icon">
+    <link rel="stylesheet" href="styles.css">
+    <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+</head>
+<body>
+    <div class="container">        
+        <div class="building">
+            <div class="floors">
+                <!-- Floors from -1 to 3 (bottom to top) -->
+                <div class="floor" id="floor-0">
+                    <div class="floor-info">
+                        <span class="floor-number">-1</span>
+                        <div class="call-buttons">
+                            <button class="call-btn up" onclick="callElevator(0, 'up')">▲</button>
+                        </div>
+                    </div>
+                    <div class="floor-line"></div>
+                </div>
+                <div class="floor" id="floor-1">
+                    <div class="floor-info">
+                        <span class="floor-number">1</span>
+                        <div class="call-buttons">
+                            <button class="call-btn up" onclick="callElevator(1, 'up')">▲</button>
+                            <button class="call-btn down" onclick="callElevator(1, 'down')">▼</button>
+                        </div>
+                    </div>
+                    <div class="floor-line"></div>
+                </div>
+                <div class="floor" id="floor-2">
+                    <div class="floor-info">
+                        <span class="floor-number">2</span>
+                        <div class="call-buttons">
+                            <button class="call-btn up" onclick="callElevator(2, 'up')">▲</button>
+                            <button class="call-btn down" onclick="callElevator(2, 'down')">▼</button>
+                        </div>
+                    </div>
+                    <div class="floor-line"></div>
+                </div>
+                <div class="floor" id="floor-3">
+                    <div class="floor-info">
+                        <span class="floor-number">3</span>
+                        <div class="call-buttons">
+                            <button class="call-btn down" onclick="callElevator(3, 'down')">▼</button>
+                        </div>
+                    </div>
+                    <div class="floor-line"></div>
+                </div>
+            </div>
+            
+            <div class="elevators">
+                <div class="elevator-shaft">
+                    <div class="elevator" id="elevator-1" style="bottom: 25%;">
+                        <div class="elevator-id">1</div>
+                        <div class="elevator-door left-door"></div>
+                        <div class="elevator-door right-door"></div>
+                    </div>
+                </div>
+                <div class="elevator-shaft">
+                    <div class="elevator" id="elevator-2" style="bottom: 25%;">
+                        <div class="elevator-id">2</div>
+                        <div class="elevator-door left-door"></div>
+                        <div class="elevator-door right-door"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="control-panels">
+            <div class="control-panel" id="panel-1">
+                <h3>Elevator 1 Controls</h3>
+                <div class="floor-buttons">
+                    <button onclick="selectFloor(3, 1)">3</button>
+                    <button onclick="selectFloor(2, 1)">2</button>
+                    <button onclick="selectFloor(1, 1)">1</button>
+                    <button onclick="selectFloor(0, 1)">-1</button>
+                </div>
+                <div class="door-controls">
+                    <button onclick="openDoor(1)">◀ ▶</button>
+                    <button onclick="closeDoor(1)">▶ ◀</button>
+                </div>
+                <div class="status">
+                    <div>Current Floor: <span id="elevator-1-floor">1</span></div>
+                    <div>Status: <span id="elevator-1-status">IDLE</span></div>
+                    <div>Door: <span id="elevator-1-door">CLOSED</span></div>
+                    <div>Target Floors: <span id="elevator-1-targets"></span></div>
+                </div>
+            </div>
+            
+            <div class="control-panel" id="panel-2">
+                <h3>Elevator 2 Controls</h3>
+                <div class="floor-buttons">
+                    <button onclick="selectFloor(3, 2)">3</button>
+                    <button onclick="selectFloor(2, 2)">2</button>
+                    <button onclick="selectFloor(1, 2)">1</button>
+                    <button onclick="selectFloor(0, 2)">-1</button>
+                </div>
+                <div class="door-controls">
+                    <button onclick="openDoor(2)">◀ ▶</button>
+                    <button onclick="closeDoor(2)">▶ ◀</button>
+                </div>
+                <div class="status">
+                    <div>Current Floor: <span id="elevator-2-floor">1</span></div>
+                    <div>Status: <span id="elevator-2-status">IDLE</span></div>
+                    <div>Door: <span id="elevator-2-door">CLOSED</span></div>
+                    <div>Target Floors: <span id="elevator-2-targets"></span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>

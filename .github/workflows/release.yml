@@ -1,0 +1,59 @@
+name: Package and Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  package-and-release:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.13'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip uninstall black -y
+
+    - name: Package application
+      run: |
+        pyinstaller --clean --noconfirm packaging.spec
+
+    - name: Upload packaged artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: packaged-app
+        path: dist/
+
+    - name: Delete Existing Release
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        TAG_NAME="latest"  # Adjust as needed
+        RELEASE_ID=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+          "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG_NAME" | jq -r .id)
+
+        if [ "$RELEASE_ID" != "null" ]; then
+          curl -s -X DELETE -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID"
+        fi
+
+    - name: Create or update release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: dist/**
+        tag_name: latest
+        name: Latest Release
+        prerelease: false
+        token: ${{ secrets.GITHUB_TOKEN }}
