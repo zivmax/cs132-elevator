@@ -39,5 +39,4 @@ jobs:
         tag_name: latest
         name: Latest Release
         prerelease: false
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ secrets.GITHUB_TOKEN }}
