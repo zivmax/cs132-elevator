@@ -85,43 +85,39 @@ The elevator system primarily involves two key entities: passengers and the elev
 
 
 
-### Passengers’ Perspective
+### R1: Passengers’ Perspective
 
 A passengers should be able to:  
 
- 1. View the current elevator location.
- 2. See the elevator's current movement direction.
- 3. Request elevator service by pressing up/down buttons on external floor panels.
- 4. Control doors at their current floor by pressing door open/close buttons (such commands outrankautomated door operations).
- 5. Select their destination floor using the internalelevator panel once inside.  
+ 1. See the elevator's current movement direction and current elevator location.
+ 2. Request elevator service by pressing up/down buttons on external floor panels.
+ 3. Control doors at their current floor by pressing door open/close buttons (such commands outrank automated door operations).
+ 4. Select their destination floor using the internalelevator panel once inside.  
 
 
-### Elevator Compartment’s Requirement
+### R2: Elevator Compartment’s Requirement
 
 An elevator compartment should be able to:
 
   1. Recieve commands from the passengers through buttons (i.e. open/close door, designate floors)
   2. Automatically close/open door when passenger enters/exits the elevator
-  3. Response with floor arrived before open door arriving a floor calling up/down.
-  4. Take order from the control system and move to the target floor
+  3. Take order from the control system and move to the target floor
 
-### Elevator Control System’s Requirement
+### R3: Elevator Control System’s Requirement
 
 The system should be able to:  
 
 1. Recieve signals from elevator compartments (i.e. open/close door, designate floors)
 2. Dispatch and order the elevator compartments:
-   1. Schedule the elevator for best efficiency according expected whole system time cost.
-   2. Resolve the conflict when multiple passengers request elevator service
-   3. Optimal elevator route scheduling.
+   1. Resolve the conflict when multiple passengers request elevator service
+   2. Optimal elevator route scheduling.
 
 
-### Visual Components
+### R4: Visual Components
 
 The elevator control panel should be able to:
 
-1. Display the current floor location of each elevator.
-2. Display door status (open/closed) for each elevator.
-3. Provide visual feedback when floor buttons are pressed (button illumination).
-4. Offer an intuitive user interface with clear button labeling and accessibility features.
-5. Show real-time updates of elevator status and location changes.
+1. Display door status (open/closed) and current floor location of each each elevator.
+2. Provide visual feedback when floor buttons are pressed (button illumination).
+3. Offer an intuitive user interface with clear button labeling and accessibility features.
+4. Show real-time updates of elevator status and location changes.

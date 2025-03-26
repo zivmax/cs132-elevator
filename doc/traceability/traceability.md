@@ -5,21 +5,28 @@
 
 ## Introduction
 
-This document traces the relationship between requirements (R), their implementations (I), and validation (V) processes for the development process,aims to ensure all functional requirements are implemented and traceable to their respective implementations.
+This document traces the relationship between requirements (R), their implementations (S), and validation (T) processes for the development process,aims to ensure all functional requirements are implemented and traceable to their respective implementations.
 
 ## Software Traceability
 
 ### Requirement to Implementation to Validation Mapping
 
-| Requirement | Is implemented by | Is validated by |
+| Requirement |   Implementation  |   Validation    | 
 | ----------- | ----------------- | --------------- |
 | R1.1        |                   |                 |
 | R1.2        |                   |                 |
-| R1.2        |                   |                 |
-| R1.2        |                   |                 |
-| R1.2        |                   |                 |
-| R1.2        |                   |                 |
-| R1.2        |                   |                 |
+| R1.3        |                   |                 |
+| R1.4        |                   |                 |
+| R2.1        |                   |                 |
+| R2.2        |                   |                 |
+| R2.3        |                   |                 |
+| R3.1        |                   |                 |
+| R3.2.1      |                   |                 |
+| R3.2.2      |                   |                 |
+| R4.1        |                   |                 |
+| R4.2        |                   |                 |
+| R4.3        |                   |                 |
+| R4.4        |                   |                 |
 
 
 

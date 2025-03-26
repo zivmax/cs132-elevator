@@ -7,18 +7,18 @@
 
 This documentation shows the specific development process, project structure and software APIs of the elevator system.
 
-## Content
+# Content
 
 - [Project Introduction](#project-introduction)
 - [System Class Structure](#system-class-structure)
 
-### Project Introduction
+## Project Introduction
 
 This project aims to develop an application that simulates the real life usage of two elevators, which is capable of vertical movement on four floors (-1F to 3F). 
 
 The backend APIs are developed in python, the user interface is implemented with PyQt, the design and implementation detail will be described in the sections below.
 
-### States Specification
+## States Specification
 
 The User interacts the elevator compartment and its door directly, their possible states are defined below:
 
@@ -42,13 +42,13 @@ The User interacts the elevator compartment and its door directly, their possibl
 - Inside each elevator, floor buttons light up when pressed, indicating the target floor.
 - Upon reaching the target floor, floor buttons reset, doors open, and the trip ends.
 
-### System Class Structure
+## System Class Structure
 
 The system consists of four classes, dispatcher, client, elevator, and engine. In the system's lifecycle, each block will update and evaluate the current status information. The detailed design will be shown through the UML class diagram below
 
 ![UCD](./imgs/class_plot/class.png)
 
-#### General class design
+### General class design
 
 - A `Elevator` class: 
   - It will handle its own operation itself, including:
@@ -77,5 +77,21 @@ The system consists of four classes, dispatcher, client, elevator, and engine. I
 - A `World` class:
   - Simluate the world.
   - Call the `update` method of each instances. 
+
+
+## Components specifications
+
+### S1: Target Floor Implementation
+
+This part here will explain the implementation and click event of floor button in detail along with its graphical user interface.
+
+### S1.1 GUI
+The four available floors are arranged symmetricly and are all initially **pale blue**, once a passenger selects the target floor, it highlights in **red** as shown below:
+<div align=center>
+<img src="./imgs/GUIs/target_floor.png" width="600"/>
+</div>
+
+### S1.2 Click Event
+
 
  
