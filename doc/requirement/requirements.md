@@ -117,3 +117,11 @@ The system should be able to:
 
 
 ### Visual Components
+
+The elevator control panel should be able to:
+
+1. Display the current floor location of each elevator.
+2. Display door status (open/closed) for each elevator.
+3. Provide visual feedback when floor buttons are pressed (button illumination).
+4. Offer an intuitive user interface with clear button labeling and accessibility features.
+5. Show real-time updates of elevator status and location changes.
