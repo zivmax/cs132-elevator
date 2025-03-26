@@ -55,8 +55,8 @@ class Elevator:
             
             # Check if we've reached a target floor
             if self.current_floor in self.target_floors:
-                self.target_floors.remove(self.current_floor)
-                # Don't open door immediately - wait for proper delay
+                # Flag this floor as a target but don't remove it yet
+                # We'll remove it after opening the door
                 self.state = ElevatorState.IDLE
                 self.last_state_change = current_time
             else:
@@ -71,10 +71,16 @@ class Elevator:
             self.door_state == DoorState.CLOSED and
             current_time - self.last_state_change >= self.floor_arrival_delay and
             self.arrival_time and current_time - self.arrival_time >= self.floor_arrival_delay):
-            # Only open doors if this floor was in the target list or if we have no targets
-            if self.current_floor in self.target_floors or self.target_floors == []:
+            # Open doors if this floor was in the target list
+            if self.current_floor in self.target_floors:
                 self.open_door()
                 self.serviced_current_arrival = True  # Mark that we've serviced this arrival
+                # Remove from target list after deciding to open door
+                self.target_floors.remove(self.current_floor)
+            elif self.target_floors == []:
+                # Also open doors if we have no targets (e.g., initial floor)
+                self.open_door()
+                self.serviced_current_arrival = True
 
         # Handle automatic door closing
         if self.door_state == DoorState.OPEN:
@@ -103,6 +109,11 @@ class Elevator:
         elif self.state == ElevatorState.DOOR_CLOSED:
             # Request movement if we have target floors - wait a moment before starting
             if current_time - self.last_state_change >= 0.3:
+                self.request_movement_if_needed()
+        
+        # Fix for IDLE elevators with remaining targets - ensure they start moving again
+        elif self.state == ElevatorState.IDLE and self.door_state == DoorState.CLOSED and self.target_floors:
+            if current_time - self.last_state_change >= 0.5:  # Small delay before starting movement
                 self.request_movement_if_needed()
 
     def request_movement_if_needed(self) -> None:
@@ -205,8 +216,10 @@ class Elevator:
                 )
             elif closest_above:
                 self.direction = "up"
-            else:
+            elif closest_below:  # Added explicit check for closest_below
                 self.direction = "down"
+            else:
+                self.direction = None  # No valid targets
 
     def calculate_estimated_time(self, floor: int, direction: str) -> float:
         # Calculate estimated time to service a request at floor with given direction
