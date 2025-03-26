@@ -3,7 +3,7 @@
 - Team: 17
 - Project: Elevator
 
-## Elevator System 
+## Elevator System
 
 This documentation shows the specific development process, project structure and software APIs of the elevator system.
 
@@ -14,15 +14,16 @@ This documentation shows the specific development process, project structure and
 
 ## Project Introduction
 
-This project aims to develop an application that simulates the real life usage of two elevators, which is capable of vertical movement on four floors (-1F to 3F). 
+This project aims to develop an application that simulates the real life usage of two elevators, which is capable of vertical movement on four floors (-1F to 3F).
 
 The backend APIs are developed in python, the user interface is implemented with PyQt, the design and implementation detail will be described in the sections below.
 
 ## States Specification
 
-The User interacts the elevator compartment and its door directly, their possible states are defined below:
+The User interacts with the elevator compartment and its door directly, their possible states are defined below:
 
 - For a single elevator compartment, it has to be in one of the following states:
+
   - **IDLE**: The elevator is stationary and waiting    or requests
   - **MOVING_UP**: The elevator is moving upward to    each a requested floor
   - **MOVING_DOWN**: The elevator is moving downward    o reach a requested floor
@@ -30,15 +31,14 @@ The User interacts the elevator compartment and its door directly, their possibl
   - **DOOR_OPEN**: The elevator doors are fully open
   - **DOOR_CLOSING**: The elevator doors are in the    rocess of closing
   - **DOOR_CLOSED**: The elevator doors are fully    losed
-
 - For a single elevator door, it has to be in one of the following states:
+
   - **OPEN**: The door is completely open
   - **CLOSED**: The door is completely closed
   - **OPENING**: The door is in the process of opening
   - **CLOSING**: The door is in the process of closing
-
-- Both elevators initially idle at the ground floor with doors closed.  
-- Doors open automatically when the elevator is called via "up" or "down" button.  
+- Both elevators initially idle at the ground floor with doors closed.
+- Doors open automatically when the elevator is called via "up" or "down" button.
 - Inside each elevator, floor buttons light up when pressed, indicating the target floor.
 - Upon reaching the target floor, floor buttons reset, doors open, and the trip ends.
 
@@ -50,7 +50,8 @@ The system consists of four classes, dispatcher, client, elevator, and engine. I
 
 ### General class design
 
-- A `Elevator` class: 
+- A `Elevator` class:
+
   - It will handle its own operation itself, including:
     - Handling user indoor floor selection.
     - Open and close door automatically besides manual control when target floor arrived.
@@ -61,23 +62,22 @@ The system consists of four classes, dispatcher, client, elevator, and engine. I
     - `door_opened`
     - `door_closed`
     - `floor_arrived`
-
 - A `Dispatcher` class:
+
   - It will receive and parse the request from the user test server, and assign the target called floor task to the most suitable elevator.
   - It will iterate the `target_floor` in `List[Elevator]`, including:
     - Adding floor
     - Removing floor
     - Sorting floor (Not neccessarily to be sorted numerically, for example [4, 5, 1] should be faster than [4, 1, 5], if 2 user calls the elevator in the floor 4 and want to get floor 1 and 5 separately)
   - All the decision should targeting making the system more efficently.
-  
 - A `Engine` class:
+
   - `Engine` will determine the changes of next floor state of each elevator according to a state like `MOVING_UP` or `STOPPED`.
   - The update of the floor state of each elevator should be floor by floor.
-
 - A `World` class:
-  - Simluate the world.
-  - Call the `update` method of each instances. 
 
+  - Simluate the world.
+  - Call the `update` method of each instances.
 
 ## Components specifications
 
@@ -85,13 +85,28 @@ The system consists of four classes, dispatcher, client, elevator, and engine. I
 
 This part here will explain the implementation and click event of floor button in detail along with its graphical user interface.
 
-### S1.1 GUI
+#### S1.1 GUI
+
 The four available floors are arranged symmetricly and are all initially **pale blue**, once a passenger selects the target floor, it highlights in **red** as shown below:
+
 <div align=center>
 <img src="./imgs/GUIs/target_floor.png" width="600"/>
 </div>
 
-### S1.2 Click Event
+#### S1.2 Click Event
 
+Once being clicked, the floor button is considered 'activated' in red and will not respond to further clicking until the elevator has reached the target floor and the button turns back to the 'idle' in blue, the specific click event will be presented in the UML sequence diagram below:
 
- 
+### S2：Call Up/Down Implementation
+
+This part here will explain the implementation and click event of call up/down buttons in detail along with its graphical user interface.
+
+#### S2.1: GUI
+Floor 1 and 2 have both call up and down button while floor 3 only has call down and floor 1 only has call up. All buttons are initially **pale blue**, once a passenger presses, it highlights in **red** as shown below:
+
+<div align=center>
+<img src="./imgs/GUIs/call.png" width="300"/>
+</div>
+
+#### S2.2: Click Event
+Same with floor button, the call up/down button is 'activated' in red and will not respond until the elevator has arrived at the passenger's floor, the button will then turn back to 'idle' in blue, the specific click event will be presented in the UML sequence diagram below:

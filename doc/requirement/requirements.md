@@ -110,7 +110,7 @@ The system should be able to:
 1. Recieve signals from elevator compartments (i.e. open/close door, designate floors)
 2. Dispatch and order the elevator compartments:
    1. Resolve the conflict when multiple passengers request elevator service
-   2. Optimal elevator route scheduling.
+   2. Arrange optimal elevator route scheduling and dispatch the closest elevator.
 
 
 ### R4: Visual Components
