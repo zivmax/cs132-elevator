@@ -1,4 +1,4 @@
-from typing import List, Optional, TYPE_CHECKING
+from typing import List, Optional, TYPE_CHECKING, Tuple
 from .models import ElevatorState, DoorState
 from .elevator import Elevator
 
@@ -10,13 +10,11 @@ if TYPE_CHECKING:
 class Dispatcher:
     def __init__(self, world: "World") -> None:
         self.world: "World" = world
-        self.last_message_timestamp: int = -1
 
     def update(self) -> None:
-        # Check for new messages
-        if self.world.client.messageTimeStamp != self.last_message_timestamp:
-            self.last_message_timestamp = self.world.client.messageTimeStamp
-            message: str = self.world.client.receivedMessage
+        # Check for new messages from the world
+        while self.world.has_msg():
+            message, _ = self.world.get_next_msg()
             if message:
                 self.handle_request(message)
 
@@ -69,7 +67,7 @@ class Dispatcher:
         if floor == elevator.current_floor and elevator.door_state == DoorState.CLOSED:
             # Send floor arrival notification first
             direction_str: str = ""
-            self.world.send_message(
+            self.world.send_msg(
                 f"{direction_str}floor_arrived@{elevator.current_floor}#{elevator.id}"
             )
             # Then open door

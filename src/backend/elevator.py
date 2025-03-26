@@ -37,7 +37,7 @@ class Elevator:
                 if self.state == ElevatorState.MOVING_UP
                 else "down_" if self.state == ElevatorState.MOVING_DOWN else ""
             )
-            self.world.send_message(
+            self.world.send_msg(
                 f"{direction_str}floor_arrived@{self.current_floor}#{self.id}"
             )
 
@@ -60,14 +60,14 @@ class Elevator:
                 self.door_state = DoorState.OPEN
                 self.state = ElevatorState.DOOR_OPEN
                 self.last_state_change = current_time
-                self.world.send_message(f"door_opened#{self.id}")
+                self.world.send_msg(f"door_opened#{self.id}")
 
         elif self.state == ElevatorState.DOOR_CLOSING:
             if current_time - self.last_state_change > 1.0:  # 1 second to close door
                 self.door_state = DoorState.CLOSED
                 self.state = ElevatorState.DOOR_CLOSED
                 self.last_state_change = current_time
-                self.world.send_message(f"door_closed#{self.id}")
+                self.world.send_msg(f"door_closed#{self.id}")
 
                 # Request movement if we have target floors
                 self.request_movement_if_needed()
