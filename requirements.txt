@@ -1,6 +1,13 @@
 altgraph==0.17.4
+black==25.1.0
+click==8.1.8
+colorama==0.4.6
+mypy-extensions==1.0.0
 packaging==24.2
+pathspec==0.12.1
 pefile==2023.2.7
+pillow==11.1.0
+platformdirs==4.3.7
 pyinstaller==6.12.0
 pyinstaller-hooks-contrib==2025.2
 PyQt6==6.8.1

@@ -5,6 +5,7 @@ from PyQt6.QtCore import QUrl
 from PyQt6.QtWidgets import QApplication, QMainWindow
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtWebChannel import QWebChannel
+from PyQt6.QtGui import QIcon  # Add this import
 
 from frontend.bridge import WebBridge
 from backend.api import ElevatorAPI
@@ -31,6 +32,11 @@ class ElevatorWebview(QMainWindow):
         # Setup the UI
         self.setWindowTitle("Elevator Simulation")
         self.resize(1024, 768)
+
+        # Set the window icon
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        icon_path = os.path.join(current_dir, "ui", "assets", "elevator.png")
+        self.setWindowIcon(QIcon(icon_path))
 
         # Create the web view
         self.web_view = QWebEngineView(self)
