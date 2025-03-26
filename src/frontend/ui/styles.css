@@ -165,11 +165,11 @@ h1 {
 }
 
 .doors-open .left-door {
-    transform: translateX(-100%);
+    transform: translateX(-101%);
 }
 
 .doors-open .right-door {
-    transform: translateX(100%);
+    transform: translateX(101%);
 }
 
 .doors-opening .left-door {
