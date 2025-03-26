@@ -35,6 +35,20 @@ jobs:
         name: packaged-app
         path: dist/
 
+    - name: Delete Existing Release
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        TAG_NAME="latest"  # Adjust as needed
+        RELEASE_ID=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+          "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG_NAME" | jq -r .id)
+
+        if [ "$RELEASE_ID" != "null" ]; then
+          curl -s -X DELETE -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID"
+        fi
+
     - name: Create or update release
       uses: softprops/action-gh-release@v2
       with:
