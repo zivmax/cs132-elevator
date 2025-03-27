@@ -90,7 +90,7 @@ This part here will explain the implementation and click event of floor button i
 The four available floors are arranged symmetricly and are all initially **pale blue**, once a passenger selects the target floor, it highlights in **red** as shown below:
 
 <div align=center>
-<img src="./imgs/GUIs/target_floor.png" width="600"/>
+<img src="./imgs/GUIs/target_floor.png" width="400"/>
 </div>
 
 #### S1.2 Target floor state Logic Implementation
@@ -110,7 +110,7 @@ This part here will explain the implementation and click event of *call up/down 
 Floor 1 and 2 have both call up and down button while floor 3 only has call down and floor 1 only has call up. All buttons are initially **pale blue**, once a passenger presses, it highlights in **red** as shown below:
 
 <div align=center>
-<img src="./imgs/GUIs/call.png" width="300"/>
+<img src="./imgs/GUIs/call.png" width="400"/>
 </div>
 
 #### S2.2: Click Event
@@ -124,7 +124,7 @@ This part here will explain the implementation and click event of *door open/clo
 the icon will **darken** once being pressed and begin to function.
 
 <div align=center>
-<img src="./imgs/GUIs/door.png" width="500"/>
+<img src="./imgs/GUIs/door.png" width="400"/>
 </div>
 
 #### S3.2 OPEN/CLOSE state Logic Implementation
@@ -147,4 +147,44 @@ The specific click event of the `Open/Close button` will be presented in the UML
 
 
 
-### S4: 
+### S4 Status Display Panel Implementation: 
+
+#### S4.1 GUI
+The control panel is the interface passengers see inside a single `elevator`,  the following information are displayed:
+- Current floor and status of this `elevator`
+- Target floors which hasn't arrived
+- Door status
+
+The passenger can:
+- Select the intended floor
+- Open/Close door when the `elevator` is in **IDLE**, **DOOR_OPENING** or **DOOR_OPEN** state.
+
+<div align=center>
+<img src="./imgs/GUIs/panel.png" width="400"/>
+</div>
+
+### S5 Dispatcher Implementation
+
+#### S5.1 Dispatching Logic
+The Dispatcher is responsible for efficiently managing elevator operations throughout the building. It handles user requests and assigns them to the most suitable elevator based on estimated service time.
+
+Key functionalities include:
+- **Request Handling**: Processes various requests including door operations, floor calls, and floor selections
+- **Elevator Assignment**: Assigns the most efficient elevator to service each call request
+- **Target Floor Management**: Adds destination floors to elevator queues and optimizes their sequence
+- **Sequence Optimization**: Reorganizes target floors to minimize travel time based on elevator's current direction
+
+#### S5.2 Elevator Assignment Strategy
+When a user calls an elevator from a floor:
+1. The dispatcher calculates the estimated service time for each elevator
+2. The elevator with the shortest estimated time is assigned to handle the request
+3. The target floor is added to the chosen elevator's queue
+4. The sequence of target floors is optimized based on the elevator's current direction and position
+
+#### S5.3 Sequence Optimization Strategy
+The target floor sequence optimization follows these principles:
+- For elevators in the state of **MOVING_UP**: Serves floors above the current position first in ascending order, then floors below in ascending order
+- For elevators in the state of **MOVING_DOWN**: Serves floors below the current position first in descending order, then floors above in ascending order  
+- For elevators in the state of **IDLE**: Determines the closest floor and starts moving in that direction first, optimizing subsequent stops accordingly
+
+This optimization strategy implements a modified version of the SCAN algorithm (elevator algorithm) to minimize wait times and maximize efficiency by reducing unnecessary direction changes.
