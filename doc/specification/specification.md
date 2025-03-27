@@ -94,6 +94,8 @@ The four available floors are arranged symmetricly and are all initially **pale 
 </div>
 
 #### S1.2 Target floor state Logic Implementation
+- The *floor button* can be selected during **all** `elevator` states, the `elevator` will head to the target floor after concluding the current business and enter **MOVING_UP** or **MOVING_DOWN** state.
+- The different *floor button* can be stacked, the `Dispatcher` will organize the optimal route to stop at all target floors.
 
 #### S1.3 Click Event
 
@@ -111,9 +113,7 @@ Floor 1 and 2 have both call up and down button while floor 3 only has call down
 <img src="./imgs/GUIs/call.png" width="300"/>
 </div>
 
-#### S2.2 Call up/down state Logic Implementation
-
-#### S2.3: Click Event
+#### S2.2: Click Event
 Same as floor button, the **call up/down** button is `'activated'` in **red** and will not respond until the elevator has arrived at the passenger's floor, the button will then turn back to `'idle'` in **blue**, the specific click event will be presented in the UML sequence diagram below:
 
 ### S3：Door Open/Close Implementation
