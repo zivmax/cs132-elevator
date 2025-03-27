@@ -93,13 +93,16 @@ The four available floors are arranged symmetricly and are all initially **pale 
 <img src="./imgs/GUIs/target_floor.png" width="600"/>
 </div>
 
-#### S1.2 Click Event
+#### S1.2 Target floor state Logic Implementation
 
-Once being clicked, the floor button is considered 'activated' in red and will not respond to further clicking until the elevator has reached the target floor and the button turns back to the 'idle' in blue, the specific click event will be presented in the UML sequence diagram below:
+#### S1.3 Click Event
+
+Once being clicked, the *floor button* is considered `'activated'` in **red** and will not respond to further clicking until the elevator has reached the target floor and the button turns back to the `'idle'` in **blue**, the specific click event will be presented in the UML sequence diagram below:
+
 
 ### S2：Call Up/Down Implementation
 
-This part here will explain the implementation and click event of call up/down buttons in detail along with its graphical user interface.
+This part here will explain the implementation and click event of *call up/down button* in detail along with its graphical user interface.
 
 #### S2.1: GUI
 Floor 1 and 2 have both call up and down button while floor 3 only has call down and floor 1 only has call up. All buttons are initially **pale blue**, once a passenger presses, it highlights in **red** as shown below:
@@ -108,5 +111,40 @@ Floor 1 and 2 have both call up and down button while floor 3 only has call down
 <img src="./imgs/GUIs/call.png" width="300"/>
 </div>
 
-#### S2.2: Click Event
-Same with floor button, the call up/down button is 'activated' in red and will not respond until the elevator has arrived at the passenger's floor, the button will then turn back to 'idle' in blue, the specific click event will be presented in the UML sequence diagram below:
+#### S2.2 Call up/down state Logic Implementation
+
+#### S2.3: Click Event
+Same as floor button, the **call up/down** button is `'activated'` in **red** and will not respond until the elevator has arrived at the passenger's floor, the button will then turn back to `'idle'` in **blue**, the specific click event will be presented in the UML sequence diagram below:
+
+### S3：Door Open/Close Implementation
+This part here will explain the implementation and click event of *door open/close button* in detail along with its graphical user interface.
+
+#### S3.1 GUI
+**Open/Close** door buttons are placed inside Elevator 1 and 2,
+the icon will **darken** once being pressed and begin to function.
+
+<div align=center>
+<img src="./imgs/GUIs/door.png" width="500"/>
+</div>
+
+#### S3.2 OPEN/CLOSE state Logic Implementation
+**S3.2.1 Open Button**:
+- The *Open Button* will only function when the elevator is in **IDLE** state and will not respond if pressed when `elevator` is in the state of **MOVING_UP** or **MOVING_DOWN**.
+- When functioning properly, the `elevator` will enter the state of **DOOR_OPENING** and the door will enter the state of **OPENING**. 
+- After **1s** of animation playing, the `elevator` will enter the state of 
+**DOOR_OPEN** and the door will enter the state of **OPEN**.
+- If no external action is posed when the `elevator` is in **DOOR_OPEN** state, after **3s**, the door wil automatically close, the **CLOSING** state detailed will be explained in *Close Button* section.
+- Keep pushing the *Open Button* when the door is already in **OPEN** state will prolong its time in the state and will only be **CLOSING** when the *Open Button* is no long being pressed.
+
+**S3.2.2 Close Button**:
+- The *Close Button* will only function when the `elevator` is in **DOOR_OPEN** or **DOOR_OPENING** state and will not respond when the `elevator` is in other states.
+- When functioning properly, the `elevator` will enter the state of **DOOR_CLOSING** and the door will enter the state of **CLOSING**.
+- After **1s** of animation playing, the `elevator` will enter the state of
+**DOOR_CLOSED**, then **immediately** switch to the state of **IDLE** and the door will enter the state of **CLOSED**.
+
+#### S3.3 Click event
+The specific click event of the `Open/Close button` will be presented in the UML sequence diagram below:
+
+
+
+### S4: 
