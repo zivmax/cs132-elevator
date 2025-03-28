@@ -163,28 +163,49 @@ The passenger can:
 <img src="./imgs/GUIs/panel.png" width="400"/>
 </div>
 
-### S5 Dispatcher Implementation
+### S5 Animation Implementation
 
-#### S5.1 Dispatching Logic
-The Dispatcher is responsible for efficiently managing elevator operations throughout the building. It handles user requests and assigns them to the most suitable elevator based on estimated service time.
+The system will visually mimic elevator movement and door operations in real time, ensuring a smooth and informative user experience.
 
-Key functionalities include:
-- **Request Handling**: Processes various requests including door operations, floor calls, and floor selections
-- **Elevator Assignment**: Assigns the most efficient elevator to service each call request
-- **Target Floor Management**: Adds destination floors to elevator queues and optimizes their sequence
-- **Sequence Optimization**: Reorganizes target floors to minimize travel time based on elevator's current direction
+#### S5.1 Elevator Movement
+- Each elevator’s position is updated in response to requests from the backend or the built-in simulation. 
 
-#### S5.2 Elevator Assignment Strategy
-When a user calls an elevator from a floor:
-1. The dispatcher calculates the estimated service time for each elevator
-2. The elevator with the shortest estimated time is assigned to handle the request
-3. The target floor is added to the chosen elevator's queue
-4. The sequence of target floors is optimized based on the elevator's current direction and position
+- The system applies *CSS* transitions to move the `elevator`’s container between floors, adjusting the `bottom` style based on the current floor. This approach produces a vertical motion within the elevator shaft.
 
-#### S5.3 Sequence Optimization Strategy
-The target floor sequence optimization follows these principles:
-- For elevators in the state of **MOVING_UP**: Serves floors above the current position first in ascending order, then floors below in ascending order
-- For elevators in the state of **MOVING_DOWN**: Serves floors below the current position first in descending order, then floors above in ascending order  
-- For elevators in the state of **IDLE**: Determines the closest floor and starts moving in that direction first, optimizing subsequent stops accordingly
+#### S5.2 Door Animations
+- The doors on each elevator use *CSS* class toggles—such as `doors-opening`, `doors-closing`, `doors-open`, and `doors-closed` to display a sliding effect.
+- When an open or close command is received, the corresponding class is assigned, triggering a brief animation that visually reflects the door’s transition state.
 
-This optimization strategy implements a modified version of the SCAN algorithm (elevator algorithm) to minimize wait times and maximize efficiency by reducing unnecessary direction changes.
+### S6 Dispatcher Implementation
+
+This section describes how the Dispatcher efficiently manages elevator operations, handling user requests and assigning them to the most suitable elevator based on real-time conditions.
+
+#### S6.1 Dispatching Logic
+The `Dispatcher` processes various requests—such as door operations, floor calls, and floor selections—and aligns them with the best elevator according to estimated service time. It also coordinates the addition and removal of target floors, ensuring each elevator’s travel path remains efficient.
+
+#### S6.2 Elevator Assignment Strategy
+When a passenger calls an elevator from a floor:
+1. The `Dispatcher` calculates an estimated service time for each elevator.
+2. The `elevator` with the shortest estimated time is assigned to the request.
+3. The requested floor is added to that `elevator`’s queue.
+4. The sequence of target floors is optimized according to the `elevator`’s current direction and position.
+
+#### S6.3 Sequence Optimization Strategy
+The `Dispatcher` employs a modified SCAN algorithm (elevator algorithm) to minimize wait times and reduce unnecessary direction changes:
+- **MOVING_UP**: Serves floors above the current floor first in ascending order, then floors below in ascending order.
+- **MOVING_DOWN**: Serves floors below the current floor first in descending order, then floors above in ascending order.
+- **IDLE**: Chooses the nearest floor first, then proceeds through subsequent stops in an optimal sequence.
+
+
+### S7 State Update Implementation
+
+This section will show how each `elevator`’s state is updated in real-time, managing movement progress, door operations, and transitions to ensure they stay in sync with user interactions and operational logic.
+
+#### S7.1 Timed Movement
+The `Engine` regularly checks each `elevator`’s movement and calculates when a single-floor travel time has elapsed. It updates the `elevator`’s current floor accordingly and removes any completed movement requests. This keeps the `elevator`’s position and movement status accurate.
+
+#### S7.2 Door and State Transitions
+- When door operations are requested, the `elevator` transitions from **IDLE** to **DOOR_OPENING** or **DOOR_CLOSING**, then to **DOOR_OPEN** or **DOOR_CLOSED**. 
+- If subsequent calls or target floors exist, the elevator switches to **MOVING_UP** or **MOVING_DOWN** until all destinations are served, ultimately returning to **IDLE**.
+
+
