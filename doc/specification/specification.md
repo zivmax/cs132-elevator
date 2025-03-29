@@ -47,7 +47,7 @@ The User interacts with the elevator compartment and its door directly, their po
 The system consists of four classes, dispatcher, client, elevator, and engine. In the system's lifecycle, each block will update and evaluate the current status information. The detailed design will be shown through the UML class diagram below
 
 <div align=center>
-<img src="./imgs/class_plot/class.png" width="300"/>
+<img src="./imgs/class_plot/class.png" width="500"/>
 </div>
 
 
@@ -104,6 +104,9 @@ The four available floors are arranged symmetricly and are all initially **pale 
 
 Once being clicked, the *floor button* is considered `'activated'` in **red** and will not respond to further clicking until the elevator has reached the target floor and the button turns back to the `'idle'` in **blue**, the specific click event will be presented in the UML sequence diagram below:
 
+<div align=center>
+<img src="./imgs/seqs/floor_button_seq.png" width="600"/>
+</div>
 
 ### S2：Call Up/Down Implementation
 
@@ -113,11 +116,15 @@ This part here will explain the implementation and click event of *call up/down 
 Floor 1 and 2 have both call up and down button while floor 3 only has call down and floor 1 only has call up. All buttons are initially **pale blue**, once a passenger presses, it highlights in **red** as shown below:
 
 <div align=center>
-<img src="./imgs/GUIs/call.png" width="400"/>
+<img src="./imgs/GUIs/call.png" width="200"/>
 </div>
 
 #### S2.2: Click Event
 Same as floor button, the **call up/down** button is `'activated'` in **red** and will not respond until the elevator has arrived at the passenger's floor, the button will then turn back to `'idle'` in **blue**, the specific click event will be presented in the UML sequence diagram below:
+
+<div align=center>
+<img src="./imgs/seqs/call_up_button_seq.png" width="600"/>
+</div>
 
 ### S3：Door Open/Close Implementation
 This part here will explain the implementation and click event of *door open/close button* in detail along with its graphical user interface.
@@ -148,9 +155,11 @@ the icon will **darken** once being pressed and begin to function.
 #### S3.3 Click event
 The specific click event of the `Open/Close button` will be presented in the UML sequence diagram below:
 
+<div align=center>
+<img src="./imgs/seqs/door_open_seq.png" width="600"/>
+</div>
 
-
-### S4 Status Display Panel Implementation: 
+### S4: Status Display Panel Implementation: 
 
 #### S4.1 GUI
 The control panel is the interface passengers see inside a single `elevator`,  the following information are displayed:
@@ -166,7 +175,7 @@ The passenger can:
 <img src="./imgs/GUIs/panel.png" width="400"/>
 </div>
 
-### S5 Animation Implementation
+### S5: Animation Implementation
 
 The system will visually mimic elevator movement and door operations in real time, ensuring a smooth and informative user experience.
 
@@ -179,7 +188,7 @@ The system will visually mimic elevator movement and door operations in real tim
 - The doors on each elevator use *CSS* class toggles—such as `doors-opening`, `doors-closing`, `doors-open`, and `doors-closed` to display a sliding effect.
 - When an open or close command is received, the corresponding class is assigned, triggering a brief animation that visually reflects the door’s transition state.
 
-### S6 Dispatcher Implementation
+### S6: Dispatcher Implementation
 
 This section describes how the Dispatcher efficiently manages elevator operations, handling user requests and assigning them to the most suitable elevator based on real-time conditions.
 
