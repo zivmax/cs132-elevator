@@ -34,4 +34,4 @@ Guo Yu:
 
 KeHao Huang:
 
-- Start the backend for elevator class 
+- Start the frontend test for elevator class 
