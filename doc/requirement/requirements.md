@@ -1,8 +1,7 @@
 # Requirement Document
 
-- Team 17 
+- Team 17
 - Project：Elevator
-
 - Made by : Guo YU
 
 ---
@@ -29,8 +28,7 @@
 
 ### Overview
 
-This project aims to develop a software which controls two elevators' movement under various user operations and system events. 
-  
+This project aims to develop a software which controls two elevators' movement under various user operations and system events.
 
 ### Product Line Analysis
 
@@ -38,7 +36,7 @@ The domain focuses on managing two elevators as they respond to user commands (o
 
 ---
 
-## UML 
+## UML
 
 ### UML Use Case Diagram
 
@@ -55,7 +53,6 @@ The use case diagram consists of the following functions:
 - **Stop**: The elevator halts either at the initial state or when it reaches the target floor and the user steps out.
 
 ![UCD](./imgs/use_case/use_case.png)
-
 
 ### UML Activity Diagram
 
@@ -76,42 +73,37 @@ The use case diagram consists of the following functions:
 
 ![UAD](./imgs/activity/activity.png)
 
-
 ## Detailed Requirement
 
 ### General
 
 The elevator system primarily involves two key entities: passengers and the elevator itself. Their interaction occurs through two main interfaces: the control panels (both inside the elevator and at floor landings) and the underlying elevator control system that manages movement and scheduling.
 
-
-
 ### R1: Passengers’ Perspective
 
-A passengers should be able to:  
+A passenger should be able to:
 
- 1. See the elevator's current movement direction and current elevator location.
- 2. Request elevator service by pressing up/down buttons on external floor panels.
- 3. Control doors at their current floor by pressing door open/close buttons (such commands outrank automated door operations).
- 4. Select their destination floor using the internalelevator panel once inside.  
-
+1. See the elevator's current movement direction and current elevator location.
+2. Request elevator service by pressing up/down buttons on external floor panels.
+3. Control doors at their current floor by pressing door open/close buttons (such commands outrank automated door operations).
+4. Select their destination floor using the internalelevator panel once inside.
 
 ### R2: Elevator Compartment’s Requirement
 
 An elevator compartment should be able to:
 
-  1. Recieve commands from the passengers through buttons (i.e. open/close door, designate floors)
-  2. Automatically close/open door when passenger enters/exits the elevator
-  3. Take order from the control system and move to the target floor
+1. Recieve commands from the passengers through buttons (i.e. open/close door, designate floors)
+2. Automatically close/open door when passenger enters/exits the elevator
+3. Take order from the control system and move to the target floor
 
 ### R3: Elevator Control System’s Requirement
 
-The system should be able to:  
+The system should be able to:
 
 1. Recieve signals from elevator compartments (i.e. open/close door, designate floors)
 2. Dispatch and order the elevator compartments:
    1. Resolve the conflict when multiple passengers request elevator service
    2. Arrange optimal elevator route scheduling and dispatch the closest elevator.
-
 
 ### R4: Visual Components
 

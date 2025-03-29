@@ -129,9 +129,14 @@ Same as floor button, the **call up/down** button is `'activated'` in **red** an
 This part here will explain the implementation and click event of *door open/close button* in detail along with its graphical user interface.
 
 #### S3.1 GUI
+
+The Animation of door Open/Close will be played after recieved functioning signals.
+<div align=center>
+<img src="./imgs/GUIs/ele_door.png" width="400"/>
+</div>
+
 **Open/Close** door buttons are placed inside Elevator 1 and 2,
 the icon will **darken** once being pressed and begin to function.
-
 <div align=center>
 <img src="./imgs/GUIs/door.png" width="400"/>
 </div>
