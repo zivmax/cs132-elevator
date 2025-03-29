@@ -15,19 +15,28 @@ class Elevator:
         self.current_floor: int = 1  # Initial floor is 1
         self.previous_floor: int = 1  # Track previous floor for change detection
         self.target_floors: List[int] = []
-        self.state: ElevatorState = ElevatorState.IDLE
-        self.door_state: DoorState = DoorState.CLOSED
+        self.state: ElevatorState = ElevatorState.IDLE  # Movement state
+        self.door_state: DoorState = DoorState.CLOSED  # Door state
         self.direction: Optional[str] = None  # "up", "down", or None
         self.last_state_change: float = time.time()
+        self.last_door_change: float = (
+            time.time()
+        )  # Separate timestamp for door changes
         self.door_timeout: float = 3.0  # seconds before automatically closing doors
         self.floor_travel_time: float = 2.0  # seconds to travel between floors
         self.door_operation_time: float = 1.0  # seconds to open or close doors
         self.floor_arrival_delay: float = 2.0  # delay after arrival before door opening
         self.moving_since: Optional[float] = None  # Timestamp when movement started
         self.floor_changed: bool = False  # Flag to detect floor changes
-        self.floor_arrival_announced: bool = False  # Track if floor arrival was announced
-        self.arrival_time: Optional[float] = None  # When the elevator arrived at a floor
-        self.serviced_current_arrival: bool = False  # Flag to prevent door reopening at same floor
+        self.floor_arrival_announced: bool = (
+            False  # Track if floor arrival was announced
+        )
+        self.arrival_time: Optional[float] = (
+            None  # When the elevator arrived at a floor
+        )
+        self.serviced_current_arrival: bool = (
+            False  # Flag to prevent door reopening at same floor
+        )
 
     def update(self) -> None:
         current_time: float = time.time()
@@ -40,81 +49,94 @@ class Elevator:
             self.serviced_current_arrival = False  # Reset serviced flag on floor change
             self.last_state_change = current_time
 
-        # Handle floor arrival announcement with proper timing
-        if self.arrival_time and not self.floor_arrival_announced and current_time - self.arrival_time >= 0.5:
-            # Notify that we've arrived at a floor
-            direction_str: str = (
-                "up_"
-                if self.state == ElevatorState.MOVING_UP
-                else "down_" if self.state == ElevatorState.MOVING_DOWN else ""
-            )
-            self.world.send_msg(
-                f"{direction_str}floor_arrived@{self.current_floor}#{self.id}"
-            )
-            self.floor_arrival_announced = True
-            
-            # Check if we've reached a target floor
-            if self.current_floor in self.target_floors:
-                # Flag this floor as a target but don't remove it yet
-                # We'll remove it after opening the door
-                self.state = ElevatorState.IDLE
-                self.last_state_change = current_time
-            else:
-                # Continue movement if we have more floors to visit
-                self.request_movement_if_needed()
+        # First, check if elevator is moving
+        if self.is_moving():
+            # While moving, only handle floor announcements
+            if (
+                self.arrival_time
+                and not self.floor_arrival_announced
+                and current_time - self.arrival_time >= 0.5
+            ):
+                # Announce floor arrival
+                direction_str: str = (
+                    "up_"
+                    if self.state == ElevatorState.MOVING_UP
+                    else "down_" if self.state == ElevatorState.MOVING_DOWN else ""
+                )
+                self.world.send_msg(
+                    f"{direction_str}floor_arrived@{self.current_floor}#{self.id}"
+                )
+                self.floor_arrival_announced = True
 
-        # Only start opening doors after arrival announcement and proper delay
-        # AND if we haven't already serviced this arrival
-        if (self.floor_arrival_announced and 
-            not self.serviced_current_arrival and
-            self.state == ElevatorState.IDLE and 
-            self.door_state == DoorState.CLOSED and
-            current_time - self.last_state_change >= self.floor_arrival_delay and
-            self.arrival_time and current_time - self.arrival_time >= self.floor_arrival_delay):
-            # Open doors if this floor was in the target list
+                # Check if we've reached a target floor
+                if self.current_floor in self.target_floors:
+                    # Stop at this floor
+                    self.state = ElevatorState.IDLE
+                    self.last_state_change = current_time
+                else:
+                    # Continue movement if we have more floors to visit
+                    self.request_movement_if_needed()
+            return  # Skip other processing while moving
+
+        # Check if delay is time up before proceeding with door operations
+        if (
+            self.floor_arrival_announced
+            and not self.serviced_current_arrival
+            and self.arrival_time
+            and current_time - self.arrival_time < self.floor_arrival_delay
+        ):
+            return  # Wait for delay to complete
+
+        # Handle door state transitions
+        if self.door_state == DoorState.OPENING:
+            if current_time - self.last_door_change > self.door_operation_time:
+                self.door_state = DoorState.OPEN
+                self.last_door_change = current_time
+                self.world.send_msg(f"door_opened#{self.id}")
+
+        elif self.door_state == DoorState.CLOSING:
+            if current_time - self.last_door_change > self.door_operation_time:
+                self.door_state = DoorState.CLOSED
+                self.last_door_change = current_time
+                self.world.send_msg(f"door_closed#{self.id}")
+
+                # After door is closed, check if we need to move
+                if current_time - self.last_door_change >= 0.3:
+                    self.request_movement_if_needed()
+
+        elif self.door_state == DoorState.OPEN:
+            # Auto-close doors after timeout
+            if current_time - self.last_door_change > self.door_timeout:
+                self.close_door()
+
+        # If idle with closed doors, check if we arrived at a target floor
+        elif (
+            self.state == ElevatorState.IDLE
+            and self.door_state == DoorState.CLOSED
+            and self.floor_arrival_announced
+            and not self.serviced_current_arrival
+        ):
+
+            # Check if this floor is a target
             if self.current_floor in self.target_floors:
+                # Open doors for target floor
                 self.open_door()
-                self.serviced_current_arrival = True  # Mark that we've serviced this arrival
-                # Remove from target list after deciding to open door
+                self.serviced_current_arrival = True
+                # Remove this floor from targets
                 self.target_floors.remove(self.current_floor)
-            elif self.target_floors == []:
-                # Also open doors if we have no targets (e.g., initial floor)
+            elif not self.target_floors:
+                # Open doors if we have no targets (e.g., initial floor)
                 self.open_door()
                 self.serviced_current_arrival = True
 
-        # Handle automatic door closing
-        if self.door_state == DoorState.OPEN:
-            if current_time - self.last_state_change > self.door_timeout:
-                self.close_door()
-
-        # Update state based on current state
-        if self.state == ElevatorState.DOOR_OPENING:
-            if current_time - self.last_state_change > self.door_operation_time:
-                self.door_state = DoorState.OPEN
-                self.state = ElevatorState.DOOR_OPEN
-                self.last_state_change = current_time
-                self.world.send_msg(f"door_opened#{self.id}")
-
-        elif self.state == ElevatorState.DOOR_CLOSING:
-            if current_time - self.last_state_change > self.door_operation_time:
-                self.door_state = DoorState.CLOSED
-                self.state = ElevatorState.DOOR_CLOSED
-                self.last_state_change = current_time
-                self.world.send_msg(f"door_closed#{self.id}")
-
-                # Request movement if we have target floors - with a small delay
-                if current_time - self.last_state_change >= 0.3:
-                    self.request_movement_if_needed()
-
-        elif self.state == ElevatorState.DOOR_CLOSED:
-            # Request movement if we have target floors - wait a moment before starting
-            if current_time - self.last_state_change >= 0.3:
-                self.request_movement_if_needed()
-        
-        # Fix for IDLE elevators with remaining targets - ensure they start moving again
-        elif self.state == ElevatorState.IDLE and self.door_state == DoorState.CLOSED and self.target_floors:
-            if current_time - self.last_state_change >= 0.5:  # Small delay before starting movement
-                self.request_movement_if_needed()
+        # Check if we have remaining target floors and need to move
+        elif (
+            self.state == ElevatorState.IDLE
+            and self.door_state == DoorState.CLOSED
+            and self.target_floors
+            and current_time - self.last_state_change >= 0.5
+        ):
+            self.request_movement_if_needed()
 
     def request_movement_if_needed(self) -> None:
         """Request movement from the Engine if there are target floors"""
@@ -162,20 +184,20 @@ class Elevator:
     def open_door(self) -> None:
         if (
             self.door_state != DoorState.OPEN
-            and self.state != ElevatorState.DOOR_OPENING
+            and self.door_state != DoorState.OPENING
+            and not self.is_moving()
         ):
-            self.state = ElevatorState.DOOR_OPENING
             self.door_state = DoorState.OPENING
-            self.last_state_change = time.time()
+            self.last_door_change = time.time()
 
     def close_door(self) -> None:
         if (
             self.door_state != DoorState.CLOSED
-            and self.state != ElevatorState.DOOR_CLOSING
+            and self.door_state != DoorState.CLOSING
+            and not self.is_moving()
         ):
-            self.state = ElevatorState.DOOR_CLOSING
             self.door_state = DoorState.CLOSING
-            self.last_state_change = time.time()
+            self.last_door_change = time.time()
 
     def _determine_direction(self) -> None:
         if not self.target_floors:
@@ -317,6 +339,7 @@ class Elevator:
         self.door_state = DoorState.CLOSED
         self.direction = None
         self.last_state_change = time.time()
+        self.last_door_change = time.time()
         self.moving_since = None
         self.floor_changed = False
         self.floor_arrival_announced = False
