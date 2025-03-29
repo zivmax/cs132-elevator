@@ -184,7 +184,7 @@ class Elevator:
     def open_door(self) -> None:
         if (
             self.door_state != DoorState.OPEN
-            and self.door_state != DoorState.OPENING
+            and self.door_state != DoorState.CLOSING
             and not self.is_moving()
         ):
             self.door_state = DoorState.OPENING
@@ -193,7 +193,7 @@ class Elevator:
     def close_door(self) -> None:
         if (
             self.door_state != DoorState.CLOSED
-            and self.door_state != DoorState.CLOSING
+            and self.door_state != DoorState.OPENING
             and not self.is_moving()
         ):
             self.door_state = DoorState.CLOSING
