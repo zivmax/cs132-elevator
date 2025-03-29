@@ -1,18 +1,14 @@
 from enum import Enum, auto
 
 
-# Elevator States
+# Elevator States (only movement states)
 class ElevatorState(Enum):
     IDLE = auto()
     MOVING_UP = auto()
     MOVING_DOWN = auto()
-    DOOR_OPENING = auto()
-    DOOR_OPEN = auto()
-    DOOR_CLOSING = auto()
-    DOOR_CLOSED = auto()
 
 
-# Door States
+# Door States (all door-related states)
 class DoorState(Enum):
     OPEN = auto()
     CLOSED = auto()
