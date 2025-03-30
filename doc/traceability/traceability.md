@@ -5,11 +5,11 @@
 
 ## Introduction
 
-This document traces the relationship between requirements (R), their implementations (S), and validation (T) processes for the development process,aims to ensure all functional requirements are implemented and traceable to their respective implementations.
+This document establishes the link among requirements (R), their implementations (S), and validation (T) tasks in the development process, ensuring that every functional requirement is correctly implemented and can be traced back to its corresponding implementation.
 
 ## Software Traceability
 
-### Requirement to Implementation to Validation Mapping
+### Requirement Implementation to Validation Mapping
 
 | Requirement | Implementation                   | Validation |
 | ----------- | -------------------------------- | ---------- |
@@ -27,11 +27,5 @@ This document traces the relationship between requirements (R), their implementa
 | R4.2        | S1.1, S2.1, S3.1                 |            |
 | R4.3        | S1.1, S2.1, S3.1, S4.1           |            |
 | R4.4        | S4.1                             |            |
-
-## Coverage Analysis
-
-- Requirements coverage: [Percentage of requirements implemented and tested]
-- Test coverage: [Percentage of code covered by tests]
-- Gap analysis: [Any requirements without sufficient implementation or validation]
 
 ## Appendix
