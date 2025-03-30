@@ -27,10 +27,7 @@ The User interacts with the elevator compartment and its door directly, their po
   - **IDLE**: The elevator is stationary and waiting    or requests
   - **MOVING_UP**: The elevator is moving upward to    each a requested floor
   - **MOVING_DOWN**: The elevator is moving downward    o reach a requested floor
-  - **DOOR_OPENING**: The elevator doors are in the    rocess of opening
-  - **DOOR_OPEN**: The elevator doors are fully open
-  - **DOOR_CLOSING**: The elevator doors are in the    rocess of closing
-  - **DOOR_CLOSED**: The elevator doors are fully    losed
+
 - For a single elevator door, it has to be in one of the following states:
 
   - **OPEN**: The door is completely open
@@ -144,17 +141,15 @@ the icon will **darken** once being pressed and begin to function.
 #### S3.2 OPEN/CLOSE state Logic Implementation
 **S3.2.1 Open Button**:
 - The *Open Button* will only function when the elevator is in **IDLE** state and will not respond if pressed when elevator is in the state of **MOVING_UP** or **MOVING_DOWN**.
-- When functioning properly, the elevator will enter the state of **DOOR_OPENING** and the door will enter the state of **OPENING**. 
-- After **1s** of animation playing, the elevator will enter the state of 
-**DOOR_OPEN** and the door will enter the state of **OPEN**.
-- If no external action is posed when the elevator is in **DOOR_OPEN** state, after **3s**, the door wil automatically close, the **CLOSING** state detailed will be explained in *Close Button* section.
+- When functioning properly, the door will enter the state of **OPENING**. 
+- After **1s** of animation playing, the door will enter the state of **OPEN**.
+- If no external action is posed when the door is in **OPEN** state, after **3s**, the door wil automatically close, the **CLOSING** state detailed will be explained in *Close Button* section.
 - Keep pushing the *Open Button* when the door is already in **OPEN** state will prolong its time in the state and will only be **CLOSING** when the *Open Button* is no long being pressed.
 
 **S3.2.2 Close Button**:
-- The *Close Button* will only function when the elevator is in **DOOR_OPEN** or **DOOR_OPENING** state and will not respond when the elevator is in other states.
-- When functioning properly, the elevator will enter the state of **DOOR_CLOSING** and the door will enter the state of **CLOSING**.
-- After **1s** of animation playing, the elevator will enter the state of
-**DOOR_CLOSED**, then **immediately** switch to the state of **IDLE** and the door will enter the state of **CLOSED**.
+- The *Close Button* will only function when the door is in **OPEN** or **OPENING** state and will not respond when the elevator is in other states.
+- When functioning properly, the door will enter the state of **CLOSING**.
+- After **1s** of animation playing, the door will enter the state of **CLOSED**.
 
 #### S3.3 Click event
 The specific click event of the `Open/Close button` will be presented in the UML sequence diagram below:
@@ -173,7 +168,7 @@ The control panel is the interface passengers see inside a single elevator,  the
 
 The passenger can:
 - Select the intended floor
-- Open/Close door when the elevator is in **IDLE**, **DOOR_OPENING** or **DOOR_OPEN** state.
+- Open/Close door when the elevator is in **IDLE**, the door is in **OPEN** or **OPENING** state.
 
 <div align=center>
 <img src="./imgs/GUIs/panel.png" width="400"/>
@@ -221,7 +216,7 @@ This section will show how each elevator’s state is updated in real-time, mana
 The `Engine` regularly checks each elevator’s movement and calculates when a single-floor travel time has elapsed. It updates the elevator’s current floor accordingly and removes any completed movement requests. This keeps the elevator’s position and movement status accurate.
 
 #### S7.2 Door and State Transitions
-- When door operations are requested, the elevator transitions from **IDLE** to **DOOR_OPENING** or **DOOR_CLOSING**, then to **DOOR_OPEN** or **DOOR_CLOSED**. 
+- When door operations are requested, the door transitions from **CLOSED** to **OPENING** or from **OPEN** or **OPENING** to **CLOSING**. 
 - If subsequent calls or target floors exist, the elevator switches to **MOVING_UP** or **MOVING_DOWN** until all destinations are served, ultimately returning to **IDLE**.
 
 
