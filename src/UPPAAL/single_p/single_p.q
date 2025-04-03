@@ -3,7 +3,7 @@
 /*
 every call is eventually serviced
 */
-A<> (callPlacedUp || callPlacedDown) imply (El.moving == true)
+A<> (callPlacedUp || callPlacedDown) imply (P.Riding == true)
 
 /*
 Elevator always goes within floor -1 to 3
@@ -13,4 +13,4 @@ A[] (El.c_floor >= MIN_FLOOR && El.c_floor <= MAX_FLOOR)
 /*
 passenger eventually reaches the floor
 */
-A<> (P.Riding) imply (P.Arrived)
+A<> (callPlacedUp || callPlacedDown) imply (P.Arrived)
