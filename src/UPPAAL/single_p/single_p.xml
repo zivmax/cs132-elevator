@@ -148,9 +148,9 @@ clock globalClock;</declaration>
   </system>
 	<queries>
 		<query>
-			<formula>A&lt;&gt; (callPlacedUp || callPlacedDown) imply (El.moving == true)</formula>
+			<formula>A&lt;&gt; (callPlacedUp || callPlacedDown) imply (P.Riding == true)</formula>
 			<comment>every call is eventually serviced</comment>
-			<result outcome="success" type="quality" timestamp="2025-04-03 19:50:21 +0800">
+			<result outcome="success" type="quality" timestamp="2025-04-03 21:02:57 +0800">
 			</result>
 		</query>
 		<query>
@@ -160,9 +160,9 @@ clock globalClock;</declaration>
 			</result>
 		</query>
 		<query>
-			<formula>A&lt;&gt; (P.Riding) imply (P.Arrived)</formula>
+			<formula>A&lt;&gt; (callPlacedUp || callPlacedDown) imply (P.Arrived)</formula>
 			<comment>passenger eventually reaches the floor</comment>
-			<result outcome="success" type="quality" timestamp="2025-04-03 19:49:48 +0800">
+			<result outcome="success" type="quality" timestamp="2025-04-03 20:59:17 +0800">
 			</result>
 		</query>
 	</queries>

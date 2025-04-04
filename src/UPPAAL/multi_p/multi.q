@@ -1,20 +1,16 @@
-// This file was generated from (Academic) UPPAAL 5.0.0
+//This file was generated from (Academic) UPPAAL 5.0.0 (rev. 714BA9DB36F49691), 2023-06-21
 
 /*
-Risk 1: Each passenger’s calls eventually leads them to ride
+every call is eventually serviced
 */
-A<> (callPlacedUp[0] || callPlacedDown[0]) imply (P0.Riding) // Passenger 0 call is serviced
-A<> (callPlacedUp[1] || callPlacedDown[1]) imply (P1.Riding) // Passenger 1 call is serviced
-A<> (callPlacedUp[2] || callPlacedDown[2]) imply (P2.Riding) // Passenger 2 call is serviced
+A<> (callPlacedUp || callPlacedDown) imply ((P1.Riding == true) and (P2.Riding == true) and (P3.Riding == true))
 
 /*
-Risk 2: Elevator stays in normal range
+Elevator always goes within floor -1 to 3
 */
-A[] (El.c_floor >= MIN_FLOOR && El.c_floor <= MAX_FLOOR) // Elevator always within -1..3
+A[] (El1.c_floor >= MIN_FLOOR && El1.c_floor <= MAX_FLOOR) and (El2.c_floor >= MIN_FLOOR && El2.c_floor <= MAX_FLOOR)
 
 /*
-Risk 3: Each passenger eventually arrives
+passenger eventually reaches the floor
 */
-A<> P0.Riding imply P0.Arrived // Passenger 0 arrives
-A<> P1.Riding imply P1.Arrived // Passenger 1 arrives
-A<> P2.Riding imply P2.Arrived // Passenger 2 arrives
+A<> (callPlacedUp || callPlacedDown) imply ((P1.Arrived) and (P2.Arrived) and (P3.Arrived))
