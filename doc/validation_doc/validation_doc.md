@@ -1,4 +1,22 @@
-## Risk Management
+# Validation Documentation
+
+- Team: 17
+- Project: Elevator
+
+## 1. General Contents
+- This document introduces a set of system verification methods that ensure the application’s reliability and correctness. 
+- Unit tests verify each component’s core functionality and state transitions.
+- Functional tests validate expected interface interactions to confirm proper user-facing behavior.
+- Integration tests center on how different parts cooperate, such as elevator logic and complex workflows, ensuring overall synchronization.
+- Risk management examines the system’s performance under varied conditions to reduce possible hazards and bolster safety and correctness.
+
+## 2. Unit Tests
+
+## 3. Functional Tests
+
+## 4. Integration Tests
+
+## 5. Risk Management
 
 ### Major System Risks:
 
@@ -107,7 +125,7 @@ A<> (callPlacedUp || callPlacedDown) imply (P.Arrived)
 <img src="./imgs/UPPAAL/single_pass.png" width="500"/>
 </div>
 
-#### 2. Multi Passengers
+#### 2. Multiple Passengers
 The basic model of this part is the same with single passengers, more passengers instances are added to simulate the real situation.
 - Global Instances
   - 2 elevators and 3 passengers
