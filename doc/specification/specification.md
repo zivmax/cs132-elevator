@@ -7,10 +7,19 @@
 
 This documentation shows the specific development process, project structure and software APIs of the elevator system.
 
-# Content
+# Table of Contents
 
 - [Project Introduction](#project-introduction)
+- [States Specification](#states-specification)
 - [System Class Structure](#system-class-structure)
+- [Components Specifications](#components-specifications)
+  - [S1: Target Floor Implementation](#s1-target-floor-implementation)
+  - [S2: Call Up/Down Implementation](#s2-call-updown-implementation)
+  - [S3: Door Open/Close Implementation](#s3-door-openclose-implementation)
+  - [S4: Status Display Panel Implementation](#s4-status-display-panel-implementation)
+  - [S5: Animation Implementation](#s5-animation-implementation)
+  - [S6: Dispatcher Implementation](#s6-dispatcher-implementation)
+  - [S7: State Update Implementation](#s7-state-update-implementation)
 
 ## Project Introduction
 

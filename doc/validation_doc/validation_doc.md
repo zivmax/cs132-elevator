@@ -3,6 +3,13 @@
 - Team: 17
 - Project: Elevator
 
+## Table of Contents
+- [1. General Contents](#1-general-contents)
+- [2. Unit Tests](#2-unit-tests)
+- [3. Functional Tests](#3-functional-tests)
+- [4. Integration Tests](#4-integration-tests)
+- [5. Risk Management](#5-risk-management)
+
 ## 1. General Contents
 - This document introduces a set of system verification methods that ensure the application’s reliability and correctness. 
 - Unit tests verify each component’s core functionality and state transitions.
@@ -34,10 +41,11 @@ The detailed FTA plot is given below:
 
 ### UPPAAL model checking
 - The model checking section will focus on the three major risks presented in the FTA plot
+- This section will introduce a UPPAAL model which simulates the state machine in different situations. 
+- The model presented will go through some abstraction compare to the actual code implementation (i.e. specific diapatching Algorithm etc. are omitted)
+- All the above risks will be tested by its corresponding query. The detailed model will be demonstrated below:
 
-#### 1. Single Passenger
-
-- This section will introduce a UPPAAL model which simulates the state machine in the situation of one passenger and one elevator. All the above risks will be tested by its corresponding query. The detailed model will be demonstrated below:
+#### 1. Single Passenger - Single Elevator
 
 - Global Statements:
 
@@ -125,7 +133,7 @@ A<> (callPlacedUp || callPlacedDown) imply (P.Arrived)
 <img src="./imgs/UPPAAL/single_pass.png" width="500"/>
 </div>
 
-#### 2. Multiple Passengers
+#### 2. Multiple Passengers - Multiple Elevators
 The basic model of this part is the same with single passengers, more passengers instances are added to simulate the real situation.
 - Global Instances
   - 2 elevators and 3 passengers
