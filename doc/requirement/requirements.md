@@ -52,26 +52,50 @@ The use case diagram consists of the following functions:
 - **Move Down**: The elevator descends to a lower targeted floor.
 - **Stop**: The elevator halts either at the initial state or when it reaches the target floor and the user steps out.
 
-![UCD](./imgs/use_case/use_case.png)
+<div align=center>
+<img src="./imgs/use_case/use_case.png" width="500"/>
+</div>
 
 ### UML Activity Diagram
 
-- **Start**: The process begins when the user starts interacting with the elevator.
-- **Which Direction?**: The user selects the direction by pressing either the Up or Down button.
-- **Enter The Elevator?**: The user decides whether to enter the elevator.
-  - **Yes**: The user enters the elevator and selects a floor.
-  - **No**: The user does not enter the elevator, and the process circles back to chosing direction.
-- **Select Floor**: The user selects the desired floor.
-- **Is current floor the target floor?**: The elevator checks if it has reached the target floor.
-  - **Yes**: The elevator opens the door.
-  - **No**: The elevator moves to the target floor.
-- **Is currently stop**: The elevator only opens the door when it stops.
-- **Exit?**: The user decides whether to exit the elevator.
-  - **Yes**: The user exits the elevator, process ends.
-  - **No**: The user remains in the elevator, and the process circles back to chosing floor.
-- **Waiting for the door to open/close**: The user waits for the door to open or close.
+- **Start**: The process begins when a passenger presses a call button.
 
-![UAD](./imgs/activity/activity.png)
+- **Call Request**: The passenger presses Up/Down button which turns red when activated.
+
+- **Elevator Dispatch**: System evaluates elevator positions and assigns the optimal elevator.
+
+- **Waiting**: The passenger waits for the elevator to arrive at their floor.
+
+- **Arrival Decision**: When elevator arrives, it enters IDLE state.
+
+  - Door automatically changes to OPENING state (takes 1 second)
+  - Call button resets to blue
+
+- **Enter Elevator**: The passenger enters the elevator.
+
+- **Floor Selection**: The passenger selects target floor and button turns red.
+
+- **Door Operation**: Three possible paths occur simultaneously:
+
+  - Auto-close: Door closes after 3 seconds if no button is pressed
+  - Manual open: Door opens if Open button is pressed while elevator is IDLE
+  - Manual close: Door closes if Close button is pressed while door is OPEN/OPENING
+
+- **Movement**: When door is CLOSED and target floor is set:
+
+  - Elevator moves UP or DOWN as needed
+  - Position updates floor by floor until reaching target
+- **Destination Arrival**:
+
+  - Elevator enters IDLE state
+  - Door automatically opens
+  - Floor button resets to blue
+- **Exit**: The passenger exits the elevator.
+
+- **Process Repeat**: System continues running to handle new requests.
+<div align=center>
+<img src="./imgs/activity/activity.png" width="600"/>
+</div>
 
 ## Detailed Requirement
 
