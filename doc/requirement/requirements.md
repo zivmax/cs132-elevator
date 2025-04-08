@@ -32,7 +32,11 @@ This project aims to develop a software which controls two elevators' movement u
 
 ### Product Line Analysis
 
-The domain focuses on managing two elevators as they respond to user commands (open/close doors, call floors, select floors) and system events (door opened/closed, floor arrivals). Each elevator must track its state (location, door status) and handle incoming requests efficiently. The system must ensure correct scheduling of elevator movements, resolve conflicts when multiple commands are issued, and reset to first-floor-closed-door mode on demand.
+The elevator system can be tailored to different scenarios by allowing variations in:
+- **Number of Elevators**: Configuring one or more elevators to handle building traffic.
+- **Door Operations**: Adjusting open/close commands and timings for different usage patterns.
+- **Floor Scheduling**: Coordinating efficient movement to respond to floor calls and user selections.
+- **Conflict Resolution**: Handling multiple simultaneous requests and ensuring priority rules.
 
 ---
 
@@ -131,7 +135,7 @@ The system should be able to:
 
 ### R4: Visual Components
 
-The elevator control panel should be able to:
+The visual components should be able to:
 
 1. Display door status (open/closed) and current floor location of each each elevator.
 2. Provide visual feedback when floor buttons are pressed (button illumination).
