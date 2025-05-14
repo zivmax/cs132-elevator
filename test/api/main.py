@@ -155,9 +155,9 @@ def create_test_scenarios() -> Dict[str, TestScenario]:
 
 def testing(server: server.ZmqServerThread, selected_scenario: str = "basic") -> None:
     def is_received_new_message(
-        oldTimeStamp: int, oldServerMessage: str, Msgunprocessed: bool = False
+        oldTimeStamp: int, oldServerMessage: str, MsgUnprocessed: bool = False
     ) -> bool:
-        if Msgunprocessed:
+        if MsgUnprocessed:
             return True
         else:
             if (
@@ -191,7 +191,7 @@ def testing(server: server.ZmqServerThread, selected_scenario: str = "basic") ->
     test_start_time = time.time()
 
     # Reset the client
-    server.send_string(server.bindedClient, "reset")
+    server.send_string(server.boundClient, "reset")
     time.sleep(1)
 
     # Recording metrics
@@ -209,11 +209,11 @@ def testing(server: server.ZmqServerThread, selected_scenario: str = "basic") ->
             if not passenger.has_called_elevator and elapsed_time >= passenger.delay:
                 if passenger.direction == "up":
                     server.send_string(
-                        server.bindedClient, f"call_up@{passenger.start_floor}"
+                        server.boundClient, f"call_up@{passenger.start_floor}"
                     )
                 else:
                     server.send_string(
-                        server.bindedClient, f"call_down@{passenger.start_floor}"
+                        server.boundClient, f"call_down@{passenger.start_floor}"
                     )
                 passenger.has_called_elevator = True
                 passenger.start_time = current_time
@@ -344,7 +344,7 @@ def testing(server: server.ZmqServerThread, selected_scenario: str = "basic") ->
                                     PassengerState.IN_ELEVATOR_2_AT_OTHER_FLOOR
                                 )
                             server.send_string(
-                                server.bindedClient,
+                                server.boundClient,
                                 f"select_floor@{each_passenger.target_floor}#{each_passenger.get_elevator_code()}",
                             )
                             print(
@@ -385,7 +385,7 @@ def testing(server: server.ZmqServerThread, selected_scenario: str = "basic") ->
                     print(f"Average journey time: {avg_time:.1f} seconds")
                 print("=" * 60)
                 time.sleep(1)
-                server.send_string(server.bindedClient, "reset")
+                server.send_string(server.boundClient, "reset")
                 break
 
         time.sleep(0.01)
@@ -426,7 +426,7 @@ if __name__ == "__main__":
                 f"Initiate '{scenarios[scenario].name}' for {addr}? (y/n)\n"
             )
             if msg.lower() == "y":
-                my_server.bindedClient = addr
+                my_server.boundClient = addr
                 testing(my_server, scenario)
             else:
                 continue

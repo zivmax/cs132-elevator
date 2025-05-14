@@ -14,7 +14,7 @@ class ZmqServerThread(threading.Thread):
         threading.Thread.__init__(self)
         self.context: zmq.Context = zmq.Context()
         self.socket: zmq.Socket = self.context.socket(zmq.ROUTER)
-        self.bindedClient: Optional[str] = None
+        self.boundClient: Optional[str] = None
         self._receivedMessage: Optional[str] = None
         self._messageTimeStamp: Optional[int] = None  # UNIX Time Stamp, should be int
 
