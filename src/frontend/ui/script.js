@@ -9,6 +9,12 @@ const floorHeights = {
     3: 75    // Floor 3 at 75% from bottom
 };
 
+// NEW: Stores animation state for each elevator
+let elevatorAnimations = {}; 
+// NEW: Defines the time (in seconds) for the elevator to travel one floor.
+// This should ideally match your backend's elevator.floor_travel_time and the default CSS transition for a single floor.
+const SINGLE_FLOOR_TRAVEL_TIME_SECONDS = 2.0; 
+
 // Initialize the web channel connection to the backend
 window.onload = function() {
     new QWebChannel(qt.webChannelTransport, function(channel) {
@@ -126,48 +132,89 @@ function closeDoor(elevatorId) {
 // Update elevator UI based on data from backend
 function updateElevatorUI(data) {
     const elevatorId = data.id;
-    const floor = data.floor;
-    const state = data.state;
+    const actualCurrentFloor = data.floor; // Backend's reported current floor
+    const state = data.state; // IDLE, MOVING_UP, MOVING_DOWN, etc.
     const doorState = data.doorState;
-    const direction = data.direction;
-    const targetFloors = data.targetFloors;
-    
-    // Update elevator position
+    const targetFloors = data.targetFloors; // List of next stops
+
     const elevatorElement = document.getElementById(`elevator-${elevatorId}`);
-    if (elevatorElement) {
-        // Update position (with animation)
-        elevatorElement.style.bottom = `${floorHeights[floor]}%`;
-        
-        // Update door state
-        elevatorElement.classList.remove('doors-open', 'doors-closed', 'doors-opening', 'doors-closing');
-        
-        if (doorState === 'OPEN') {
-            elevatorElement.classList.add('doors-open');
-        } else if (doorState === 'CLOSED') {
-            elevatorElement.classList.add('doors-closed');
-        } else if (doorState === 'OPENING') {
-            elevatorElement.classList.add('doors-opening');
-        } else if (doorState === 'CLOSING') {
-            elevatorElement.classList.add('doors-closing');
-        }
+    if (!elevatorElement) return;
+
+    // Initialize animation state for this elevator if it doesn't exist
+    if (!elevatorAnimations[elevatorId]) {
+        elevatorAnimations[elevatorId] = {
+            visualTargetFloor: null // The ultimate destination of the current multi-floor visual travel
+        };
     }
-    
-    // Update status displays
-    document.getElementById(`elevator-${elevatorId}-floor`).textContent = floor === 0 ? "-1" : floor;
+    let animState = elevatorAnimations[elevatorId];
+
+    // Always update textual information
+    document.getElementById(`elevator-${elevatorId}-floor`).textContent = actualCurrentFloor === 0 ? "-1" : actualCurrentFloor;
     document.getElementById(`elevator-${elevatorId}-status`).textContent = state;
     document.getElementById(`elevator-${elevatorId}-door`).textContent = doorState;
-    document.getElementById(`elevator-${elevatorId}-targets`).textContent = targetFloors.map(floor => floor === 0 ? "-1" : floor).join(', ');
-    
-    // Update active floor buttons - fix to ensure ALL buttons are properly set
+    document.getElementById(`elevator-${elevatorId}-targets`).textContent = targetFloors.map(f => f === 0 ? "-1" : f).join(', ');
+
+    // Update door visuals (this part remains unchanged)
+    elevatorElement.classList.remove('doors-open', 'doors-closed', 'doors-opening', 'doors-closing');
+    if (doorState === 'OPEN') elevatorElement.classList.add('doors-open');
+    else if (doorState === 'CLOSED') elevatorElement.classList.add('doors-closed');
+    else if (doorState === 'OPENING') elevatorElement.classList.add('doors-opening');
+    else if (doorState === 'CLOSING') elevatorElement.classList.add('doors-closing');
+
+    // Handle elevator vertical movement visualization
+    if (state === "MOVING_UP" || state === "MOVING_DOWN") {
+        if (targetFloors.length > 0) {
+            const nextStopFloor = targetFloors[0]; // The immediate next floor the elevator will stop at
+
+            // If this is a new movement segment OR the ultimate target has changed
+            if (animState.visualTargetFloor !== nextStopFloor) {
+                animState.visualTargetFloor = nextStopFloor;
+
+                const travelDistance = Math.abs(nextStopFloor - actualCurrentFloor);
+
+                if (travelDistance > 0) {
+                    const animationDuration = travelDistance * SINGLE_FLOOR_TRAVEL_TIME_SECONDS;
+                    elevatorElement.style.transition = `bottom ${animationDuration}s ease-in-out`;
+                    elevatorElement.style.bottom = `${floorHeights[nextStopFloor]}%`;
+                } else {
+                    // MOVING but travelDistance is 0 to nextStopFloor (e.g., at the floor but backend says MOVING)
+                    // Snap to the floor and reset transition
+                    elevatorElement.style.transition = 'none';
+                    elevatorElement.style.bottom = `${floorHeights[actualCurrentFloor]}%`;
+                    void elevatorElement.offsetHeight; // Force reflow
+                    elevatorElement.style.transition = `bottom ${SINGLE_FLOOR_TRAVEL_TIME_SECONDS}s ease-in-out`; // Default for next
+                }
+            }
+            // If animState.visualTargetFloor === nextStopFloor, it's an intermediate floor update.
+            // The visual animation is already in progress towards visualTargetFloor. Only text was updated.
+        } else {
+            // MOVING but no target_floors: Inconsistent state. Snap to current floor.
+            animState.visualTargetFloor = null;
+            elevatorElement.style.transition = 'none';
+            elevatorElement.style.bottom = `${floorHeights[actualCurrentFloor]}%`;
+            void elevatorElement.offsetHeight; // Force reflow
+            elevatorElement.style.transition = `bottom ${SINGLE_FLOOR_TRAVEL_TIME_SECONDS}s ease-in-out`;
+        }
+    } else { // Elevator is IDLE, OPENING, CLOSING, OPEN, CLOSED
+        animState.visualTargetFloor = null; // Clear any ongoing visual long-travel target
+
+        // Ensure the elevator is visually at its actualCurrentFloor.
+        // Snap to the actualCurrentFloor. If it was in a long animation, this stops it correctly.
+        elevatorElement.style.transition = 'none';
+        elevatorElement.style.bottom = `${floorHeights[actualCurrentFloor]}%`;
+        void elevatorElement.offsetHeight; // Force reflow to apply the 'none' transition and new bottom immediately
+
+        // Restore default transition for any subsequent small adjustments or next moves
+        elevatorElement.style.transition = `bottom ${SINGLE_FLOOR_TRAVEL_TIME_SECONDS}s ease-in-out`;
+    }
+
+    // Update active floor buttons inside the elevator panel (existing logic)
     const controlPanel = document.getElementById(`panel-${elevatorId}`);
     if (controlPanel) {
         const buttons = controlPanel.querySelectorAll('.floor-buttons button');
         buttons.forEach(button => {
-            // Need to convert "-1" text to 0 for basement floor
-            let buttonFloor = button.textContent;
-            buttonFloor = buttonFloor === "-1" ? 0 : parseInt(buttonFloor);
-            
-            // Set or remove active class based on targetFloors list
+            let buttonFloorText = button.textContent;
+            let buttonFloor = buttonFloorText === "-1" ? 0 : parseInt(buttonFloorText);
             if (targetFloors.includes(buttonFloor)) {
                 button.classList.add('active');
             } else {
