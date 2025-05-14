@@ -111,6 +111,20 @@ Once being clicked, the *floor button* is considered `'activated'` in **red** an
 <img src="./imgs/seqs/floor_button_seq.png" width="600"/>
 </div>
 
+#### S1.4 Backend Command
+
+User Operation:
+**"select_floor"**: ["-1#1", "-1#2", "1#1", "1#2", "2#1", "2#2", "3#1", "3#2"]
+
+select_floor@i#k means a user in elevator #k selects to go to the i-th floor.
+
+Corresponding System Events:
+**"floor_arrived"**:["up","down",""],["-1","1","2","3"],["#1", "#2"] 
+
+"up_floor_i_arrived#k"， indicating that elevator #k has arrived at the i-th floor while moving upwards. "floor_i_arrived#k",indicating that elevator #k has stopped at the i-th floor.
+
+
+
 ### S2：Call Up/Down Implementation
 
 This part here will explain the implementation and click event of *call up/down button* in detail along with its graphical user interface.
@@ -130,6 +144,14 @@ Same as floor button, the **call up/down** button is `'activated'` in **red** an
 <div align=center>
 <img src="./imgs/seqs/call_up_button_seq.png" width="600"/>
 </div>
+
+#### S2.3: Backend Command
+
+User Operations:
+**"call_down"**: ["3", "2", "1"]
+**"call_up"**: ["-1", "1", "2"]
+
+call_up/call_down@i signifies the user at floor i pressing the button to call the elevator to go upwards/downwards.
 
 ### S3：Door Open/Close Implementation
 
@@ -173,6 +195,19 @@ The specific click event of the `Open/Close button` will be presented in the UML
 <div align=center>
 <img src="./imgs/seqs/door_open_seq.png" width="600"/>
 </div>
+
+#### S3.4 Backend Command
+
+User Operations:
+**"open_door"**: ["#1", "#2"]
+**"close_door"**: ["#1", "#2"]
+open_door/close_door#i means open/close the doors of elevator #i
+
+Corresponding System Events
+**"door_opened"**: ["#1", "#2"]
+**"door_closed"**: ["#1", "#2"]
+
+door_opened/door_closed#i means the doors of elevator #i have opened/closed
 
 ### S4: Status Display Panel Implementation:
 
