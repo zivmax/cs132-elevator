@@ -100,9 +100,7 @@ class ElevatorAPI:
                 elevator.door_state.name
                 if hasattr(elevator.door_state, "name")
                 else str(elevator.door_state)
-            )
-
-            # Create a dictionary with elevator state information
+            )  # Create a dictionary with elevator state information
             elevator_state = {
                 "elevator_id": elevator.id,
                 "floor": elevator.current_floor,
@@ -110,6 +108,7 @@ class ElevatorAPI:
                 "door_state": door_state_str,
                 "direction": elevator.direction if elevator.direction else "none",
                 "target_floors": elevator.target_floors,
+                "target_floors_origin": elevator.target_floors_origin,
             }
 
             elevator_states.append(elevator_state)

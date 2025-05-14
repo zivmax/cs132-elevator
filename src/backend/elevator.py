@@ -15,6 +15,9 @@ class Elevator:
         self.current_floor: int = 1  # Initial floor is 1
         self.previous_floor: int = 1  # Track previous floor for change detection
         self.target_floors: List[int] = []
+        self.target_floors_origin: dict = (
+            {}
+        )  # Track origin of target floors: "inside" or "outside"
         self.state: ElevatorState = ElevatorState.IDLE  # Movement state
         self.door_state: DoorState = DoorState.CLOSED  # Door state
         self.direction: Optional[str] = None  # "up", "down", or None
@@ -115,15 +118,16 @@ class Elevator:
             and self.door_state == DoorState.CLOSED
             and self.floor_arrival_announced
             and not self.serviced_current_arrival
-        ):
-
-            # Check if this floor is a target
+        ):  # Check if this floor is a target
             if self.current_floor in self.target_floors:
                 # Open doors for target floor
                 self.open_door()
                 self.serviced_current_arrival = True
-                # Remove this floor from targets
+
+                # Remove this floor from targets and origins
                 self.target_floors.remove(self.current_floor)
+                if self.current_floor in self.target_floors_origin:
+                    del self.target_floors_origin[self.current_floor]
             elif not self.target_floors:
                 # Open doors if we have no targets (e.g., initial floor)
                 self.open_door()
@@ -335,6 +339,7 @@ class Elevator:
         self.current_floor = 1
         self.previous_floor = 1
         self.target_floors = []
+        self.target_floors_origin = {}  # Clear the origins dictionary
         self.state = ElevatorState.IDLE
         self.door_state = DoorState.CLOSED
         self.direction = None

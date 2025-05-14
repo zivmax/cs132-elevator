@@ -25,6 +25,10 @@ window.onload = function() {
         backend.elevatorUpdated.connect(function(message) {
             console.log("Elevator updated:", message);
             const data = JSON.parse(message);
+            // Handle target_floors_origin - convert to regular object if needed
+            if (data.target_floors_origin) {
+                data.targetFloorsOrigin = data.target_floors_origin;
+            }
             updateElevatorUI(data);
         });
         
@@ -136,6 +140,7 @@ function updateElevatorUI(data) {
     const state = data.state; // IDLE, MOVING_UP, MOVING_DOWN, etc.
     const doorState = data.doorState;
     const targetFloors = data.targetFloors; // List of next stops
+    const targetFloorsOrigin = data.targetFloorsOrigin || {}; // Origin of each target floor
 
     const elevatorElement = document.getElementById(`elevator-${elevatorId}`);
     if (!elevatorElement) return;
@@ -206,16 +211,16 @@ function updateElevatorUI(data) {
 
         // Restore default transition for any subsequent small adjustments or next moves
         elevatorElement.style.transition = `bottom ${SINGLE_FLOOR_TRAVEL_TIME_SECONDS}s ease-in-out`;
-    }
-
-    // Update active floor buttons inside the elevator panel (existing logic)
+    }    // Update active floor buttons inside the elevator panel based on origin
     const controlPanel = document.getElementById(`panel-${elevatorId}`);
     if (controlPanel) {
         const buttons = controlPanel.querySelectorAll('.floor-buttons button');
         buttons.forEach(button => {
             let buttonFloorText = button.textContent;
             let buttonFloor = buttonFloorText === "-1" ? 0 : parseInt(buttonFloorText);
-            if (targetFloors.includes(buttonFloor)) {
+            
+            // Only highlight if the floor was requested from inside the elevator
+            if (targetFloors.includes(buttonFloor) && targetFloorsOrigin[buttonFloor] === "inside") {
                 button.classList.add('active');
             } else {
                 button.classList.remove('active');
@@ -245,12 +250,18 @@ function highlightElevatorButton(floor, elevatorId) {
     if (panel) {
         const buttons = panel.querySelectorAll('.floor-buttons button');
         buttons.forEach(button => {
-            if (parseInt(button.textContent) === floor) {
+            if ((buttonFloor = button.textContent === "-1" ? 0 : parseInt(button.textContent)) === floor) {
                 button.classList.add('active');
                 // Don't remove the highlight - let the backend response handle it via updateElevatorUI
             }
         });
     }
+    
+    // When an inside button is pressed, unhighlight all outside call buttons
+    const allFloorButtons = document.querySelectorAll('.call-btn');
+    allFloorButtons.forEach(button => {
+        button.classList.remove('active');
+    });
 }
 
 // Simulate elevator movement for testing (if not connected to backend)

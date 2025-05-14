@@ -39,7 +39,8 @@ class Dispatcher:
             parts: List[str] = request.split("@")[1].split("#")
             floor: int = int(parts[0])
             elevator_id: int = int(parts[1])
-            self._add_target_floor(elevator_id - 1, floor)
+            # This is an inside elevator call
+            self._add_target_floor(elevator_id - 1, floor, "inside")
 
         elif request == "reset":
             for elevator in self.world.elevators:
@@ -57,10 +58,19 @@ class Dispatcher:
                 best_elevator = elevator
 
         if best_elevator:
-            self._add_target_floor(best_elevator.id - 1, floor)
+            # This is an outside call (from a floor button)
+            self._add_target_floor(best_elevator.id - 1, floor, "outside")
 
-    def _add_target_floor(self, elevator_idx: int, floor: int) -> None:
-        """Add target floor to elevator and optimize the sequence"""
+    def _add_target_floor(
+        self, elevator_idx: int, floor: int, origin: str = "outside"
+    ) -> None:
+        """Add target floor to elevator and optimize the sequence
+
+        Args:
+            elevator_idx: Index of the elevator (0-based)
+            floor: Floor number to add as target
+            origin: Origin of the request, either "inside" or "outside"
+        """
         elevator = self.world.elevators[elevator_idx]
 
         # If elevator is already at this floor and door is closed, open door
@@ -82,6 +92,9 @@ class Dispatcher:
 
         # Add floor to target list
         elevator.target_floors.append(floor)
+
+        # Store the origin of this floor request
+        elevator.target_floors_origin[floor] = origin
 
         # Optimize the sequence for efficiency
         self._optimize_target_sequence(elevator)

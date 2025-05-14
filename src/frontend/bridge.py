@@ -57,6 +57,7 @@ class WebBridge(QObject):
         door_state: str,
         direction: str,
         target_floors: list,
+        target_floors_origin: dict = None,
     ):
         """Send elevator state update to frontend"""
         data = {
@@ -66,6 +67,7 @@ class WebBridge(QObject):
             "doorState": door_state,
             "direction": direction,
             "targetFloors": target_floors,
+            "target_floors_origin": target_floors_origin or {},
         }
         self.elevatorUpdated.emit(json.dumps(data))
 
@@ -83,6 +85,7 @@ class WebBridge(QObject):
                 door_state=elevator_state["door_state"],
                 direction=elevator_state["direction"],
                 target_floors=elevator_state["target_floors"],
+                target_floors_origin=elevator_state.get("target_floors_origin", {}),
             )
 
     def notify_floor_called(self, floor: int, direction: str):
