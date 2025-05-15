@@ -17,6 +17,36 @@ const SINGLE_FLOOR_TRAVEL_TIME_SECONDS = 2.0;
 
 // Initialize the web channel connection to the backend
 window.onload = function() {
+    // Add CSS rule to determine debug panel visibility
+    const style = document.createElement('style');
+    document.head.appendChild(style);
+    
+    // Function to update CSS based on showDebugPanel state
+    const updateDebugPanelVisibility = function() {
+        // Default to showing if not explicitly set to false
+        const isVisible = window.showDebugPanel !== false;
+        console.log("Debug panel visibility set to:", isVisible);
+        
+        // Update CSS rule
+        style.textContent = '.debug-section { display: ' + (isVisible ? 'block' : 'none') + ' !important; }';
+    };
+    
+    // Initial setup
+    updateDebugPanelVisibility();
+    
+    // Set up listener for when Python sets the variable later
+    let _showDebugPanel = window.showDebugPanel;
+    Object.defineProperty(window, 'showDebugPanel', {
+        set: function(value) {
+            console.log("showDebugPanel property set to:", value);
+            _showDebugPanel = value;
+            updateDebugPanelVisibility();
+        },
+        get: function() {
+            return _showDebugPanel;
+        }
+    });
+
     new QWebChannel(qt.webChannelTransport, function(channel) {
         backend = channel.objects.backend;
         console.log("Backend connection established");

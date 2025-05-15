@@ -1,6 +1,7 @@
 import sys
 import os
 import time
+import argparse
 from PyQt6.QtWidgets import QApplication
 
 from backend.world import World
@@ -8,7 +9,7 @@ from frontend.webview import ElevatorWebview
 
 
 class ElevatorApplication:
-    def __init__(self):
+    def __init__(self, show_debug=True):
         # Create Qt application
         self.app = QApplication(sys.argv)
 
@@ -16,7 +17,7 @@ class ElevatorApplication:
         self.backend = World()
 
         # Initialize frontend
-        self.frontend = ElevatorWebview(self.backend)
+        self.frontend = ElevatorWebview(self.backend, show_debug)
         self.frontend.show()
 
         # Setup timer for UI updates
@@ -59,6 +60,12 @@ class ElevatorApplication:
 
 
 if __name__ == "__main__":
-    app = ElevatorApplication()
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description="Elevator Simulation")
+    parser.add_argument("--debug", action="store_true", help="Show debug information panel")
+    args = parser.parse_args()
+    
+    # Create and run the application
+    app = ElevatorApplication(show_debug=args.debug)
     app.run()
     os._exit(0)

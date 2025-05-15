@@ -16,9 +16,10 @@ if TYPE_CHECKING:
 class ElevatorWebview(QMainWindow):
     """Main window for the elevator UI using QtWebEngine"""
 
-    def __init__(self, world: "World" = None):
+    def __init__(self, world: "World" = None, show_debug: bool = True):
         super().__init__()
         self.bridge = WebBridge(parent=self, world=world)
+        self.show_debug = show_debug
 
         # Setup the UI
         self.setWindowTitle("Elevator Simulation")
@@ -31,20 +32,29 @@ class ElevatorWebview(QMainWindow):
 
         # Create the web view
         self.web_view = QWebEngineView(self)
-        self.setCentralWidget(self.web_view)
-
-        # Set up web channel for communication
+        self.setCentralWidget(self.web_view)        # Set up web channel for communication
         self.channel = QWebChannel()
         self.channel.registerObject("backend", self.bridge)
         self.web_view.page().setWebChannel(self.channel)
-
+        
         # Load the HTML file
         current_dir = os.path.dirname(os.path.abspath(__file__))
         html_path = os.path.join(current_dir, "ui", "index.html")
+        
+        # Prepare to pass the debug flag to the web page
+        self.web_view.loadFinished.connect(self.on_load_finished)
+        
+        # Load the HTML
         self.web_view.load(QUrl.fromLocalFile(html_path))
-
+        
     def update(self):
         self.bridge.sync_backend()
+        
+    def on_load_finished(self, success):
+        if success:
+            # Pass the debug flag to JavaScript
+            script = f"window.showDebugPanel = {str(self.show_debug).lower()}; console.log('Python set showDebugPanel to: {str(self.show_debug).lower()}');"
+            self.web_view.page().runJavaScript(script)
 
 
 def run_standalone():
