@@ -153,7 +153,25 @@ function updateElevatorUI(data) {
     }
     let animState = elevatorAnimations[elevatorId];
 
-    // Always update textual information
+    // Update real elevator panel
+    document.getElementById(`real-elevator-${elevatorId}-floor`).textContent = actualCurrentFloor === 0 ? "-1" : actualCurrentFloor;
+    
+    // Update direction indicators
+    const upArrow = document.getElementById(`elevator-${elevatorId}-up-arrow`);
+    const downArrow = document.getElementById(`elevator-${elevatorId}-down-arrow`);
+    
+    // Reset both arrows first
+    upArrow.classList.remove('active');
+    downArrow.classList.remove('active');
+    
+    // Set active arrow based on state
+    if (state === 'MOVING_UP') {
+        upArrow.classList.add('active');
+    } else if (state === 'MOVING_DOWN') {
+        downArrow.classList.add('active');
+    }
+
+    // Update debug panel information
     document.getElementById(`elevator-${elevatorId}-floor`).textContent = actualCurrentFloor === 0 ? "-1" : actualCurrentFloor;
     document.getElementById(`elevator-${elevatorId}-status`).textContent = state;
     document.getElementById(`elevator-${elevatorId}-door`).textContent = doorState;
