@@ -34,6 +34,7 @@ This project aims to develop a software which controls two elevators' movement u
 ### Product Line Analysis
 
 The elevator system can be tailored to different scenarios by allowing variations in:
+
 - **Number of Elevators**: Configuring one or more elevators to handle building traffic.
 - **Door Operations**: Adjusting open/close commands and timings for different usage patterns.
 - **Floor Scheduling**: Coordinating efficient movement to respond to floor calls and user selections.
@@ -64,28 +65,20 @@ The use case diagram consists of the following functions:
 ### UML Activity Diagram
 
 - **Start**: The process begins when a passenger presses a call button.
-
 - **Call Request**: The passenger presses Up/Down button which turns red when activated.
-
 - **Elevator Dispatch**: System evaluates elevator positions and assigns the optimal elevator.
-
 - **Waiting**: The passenger waits for the elevator to arrive at their floor.
-
 - **Arrival Decision**: When elevator arrives, it enters IDLE state.
 
   - Door automatically changes to OPENING state (takes 1 second)
   - Call button resets to blue
-
 - **Enter Elevator**: The passenger enters the elevator.
-
 - **Floor Selection**: The passenger selects target floor and button turns red.
-
 - **Door Operation**: Three possible paths occur simultaneously:
 
   - Auto-close: Door closes after 3 seconds if no button is pressed
   - Manual open: Door opens if Open button is pressed while elevator is IDLE
   - Manual close: Door closes if Close button is pressed while door is OPEN/OPENING
-
 - **Movement**: When door is CLOSED and target floor is set:
 
   - Elevator moves UP or DOWN as needed
@@ -96,8 +89,8 @@ The use case diagram consists of the following functions:
   - Door automatically opens
   - Floor button resets to blue
 - **Exit**: The passenger exits the elevator.
-
 - **Process Repeat**: System continues running to handle new requests.
+
 <div align=center>
 <img src="./imgs/activity/activity.png" width="600"/>
 </div>
