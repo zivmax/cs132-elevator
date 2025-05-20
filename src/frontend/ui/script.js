@@ -1,5 +1,166 @@
 // Global variables for backend communication
-let backend;
+// let backend; // Will be replaced by the const backend object below
+
+// Helper function to create event emitters
+function createEventEmitter() {
+    const listeners = [];
+    return {
+        connect: function(callback) {
+            listeners.push(callback);
+        },
+        emit: function(data) {
+            listeners.forEach(cb => {
+                try {
+                    cb(data);
+                } catch (e) {
+                    console.error("Error in event listener:", e);
+                }
+            });
+        }
+        // Optional: disconnect function if needed later
+        // disconnect: function(callback) {
+        //     const index = listeners.indexOf(callback);
+        //     if (index > -1) {
+        //         listeners.splice(index, 1);
+        //     }
+        // }
+    };
+}
+
+// Define the backend object for WebSocket communication
+const backend = {
+    socket: null,
+    _isConnected: false,
+    elevatorUpdated: createEventEmitter(), // Emitter for elevator updates
+    floorCalled: createEventEmitter(),   // Emitter for floor calls
+    _pendingPromise: null, // ADDED: To store resolve/reject for sendToBackend
+
+    init: function(url) {
+        this.socket = new WebSocket(url);
+
+        this.socket.onopen = () => {
+            this._isConnected = true; // Set connected flag
+            console.log("js: WebSocket connection established to", url);
+            // If there was a promise pending from a previous connection attempt,
+            // it should ideally be handled or cleared. For now, we assume fresh init.
+        };
+
+        this.socket.onmessage = (event) => {
+            console.log("[Debug] Raw event.data:", event.data);
+            console.log("[Debug] Type of event.data:", typeof event.data);
+
+            let message;
+            try {
+                message = JSON.parse(event.data);
+            } catch (e) {
+                console.error("js: Error parsing JSON from backend:", e, "Raw data:", event.data);
+                if (this._pendingPromise && typeof this._pendingPromise.reject === 'function') {
+                    this._pendingPromise.reject(new Error("Error parsing JSON from backend: " + e.message));
+                    this._pendingPromise = null;
+                }
+                return;
+            }
+
+            console.log("[Debug] Parsed message object:", message);
+            if (message !== null && typeof message === 'object') {
+                console.log("[Debug] Keys in parsed message:", Object.keys(message));
+                console.log("[Debug] Value of message.status:", message.status);
+                console.log("[Debug] Type of message.status:", typeof message.status);
+                console.log("[Debug] Value of message.type:", message.type);
+                console.log("[Debug] Type of message.type:", typeof message.type);
+            } else {
+                console.log("[Debug] Parsed message is not an object or is null:", message);
+            }
+
+            // Check for direct reply first, ensure message is an object and status is a string
+            if (this._pendingPromise && message && typeof message.status === 'string') {
+                console.log("js: Received direct reply:", message);
+                if (message.status === 'success') {
+                    this._pendingPromise.resolve(message);
+                } else {
+                    const errorMessage = message.message || 'Backend request failed';
+                    this._pendingPromise.reject(new Error(errorMessage));
+                }
+                this._pendingPromise = null;
+            } else if (message && message.type === "elevatorUpdated") {
+                console.log("js: Received elevatorUpdated broadcast:", message.payload);
+                this.elevatorUpdated.emit(message.payload);
+            } else if (message && message.type === "floorCalled") {
+                console.log("js: Received floorCalled broadcast:", message.payload);
+                this.floorCalled.emit(message.payload);
+            } else {
+                console.error("js: Received unknown or malformed message type from backend (final else):", message);
+                if (this._pendingPromise) {
+                    const errorDetail = message ? JSON.stringify(message) : String(message);
+                    this._pendingPromise.reject(new Error('Malformed or unexpected reply from backend. Message: ' + errorDetail));
+                    this._pendingPromise = null;
+                }
+            }
+        };
+
+        this.socket.onclose = (event) => {
+            // MODIFIED: onclose handler
+            console.log("WebSocket connection closed.", event.reason || "No reason provided");
+            this._isConnected = false;
+            if (this._pendingPromise) {
+                this._pendingPromise.reject(new Error("WebSocket connection closed"));
+                this._pendingPromise = null;
+            }
+        };
+
+        this.socket.onerror = (error) => {
+            // MODIFIED: onerror handler
+            console.error("WebSocket error:", error);
+            this._isConnected = false;
+            if (this._pendingPromise) {
+                this._pendingPromise.reject(new Error("WebSocket error"));
+                this._pendingPromise = null;
+            }
+        };
+    },
+
+    sendToBackend: function(messageString) {
+        // MODIFIED: sendToBackend implementation
+        return new Promise((resolve, reject) => {
+            if (!this.isConnected()) {
+                // Try to connect if not connected, or reject immediately
+                // For simplicity, rejecting immediately here.
+                console.error("js: WebSocket not connected. Cannot send message.");
+                return reject(new Error("WebSocket not connected"));
+            }
+            if (this._pendingPromise) {
+                console.warn("js: Another request is already in flight. Blocking new request.");
+                return reject(new Error("Another request is already in flight"));
+            }
+
+            this._pendingPromise = { resolve, reject };
+
+            try {
+                this.socket.send(messageString);
+                console.log("js: Sent to backend:", messageString);
+            } catch (e) {
+                console.error("js: Error sending message to backend:", e);
+                this._pendingPromise.reject(e); // Reject the stored promise
+                this._pendingPromise = null; // Clear it
+                return; // Exit early
+            }
+
+            // Timeout for the request
+            setTimeout(() => {
+                // Check if the promise is still pending and belongs to this timeout
+                if (this._pendingPromise && this._pendingPromise.reject === reject) {
+                    console.warn("js: Request timed out for message:", messageString);
+                    this._pendingPromise.reject(new Error("Request timed out"));
+                    this._pendingPromise = null;
+                }
+            }, 10000); // 10-second timeout
+        });
+    },
+
+    isConnected: function() {
+        return this._isConnected && this.socket && this.socket.readyState === WebSocket.OPEN;
+    }
+};
 
 // Floor heights (% values from bottom)
 const floorHeights = {
@@ -47,28 +208,28 @@ window.onload = function() {
         }
     });
 
-    new QWebChannel(qt.webChannelTransport, function(channel) {
-        backend = channel.objects.backend;
-        console.log("Backend connection established");
-        
-        // Register for elevator updates
-        backend.elevatorUpdated.connect(function(message) {
-            console.log("Elevator updated:", message);
-            const data = JSON.parse(message);
-            // Handle target_floors_origin - convert to regular object if needed
-            if (data.target_floors_origin) {
-                data.targetFloorsOrigin = data.target_floors_origin;
-            }
-            updateElevatorUI(data);
-        });
-        
-        // Register for floor call updates
-        backend.floorCalled.connect(function(message) {
-            console.log("Floor called:", message);
-            const data = JSON.parse(message);
-            highlightFloorButton(data.floor, data.direction);
-        });
+    // Initialize WebSocket connection
+    backend.init('ws://127.0.0.1:8765');
+    // Note: "Backend connection established" log will come from backend.socket.onopen
+
+    // Register for elevator updates - these listeners are attached to our custom emitters
+    backend.elevatorUpdated.connect(function(message) {
+        console.log("Elevator updated:", message); // This log comes from the event listener
+        const data = message; // MODIFIED: Use the message object directly
+        // Handle target_floors_origin - convert to regular object if needed
+        if (data.target_floors_origin) {
+            data.targetFloorsOrigin = data.target_floors_origin;
+        }
+        updateElevatorUI(data);
     });
+    
+    // Register for floor call updates
+    backend.floorCalled.connect(function(message) {
+        console.log("Floor called:", message); // This log comes from the event listener
+        const data = message; // MODIFIED: Use the message object directly
+        highlightFloorButton(data.floor, data.direction);
+    });
+    // The QWebChannel part is removed.
 };
 
 // Call elevator from a floor
@@ -314,7 +475,7 @@ function highlightElevatorButton(floor, elevatorId) {
 
 // Simulate elevator movement for testing (if not connected to backend)
 function simulateElevator() {
-    if (!backend) {
+    if (!backend.isConnected()) { // Check if WebSocket is connected
         // Elevator 1: Move from floor 1 to 3
         setTimeout(() => {
             updateElevatorUI({
@@ -398,7 +559,7 @@ function simulateElevator() {
 
 // Run the simulation if not connected to backend after 2 seconds
 setTimeout(() => {
-    if (!backend) {
+    if (!backend.isConnected()) { // Check if WebSocket is connected
         console.log("Backend not connected, running simulation");
         simulateElevator();
     }
