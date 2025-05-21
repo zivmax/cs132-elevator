@@ -20,6 +20,7 @@ This documentation shows the specific development process, project structure and
   - [S5: Animation Implementation](#s5-animation-implementation)
   - [S6: Dispatcher Implementation](#s6-dispatcher-implementation)
   - [S7: State Update Implementation](#s7-state-update-implementation)
+  - [Summary Table: Backend Commands and Events](#summary-table-backend-commands-and-events)
 
 ## Project Introduction
 
@@ -119,11 +120,9 @@ User Operation:
 select_floor@i#k means a user in elevator #k selects to go to the i-th floor.
 
 Corresponding System Events:
-**"floor_arrived"**:["up","down",""],["-1","1","2","3"],["#1", "#2"] 
+**"floor_arrived"**:["up","down",""],["-1","1","2","3"],["#1", "#2"]
 
 "up_floor_i_arrived#k"， indicating that elevator #k has arrived at the i-th floor while moving upwards. "floor_i_arrived#k",indicating that elevator #k has stopped at the i-th floor.
-
-
 
 ### S2：Call Up/Down Implementation
 
@@ -217,7 +216,6 @@ The control panel is the interface passengers see inside a single elevator,  the
 
 - Current floor and status of this elevator
 - Target floors which hasn't arrived
-- Door status
 
 The passenger can:
 
@@ -228,7 +226,7 @@ The passenger can:
 <img src="./imgs/GUIs/panel.png" width="400"/>
 </div>
 
-### S5: Animation Implementation
+### S5:  Animation Implementation
 
 The system will visually mimic elevator movement and door operations in real time, ensuring a smooth and informative user experience.
 
@@ -242,7 +240,7 @@ The system will visually mimic elevator movement and door operations in real tim
 - The doors on each elevator use *CSS* class toggles—such as `doors-opening`, `doors-closing`, `doors-open`, and `doors-closed` to display a sliding effect.
 - When an open or close command is received, the corresponding class is assigned, triggering a brief animation that visually reflects the door’s transition state.
 
-### S6: Dispatcher Implementation
+### S6:  Dispatcher Implementation
 
 This section describes how the Dispatcher efficiently manages elevator operations, handling user requests and assigning them to the most suitable elevator based on real-time conditions.
 
@@ -267,7 +265,7 @@ The `Dispatcher` employs a modified SCAN algorithm (elevator algorithm) to minim
 - **MOVING_DOWN**: Serves floors below the current floor first in descending order, then floors above in ascending order.
 - **IDLE**: Chooses the nearest floor first, then proceeds through subsequent stops in an optimal sequence.
 
-### S7 State Update Implementation
+### S7:  State Update Implementation
 
 This section will show how each elevator’s state is updated in real-time, managing movement progress, door operations, and transitions to ensure they stay in sync with user interactions and operational logic.
 
@@ -279,3 +277,21 @@ The `Engine` regularly checks each elevator’s movement and calculates when a s
 
 - When door operations are requested, the door transitions from **CLOSED** to **OPENING** or from **OPEN** or **OPENING** to **CLOSING**.
 - If subsequent calls or target floors exist, the elevator switches to **MOVING_UP** or **MOVING_DOWN** until all destinations are served, ultimately returning to **IDLE**.
+
+### Summary Table: Backend Commands and Events
+
+| Command/Event         | Description/When Emitted                                 |
+|----------------------|----------------------------------------------------------|
+| select_floor@i#k     | User in elevator #k selects floor i                      |
+| call_up@i            | User at floor i calls elevator up                        |
+| call_down@i          | User at floor i calls elevator down                      |
+| open_door#k          | User requests to open door of elevator #k                |
+| close_door#k         | User requests to close door of elevator #k               |
+| reset                | System reset to initial state                            |
+| floor_arrived@i#k    | Elevator #k arrived at floor i                           |
+| up_floor_arrived@i#k | Elevator #k arrived at floor i moving up                 |
+| down_floor_arrived@i#k| Elevator #k arrived at floor i moving down              |
+| door_opened#k        | Elevator #k door opened                                  |
+| door_closed#k        | Elevator #k door closed                                  |
+
+---
