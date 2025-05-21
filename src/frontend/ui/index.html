@@ -6,7 +6,7 @@
     <title>Elevator Simulation</title>
     <link rel="icon" href="assets/elevator.png" type="image/x-icon">
     <link rel="stylesheet" href="styles.css">
-    <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+    <script src="script.js"></script>
 </head>
 <body>
     <div class="container">        
@@ -70,8 +70,7 @@
                 </div>
             </div>
         </div>
-        
-        <div class="control-panels">
+          <div class="control-panels">
             <div class="control-panel" id="panel-1">
                 <h3>Elevator 1 Controls</h3>
                 <div class="floor-buttons">
@@ -84,11 +83,16 @@
                     <button onclick="openDoor(1)">◀ ▶</button>
                     <button onclick="closeDoor(1)">▶ ◀</button>
                 </div>
-                <div class="status">
-                    <div>Current Floor: <span id="elevator-1-floor">1</span></div>
-                    <div>Status: <span id="elevator-1-status">IDLE</span></div>
-                    <div>Door: <span id="elevator-1-door">CLOSED</span></div>
-                    <div>Target Floors: <span id="elevator-1-targets"></span></div>
+                <div class="elevator-display">
+                    <div class="real-panel">
+                        <div class="floor-indicator">
+                            <span id="real-elevator-1-floor">1</span>
+                        </div>
+                        <div class="direction-indicator">
+                            <div class="direction-arrow up" id="elevator-1-up-arrow">▲</div>
+                            <div class="direction-arrow down" id="elevator-1-down-arrow">▼</div>
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -104,16 +108,45 @@
                     <button onclick="openDoor(2)">◀ ▶</button>
                     <button onclick="closeDoor(2)">▶ ◀</button>
                 </div>
-                <div class="status">
-                    <div>Current Floor: <span id="elevator-2-floor">1</span></div>
-                    <div>Status: <span id="elevator-2-status">IDLE</span></div>
-                    <div>Door: <span id="elevator-2-door">CLOSED</span></div>
-                    <div>Target Floors: <span id="elevator-2-targets"></span></div>
+                <div class="elevator-display">
+                    <div class="real-panel">
+                        <div class="floor-indicator">
+                            <span id="real-elevator-2-floor">1</span>
+                        </div>
+                        <div class="direction-indicator">
+                            <div class="direction-arrow up" id="elevator-2-up-arrow">▲</div>
+                            <div class="direction-arrow down" id="elevator-2-down-arrow">▼</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="debug-section">
+            <h3>Debug Information</h3>
+            <div class="debug-panels">
+                <div class="debug-panel" id="debug-panel-1">
+                    <h4>Elevator 1 Debug</h4>
+                    <div class="status">
+                        <div>Current Floor: <span id="elevator-1-floor">1</span></div>
+                        <div>Status: <span id="elevator-1-status">IDLE</span></div>
+                        <div>Door: <span id="elevator-1-door">CLOSED</span></div>
+                        <div>Target Floors: <span id="elevator-1-targets"></span></div>
+                    </div>
+                </div>
+                
+                <div class="debug-panel" id="debug-panel-2">
+                    <h4>Elevator 2 Debug</h4>
+                    <div class="status">
+                        <div>Current Floor: <span id="elevator-2-floor">1</span></div>
+                        <div>Status: <span id="elevator-2-status">IDLE</span></div>
+                        <div>Door: <span id="elevator-2-door">CLOSED</span></div>
+                        <div>Target Floors: <span id="elevator-2-targets"></span></div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
     
-    <script src="script.js"></script>
 </body>
 </html>

@@ -8,19 +8,20 @@
 
 ## Table of Contents
 
-- [Introduction](#introduction)
-  - [Overview](#overview)
-  - [Basic Requirements](#basic-requirements)
-  - [Product Line Analysis](#product-line-analysis)
-- [UML](#uml)
-  - [UML Use Case Diagram](#uml-use-case-diagram)
-  - [UML Activity Diagram](#uml-activity-diagram)
-- [Detailed Requirement](#detailed-requirement)
-  - [General Requirement](#general-requirement)
-  - [Passengers’ Perspective](#passengers-perspective)
-  - [Elevator Compartment’s Requirement](#elevator-compartments-requirement)
-  - [Elevator Control System’s Requirement](#elevator-control-systems-requirement)
-  - [Visual Components](#visual-components)
+- [Requirement Document](#requirement-document)
+  - [Table of Contents](#table-of-contents)
+  - [Introduction](#introduction)
+    - [Overview](#overview)
+    - [Product Line Analysis](#product-line-analysis)
+  - [UML](#uml)
+    - [UML Use Case Diagram](#uml-use-case-diagram)
+    - [UML Activity Diagram](#uml-activity-diagram)
+  - [Detailed Requirement](#detailed-requirement)
+    - [General](#general)
+    - [R1: Passengers’ Perspective](#r1-passengers-perspective)
+    - [R2: Elevator Compartment’s Requirement](#r2-elevator-compartments-requirement)
+    - [R3: Elevator Control System’s Requirement](#r3-elevator-control-systems-requirement)
+    - [R4: Visual Components](#r4-visual-components)
 
 ---
 
@@ -113,7 +114,7 @@ A passenger should be able to:
 
 An elevator compartment should be able to:
 
-1. Recieve commands from the passengers through buttons (i.e. open/close door, designate floors)
+1. Receive commands from the passengers through buttons (i.e. open/close door, designate floors)
 2. Automatically close/open door when passenger enters/exits the elevator
 3. Take order from the control system and move to the target floor
 
@@ -121,7 +122,7 @@ An elevator compartment should be able to:
 
 The system should be able to:
 
-1. Recieve signals from elevator compartments (i.e. open/close door, designate floors)
+1. Receive signals from elevator compartments (i.e. open/close door, designate floors)
 2. Dispatch and order the elevator compartments:
    1. Resolve the conflict when multiple passengers request elevator service
    2. Arrange optimal elevator route scheduling and dispatch the closest elevator.

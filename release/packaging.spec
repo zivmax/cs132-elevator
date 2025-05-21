@@ -2,10 +2,10 @@
 
 
 a = Analysis(
-    ['src\\main.py'],
+    ['..\\src\\main.py'],
     pathex=[],
     binaries=[],
-    datas=[('src\\frontend\\ui', 'frontend\\ui')],  # Include the UI files
+    datas=[('..\\src\\frontend\\ui', 'frontend\\ui')],  # Include the UI files
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -35,5 +35,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='src\\frontend\\ui\\assets\\elevator.png',
+    icon='..\\src\\frontend\\ui\\assets\\elevator.png',
 )

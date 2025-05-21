@@ -1,64 +1,56 @@
 import sys
 import os
 import time
+import argparse
 from PyQt6.QtWidgets import QApplication
 
 from backend.world import World
-from frontend.webview import ElevatorWebview
+from frontend.webview import ElevatorWebSocketView
 
 
 class ElevatorApplication:
-    def __init__(self):
+    def __init__(self, show_debug=True, remote_debugging_port=0):
         # Create Qt application
         self.app = QApplication(sys.argv)
 
         # Initialize backend
         self.backend = World()
 
-        # Initialize frontend
-        self.frontend = ElevatorWebview(self.backend)
+        # Initialize frontend with WebSocket communication
+        self.frontend = ElevatorWebSocketView(
+            self.backend, 
+            show_debug=show_debug, 
+            remote_debugging_port=remote_debugging_port
+        )
         self.frontend.show()
 
         # Setup timer for UI updates
         self.last_update_time = time.time()
 
+    def update(self):
+        """Update the UI based on backend state"""
+        current_time = time.time()
+        if current_time - self.last_update_time >= 0.1:  # Update 10 times per second
+            self.frontend.update()
+            self.backend.update()  # Update backend state
+            self.last_update_time = current_time
+
     def run(self):
-        # Start the application event loop
-        try:
-            # Main loop
-            while True:
-                # Process Qt events
-                self.app.processEvents()
-
-                # Update backend
-                self.backend.update()
-
-                # Update UI every 100ms
-                current_time = time.time()
-                if current_time - self.last_update_time >= 0.1:
-                    self.frontend.update()
-                    self.last_update_time = current_time
-
-                # Sleep to prevent high CPU usage
-                time.sleep(0.01)
-
-        except KeyboardInterrupt:
-            print("Elevator simulation terminated.")
-
-            # Process any pending events before closing
+        """Run the application main loop"""
+        while True:
             self.app.processEvents()
-
-            # Close UI
-            self.frontend.close()
-
-            # Ensure application quits
-            self.app.quit()
-
-            # Process events one final time
-            self.app.processEvents()
+            self.update()
+            time.sleep(0.01)  # Small sleep to avoid CPU hogging
 
 
 if __name__ == "__main__":
-    app = ElevatorApplication()
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description="Elevator Simulation")
+    parser.add_argument("--debug", action="store_true", help="Show debug information panel")
+    parser.add_argument("--cdp", type=int, default=0, help="Chromium debugging port")
+    args = parser.parse_args()
+    
+    # Create and run the application
+    app = ElevatorApplication(show_debug=args.debug, remote_debugging_port=args.cdp)
     app.run()
     os._exit(0)
