@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import QApplication, QMainWindow
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtGui import QIcon
 
-from frontend.bridge import WebSocketBridge
+from backend.bridge import WebSocketBridge
 
 if TYPE_CHECKING:
     from backend.world import World
