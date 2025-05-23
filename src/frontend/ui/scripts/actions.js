@@ -6,7 +6,7 @@ import { highlightFloorButton, highlightElevatorButton } from './ui-helpers.js';
 export function callElevator(floor, direction) {
     highlightFloorButton(floor, direction);
     if (backend) {
-        const message = { action: "callElevator", floor, direction };
+        const message = { function: "handle_call_elevator", params: { floor, direction } };
         backend.sendToBackend(JSON.stringify(message))
             .then(() => {})
             .catch(error => { console.error("Error calling elevator:", error); });
@@ -16,7 +16,7 @@ export function callElevator(floor, direction) {
 export function selectFloor(floor, elevatorId) {
     highlightElevatorButton(floor, elevatorId);
     if (backend) {
-        const message = { action: "selectFloor", floor, elevatorId };
+        const message = { function: "handle_select_floor", params: { floor, elevatorId } };
         backend.sendToBackend(JSON.stringify(message))
             .then(() => {})
             .catch(error => { console.error("Error selecting floor:", error); });
@@ -25,7 +25,7 @@ export function selectFloor(floor, elevatorId) {
 
 export function openDoor(elevatorId) {
     if (backend) {
-        const message = { action: "openDoor", elevatorId };
+        const message = { function: "handle_open_door", params: { elevatorId } };
         backend.sendToBackend(JSON.stringify(message))
             .then(() => {})
             .catch(error => { console.error("Error opening door:", error); });
@@ -34,7 +34,7 @@ export function openDoor(elevatorId) {
 
 export function closeDoor(elevatorId) {
     if (backend) {
-        const message = { action: "closeDoor", elevatorId };
+        const message = { function: "handle_close_door", params: { elevatorId } };
         backend.sendToBackend(JSON.stringify(message))
             .then(() => {})
             .catch(error => { console.error("Error closing door:", error); });

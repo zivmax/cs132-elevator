@@ -4,47 +4,34 @@ import websockets
 import threading
 from typing import Dict, Any, Callable, Set, Optional, TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from backend.world import World
-
 class WebSocketServer:
     """WebSocket server for communication between backend and frontend"""
     
-    def __init__(self, host: str = '127.0.0.1', port: int = 8765, world: Optional["World"] = None):
+    def __init__(self, host: str = '127.0.0.1', port: int = 8765, message_handler: Optional[Callable[[str], str]] = None):
         self.host = host
         self.port = port
         self._clients: Set[websockets.WebSocketServerProtocol] = set()
-        self._callbacks = {}
-        self.world = world
+        self.message_handler = message_handler # New: message handler
         self._server = None
         self._thread = None
         self._stop_event = threading.Event()
         self.loop: Optional[asyncio.AbstractEventLoop] = None # Added for storing the event loop
 
-    def register_callback(self, action: str, callback):
-        """Register a callback function for a specific action"""
-        self._callbacks[action] = callback
-
     async def _process_message(self, websocket, message: str) -> str:
         """Process incoming message from client"""
         try:
-            data = json.loads(message)
-            action = data.get("action")
-
             # Log the message for debugging
-            print(f"Received from frontend: {message}")
+            print(f"Received from client: {message}")
 
-            # Call the registered callback if it exists
-            if action in self._callbacks:
-                # Assuming the callback returns a JSON string
-                return self._callbacks[action](data)  
+            if self.message_handler:
+                return self.message_handler(message)
             
-            # If action not in callbacks, create an error response
+            # If no message handler, return an error
             return json.dumps(
-                {"status": "error", "message": f"No handler for action: {action}"}
+                {"status": "error", "message": "No message handler registered"}
             )
         except Exception as e:
-            print(f"Error processing message from frontend: {e}")
+            print(f"Error processing message: {e}")
             return json.dumps({"status": "error", "message": str(e)})
 
     async def _handle_connection(self, websocket):
