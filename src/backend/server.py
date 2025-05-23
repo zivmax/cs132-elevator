@@ -101,6 +101,11 @@ class WebSocketServer:
             self._thread.join(timeout=2.0) # Increased timeout slightly for graceful shutdown
         print("WebSocket server stopped")
         
+    @property
+    def is_running(self):
+        """Return True if the server is running (not stopped)."""
+        return not self._stop_event.is_set()
+
     def send_elevator_updated(self, data: Dict[str, Any]):
         """Send elevator state update to frontend"""
         message = json.dumps({
