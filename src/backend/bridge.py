@@ -84,10 +84,6 @@ class WebSocketBridge:
                 target_floors=elevator_state["target_floors"],
                 target_floors_origin=elevator_state.get("target_floors_origin", {}),
             )
-
-    def notify_floor_called(self, floor: int, direction: str):
-        """Send floor called notification to frontend"""
-        self.server.send_floor_called(floor, direction)
         
     def stop(self):
         """Stop the WebSocket server"""

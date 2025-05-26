@@ -1,7 +1,5 @@
 // Elevator UI logic and DOM manipulation
-import { backend } from './backend.js';
 import { floorHeights, SINGLE_FLOOR_TRAVEL_TIME_SECONDS, elevatorAnimations } from './constants.js';
-import { highlightFloorButton, highlightElevatorButton } from './ui-helpers.js';
 
 export function updateElevatorUI(data) {
     const elevatorId = data.id;

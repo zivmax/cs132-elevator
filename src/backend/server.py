@@ -107,18 +107,3 @@ class WebSocketServer:
             )
         else:
             print("WebSocket server loop not available or closed when trying to send elevator_updated.")
-        
-    def send_floor_called(self, floor: int, direction: str):
-        """Send floor called notification to frontend"""
-        message = json.dumps({
-            "type": "floorCalled",
-            "payload": {"floor": floor, "direction": direction}
-        })
-        
-        if self.loop and not self.loop.is_closed():
-            asyncio.run_coroutine_threadsafe(
-                self.broadcast(message),
-                self.loop # Use the stored loop
-            )
-        else:
-            print("WebSocket server loop not available or closed when trying to send floor_called.")
