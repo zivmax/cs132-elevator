@@ -66,7 +66,7 @@ class WebSocketBridge:
             "target_floors_origin": target_floors_origin or {},
         }
         if self.server.is_running:
-            self.server.send_elevator_updated(data)
+            self.server.send_elevator_states(data)
 
     def sync_backend(self):
         """Update the UI based on backend state"""

@@ -93,7 +93,7 @@ class WebSocketServer:
         """Return True if the server is running (not stopped)."""
         return not self._stop_event.is_set()
 
-    def send_elevator_updated(self, data: Dict[str, Any]):
+    def send_elevator_states(self, data: Dict[str, Any]):
         """Send elevator state update to frontend"""
         message = json.dumps({
             "type": "elevatorUpdated",
