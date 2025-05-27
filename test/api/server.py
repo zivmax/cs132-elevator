@@ -3,86 +3,108 @@ import zmq
 import threading
 import sys
 import os
-from typing import Set, Optional, Any, List, Tuple
+import queue
 
 
 class ZmqServerThread(threading.Thread):
-    _port: int = 27132
-    clients_addr: Set[str] = set()
+    _port = 27132
+    clients_addr=set()
 
-    def __init__(self, server_port: Optional[int] = None) -> None:
+    def __init__(self, server_port:int = None) -> None:
         threading.Thread.__init__(self)
-        self.context: zmq.Context = zmq.Context()
-        self.socket: zmq.Socket = self.context.socket(zmq.ROUTER)
-        self.boundClient: Optional[str] = None
-        self._receivedMessage: Optional[str] = None
-        self._messageTimeStamp: Optional[int] = None  # UNIX Time Stamp, should be int
+        self.context = zmq.Context()
+        self.socket = self.context.socket(zmq.ROUTER)
+        self.bindedClient = None
+        self._sentTimeStamp:int = None
+        # 新增接收队列和最后消息缓存
+        self.recv_queue = queue.Queue()
+        self._last_received = {"message":"","timestamp":-1} #第一个为message，第二个为timestamp
+        self.msgQueue:queue.Queue = queue.Queue()
 
-        if server_port is not None:
-            self.port = server_port
 
-        print(f"Start hosting at port:{self._port}")
+        if(server_port is not None):
+            self.port  = server_port
+
+        print("Start hosting at port:{port}".format(port = self._port))
+        self.t = threading.Thread(target=self.listen_queue)
+        self.t.start()
+        print("Start listening queue")
         self.start()
 
-    @property
-    def port(self) -> int:
-        return self._port
 
+    @property
+    def port(self):
+        return self._port
+    
     @port.setter
-    def port(self, value: int) -> None:
-        if value < 0 or value > 65535:
-            raise ValueError("score must between 0 ~ 65535!")
+    def port(self,value:int):
+        if(value < 0 or value > 65535):
+            raise ValueError('score must between 0 ~ 65535!')
         self._port = value
 
     @property
-    def messageTimeStamp(self) -> int:
-        if self._messageTimeStamp == None:
-            return -1
-        else:
-            return self._messageTimeStamp
-
-    @messageTimeStamp.setter
-    def messageTimeStamp(self, value: int) -> None:
-        self._messageTimeStamp = value
+    def messageTimeStamp(self)->int:
+        return self._last_received['timestamp']
 
     @property
-    def receivedMessage(self) -> str:
-        if self._receivedMessage == None:
-            return ""
+    def receivedMessage(self)->str:
+        try:
+            msg = self.recv_queue.get_nowait()
+
+            self._last_received['message'] = msg['message']
+            self._last_received['timestamp'] = msg['timestamp']
+        except queue.Empty:
+            pass
+        return self._last_received['message']
+
+    @property
+    def sentTimeStamp(self)->int:
+        if(self._sentTimeStamp == None):
+            return -1
         else:
-            return self._receivedMessage
+            return self._sentTimeStamp
+        
+    @sentTimeStamp.setter
+    def sentTimeStamp(self,value:int):
+        self._sentTimeStamp = value
 
-    @receivedMessage.setter
-    def receivedMessage(self, value: str) -> None:
-        self._receivedMessage = value
-
-    # start listening
-    def hosting(self, server_port: Optional[int] = None) -> None:
-
-        if server_port is not None:
-            self.port = server_port
-        self.socket.bind(f"tcp://{'127.0.0.1'}:{self.port}")
+    #start listening
+    def hosting(self, server_port:int = None)-> None:
+        if(server_port is not None):
+            self.port  = server_port
+        self.socket.bind("tcp://{0}:{1}".format("127.0.0.1", self.port))
 
         while True:
-            address_and_contents: List[bytes] = self.socket.recv_multipart()
-            address: bytes = address_and_contents[0]
-            contents: bytes = address_and_contents[1]
-            address_str: str = address.decode()
-            contents_str: str = contents.decode()
+            [address,contents]=self.socket.recv_multipart()
+            address_str = address.decode()
+            contents_str = contents.decode()
             self.clients_addr.add(address_str)
-            self.messageTimeStamp = int(round(time.time() * 1000))  # UNIX Time Stamp
-            self.receivedMessage = contents_str
-            print(f"Client:[{address_str}] message:{contents_str}\n")
+            timestamp = int(round(time.time() * 1000))
+            if  contents_str.endswith("is online") or ("door_closed" in contents_str):
+                print("(skipped message) client:[%s] message:%s Timestamp:%s\n"%(address_str,contents_str,str(timestamp)))
+                continue
+            self.recv_queue.put({'message': contents_str, 'timestamp': timestamp})
+            print("client:[%s] message:%s Timestamp:%s\n"%(address_str,contents_str,str(timestamp)))
 
-    def send_string(self, address: str, msg: str = "") -> None:
+    def listen_queue(self):
+        while True:
+            if((not self.msgQueue.empty()) and ((int(round(time.time() * 1000)) - self.sentTimeStamp) > 800)):
+                self.sentTimeStamp = int(round(time.time() * 1000))
+                self.__send_string(self.bindedClient,self.msgQueue.get())
+
+    def send_string(self,address:str,msg:str =""):
+        self.msgQueue.put(msg)
+
+
+    def __send_string(self,address:str,msg:str =""):
         if not self.socket.closed:
-            print(f"Server:[{str(address)}] message:{str(msg)}\n")
-            self.socket.send_multipart(
-                [address.encode(), msg.encode()]
-            )  # send msg to address
+            print("Server:[%s] message:%s\n"%(str(address),str(msg)))
+            self.socket.send_multipart([address.encode(), msg.encode()]) #send msg to address
         else:
             print("socket is closed,can't send message...")
 
-    # override
-    def run(self) -> None:
+    #override
+    def run(self):
         self.hosting()
+
+

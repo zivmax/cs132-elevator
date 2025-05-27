@@ -16,7 +16,12 @@ class DoorState(Enum):
     CLOSING = auto()
 
 
+class MoveDirection(Enum):
+    UP = "up"
+    DOWN = "down"
+
+
 class MoveRequest:
-    def __init__(self, elevator_id: int, direction: str):
+    def __init__(self, elevator_id: int, direction: MoveDirection):
         self.elevator_id = elevator_id
         self.direction = direction  # "up" or "down"
