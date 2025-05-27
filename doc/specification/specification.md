@@ -48,7 +48,7 @@ The User interacts with the elevator compartment and its door directly, their po
 
 ## System Class Structure
 
-The system consists of four major classes: `Dispatcher`, elevator, and `engine`, they run in the environment `World`. In the system's lifecycle, each block will update and evaluate the current status information. The detailed design will be shown through the UML class diagram below:
+The system consists of four major classes: `Dispatcher`, `Elevator`, and `Engine`, they run in the environment `World`. In the system's lifecycle, each block will update and evaluate the current status information. The detailed design will be shown through the UML class diagram below:
 
 <div align=center>
 <img src="./imgs/class_plot/class.png" width="500"/>
@@ -57,7 +57,6 @@ The system consists of four major classes: `Dispatcher`, elevator, and `engine`,
 ### General Class Design
 
 - An `Elevator` class:
-
   - It will handle its own operation itself, including:
     - Handling user indoor floor selection.
     - Open and close door automatically besides manual control when target floor arrived.
@@ -69,20 +68,14 @@ The system consists of four major classes: `Dispatcher`, elevator, and `engine`,
     - `door_closed`
     - `floor_arrived`
 - A `Dispatcher` class:
-
   - It will receive and parse the request from the user test server, and assign the target called floor task to the most suitable elevator.
   - It will iterate the `target_floor` in `List[Elevator]`, including:
     - Adding floor
     - Removing floor
-    - Sorting floor (Not neccessarily to be sorted numerically, for example [4, 5, 1] should be faster than [4, 1, 5], if 2 user calls the elevator in the floor 4 and want to get floor 1 and 5 separately)
   - All the decision should targeting making the system more efficently.
 - An `Engine` class:
-
-  - `Engine` will determine the changes of next floor state of each elevator according to a state like `MOVING_UP` or `STOPPED`.
   - The update of the floor state of each elevator should be floor by floor.
 - A `World` class:
-
-  - Simluate the world.
   - Call the `update` method of each instances.
 
 ## Components Specifications

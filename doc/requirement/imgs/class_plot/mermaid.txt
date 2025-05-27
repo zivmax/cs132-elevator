@@ -1,0 +1,98 @@
+classDiagram
+
+    class World {
+        +World()
+        +testclient: ZmqClientThread
+        +engine: Engine
+        +elevators: List[Elevator]
+        +dispatcher: Dispatcher  
+        +update()
+        +add_msg(message: str)
+        +get_next_msg() Tuple[str,int]
+        +has_msg() bool
+        +send_msg(message: str)
+        -_check_testclient_msg() void
+        -_message_queue: Deque[Tuple[str,int]] = deque()
+        -_last_checked_timestamp: int = -1
+    }
+
+    class Engine {
+        +Engine(world: World)
+        -world: World
+        -movement_requests: Dict[int, str]
+        +request_movement(request: MoveRequest) void
+        +update() void
+    }
+
+    class Dispatcher {
+        +Dispatcher(world: World)
+        -world: World
+        +update() void
+        +handle_request(request: str) void
+        -_assign_elevator(floor: int, direction: str) void
+        -_add_target_floor(elevator_idx: int, floor: int) void
+        -_optimize_target_sequence(elevator: Elevator) void
+    }
+
+    class Elevator {
+        +Elevator(elevator_id: int, world: World)
+        -id: int
+        -world: World
+        -current_floor: int = 1
+        -previous_floor: int = 1
+        -target_floors: List[int] = []
+        -state: ElevatorState = ElevatorState.IDLE
+        -door_state: DoorState = DoorState.CLOSED
+        -direction: Optional[str] = None
+        -last_state_change: float
+        -last_door_change: float
+        -door_timeout: float = 3.0
+        -floor_travel_time: float = 2.0
+        -door_operation_time: float = 1.0
+        -floor_arrival_delay: float = 2.0
+        -moving_since: Optional[float] = None
+        -floor_changed: bool = False
+        -floor_arrival_announced: bool = False
+        -arrival_time: Optional[float] = None
+        -serviced_current_arrival: bool = False
+        +update() void
+        +request_movement_if_needed() void
+        +set_floor(new_floor: int) void
+        +set_moving_state(direction: str) void
+        +is_moving() bool
+        +get_movement_direction() int
+        +open_door() void
+        +close_door() void
+        +calculate_estimated_time(floor: int, direction: str) float
+        +reset() void
+        -_determine_direction() void
+    }
+
+    class ElevatorState {
+        <<enumeration>>
+        IDLE
+        MOVING_UP
+        MOVING_DOWN
+    }
+
+    class DoorState {
+        <<enumeration>>
+        OPEN
+        CLOSED
+        OPENING
+        CLOSING
+    }
+
+    class MoveRequest {
+        +MoveRequest(elevator_id: int, direction: str)
+        -elevator_id: int
+        -direction: str
+    }
+
+    World <--> "2..*" Elevator
+    World <--> Engine 
+    World <--> Dispatcher
+
+    Elevator --> ElevatorState : uses
+    Elevator --> DoorState : uses
+    Elevator --> MoveRequest : uses

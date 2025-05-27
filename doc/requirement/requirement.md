@@ -15,6 +15,7 @@
     - [Product Line Analysis](#product-line-analysis)
   - [UML](#uml)
     - [UML Use Case Diagram](#uml-use-case-diagram)
+    - [UML Class Diagram](#uml-class-diagram)
     - [UML Activity Diagram](#uml-activity-diagram)
   - [Detailed Requirement](#detailed-requirement)
     - [General](#general)
@@ -61,6 +62,37 @@ The use case diagram consists of the following functions:
 <div align=center>
 <img src="./imgs/use_case/use_case.png" width="500"/>
 </div>
+
+### UML Class Diagram
+
+The system consists of four major classes: `Dispatcher`, `Elevator`, and `Engine`, they run in the environment `World`. In the system's lifecycle, each block will update and evaluate the current status information. The detailed design will be shown through the UML class diagram below. This diagram includes users (e.g., Passenger) and system components (e.g., Elevator, ControlSystem, FloorPanel, ElevatorPanel, Door, Button), illustrating the static structure of the system, showing classes, their attributes, methods, and relationships between them.
+
+<div align=center>
+<img src="../Specification/imgs/class_plot/class.png" width="500"/>
+</div>
+
+### General Class Design
+
+- An `Elevator` class:
+  - It will handle its own operation itself, including:
+    - Handling user indoor floor selection.
+    - Open and close door automatically besides manual control when target floor arrived.
+  - It will execute transporting process according to a `target_floor` like list which is manipulated by the dispatcher.
+    - In this part, the elevator should perform strictly follow the order of the floors in the list.
+  - The elevator can't move itself, it has to sending moving request to the `Engine` class, the `Engine` class will handling the changes of the state indicates which floor the elevator are currently being.
+  - It will sends event signal to the user test server, including:
+    - `door_opened`
+    - `door_closed`
+    - `floor_arrived`
+- A `Dispatcher` class:
+  - It will receive and parse the request from the user test server, and assign the target called floor task to the most suitable elevator.
+  - It will iterate the `target_floor` in `List[Elevator]`, including:
+    - Adding floor
+    - Removing floor
+- An `Engine` class:
+  - The update of the floor state of each elevator should be floor by floor.
+- A `World` class:
+  - Call the `update` method of each instances.
 
 ### UML Activity Diagram
 
