@@ -1,7 +1,7 @@
 import time
 from typing import Dict, TYPE_CHECKING
 
-from .models import MoveRequest
+from .models import MoveRequest, MoveDirection
 
 if TYPE_CHECKING:
     from .world import World
@@ -14,10 +14,10 @@ class Engine:
 
     def request_movement(self, request: MoveRequest) -> None:
         """Process movement request from an elevator"""
-        self.movement_requests[request.elevator_id] = request.direction
+        self.movement_requests[request.elevator_id] = request.direction.value
         # Set the elevator's state according to the requested direction
         elevator = self.world.elevators[request.elevator_id - 1]
-        elevator.set_moving_state(request.direction)
+        elevator.set_moving_state(request.direction.value)
 
     def update(self) -> None:
         current_time: float = time.time()

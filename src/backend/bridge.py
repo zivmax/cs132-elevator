@@ -1,11 +1,13 @@
 import json
-from typing import Dict, Any, TYPE_CHECKING
+from typing import Dict, Any, TYPE_CHECKING, Optional  # Add Optional
 
 from backend.api import ElevatorAPI
 from backend.server import WebSocketServer
+from backend.models import MoveDirection  # Add MoveDirection import
 
 if TYPE_CHECKING:
     from backend.world import World
+
 
 class WebSocketBridge:
     """Bridge class for communication between Python backend and JavaScript frontend using WebSocket"""
@@ -14,7 +16,7 @@ class WebSocketBridge:
         self.api = ElevatorAPI(world)
         # Pass the message handler directly to the WebSocketServer constructor
         self.server = WebSocketServer(host=host, port=port, message_handler=self._handle_message)
-        
+
         # Start the WebSocket server
         self.server.start()
 
@@ -26,10 +28,10 @@ class WebSocketBridge:
             params = data.get("params", {})
             if not func_name:
                 return json.dumps({"status": "error", "message": "Missing 'function' in request"})
-            
+
             # Get the function from ElevatorAPI by its string name
             func = getattr(self.api, func_name, None)
-            
+
             if not func or not callable(func):
                 return json.dumps({"status": "error", "message": f"No such API function: {func_name}"})
             
@@ -51,17 +53,23 @@ class WebSocketBridge:
         floor: int,
         state: str,
         door_state: str,
-        direction: str,
+        direction: Optional[MoveDirection],  # Change type to Optional[MoveDirection]
         target_floors: list,
         target_floors_origin: dict = None,
     ):
         """Send elevator state update to frontend"""
+        direction_value = None
+        if isinstance(direction, MoveDirection):
+            direction_value = direction.value
+        elif direction is None:
+            direction_value = None  # Or an empty string, depending on frontend expectation
+
         data = {
             "id": elevator_id,
             "floor": floor,
             "state": state,
             "doorState": door_state,
-            "direction": direction,
+            "direction": direction_value,  # Use the converted value
             "targetFloors": target_floors,
             "target_floors_origin": target_floors_origin or {},
         }
@@ -84,7 +92,7 @@ class WebSocketBridge:
                 target_floors=elevator_state["target_floors"],
                 target_floors_origin=elevator_state.get("target_floors_origin", {}),
             )
-        
+
     def stop(self):
         """Stop the WebSocket server"""
         self.server.stop()
