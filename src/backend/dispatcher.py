@@ -1,86 +1,63 @@
 from typing import List, Optional, TYPE_CHECKING, Tuple
-from .models import ElevatorState, DoorState
+from .models import ElevatorState, DoorState, MoveDirection  # Added MoveDirection
 from .elevator import Elevator
 
 
 if TYPE_CHECKING:
     from .world import World
+    from .api import ElevatorAPI  # Added API import
 
 
 class Dispatcher:
-    def __init__(self, world: "World") -> None:
+    # Added api parameter to __init__
+    def __init__(self, world: "World", api: "ElevatorAPI") -> None:
         self.world: "World" = world
+        self.api: "ElevatorAPI" = api  # Store API instance
 
     def update(self) -> None:
-        # Check for new messages from the world
-        while self.world.has_msg():
-            message, _ = self.world.get_next_msg()
-            if message:
-                self.handle_request(message)
+        # Message handling is now done by World calling API's parse_and_handle_message.
+        # Dispatcher's update might become very simple or even be removed if all
+        # its actions are triggered directly by API calls.
+        # For now, let's keep it empty or for future logic not tied to message parsing.
+        pass
 
-    def handle_request(self, request: str) -> None:
-        if request.startswith("open_door"):
-            elevator_id: int = int(request.split("#")[1])
-            self.world.elevators[elevator_id - 1].open_door()
+    # Removed handle_request as it's now part of api.py's parse_and_handle_message
+    # def handle_request(self, request: str) -> None:
+    #     ...
 
-        elif request.startswith("close_door"):
-            elevator_id: int = int(request.split("#")[1])
-            self.world.elevators[elevator_id - 1].close_door()
-
-        elif request.startswith("call_up"):
-            floor: int = int(request.split("@")[1])
-            self._assign_elevator(floor, "up")
-
-        elif request.startswith("call_down"):
-            floor: int = int(request.split("@")[1])
-            self._assign_elevator(floor, "down")
-
-        elif request.startswith("select_floor"):
-            parts: List[str] = request.split("@")[1].split("#")
-            floor: int = int(parts[0])
-            elevator_id: int = int(parts[1])
-            # This is an inside elevator call
-            self._add_target_floor(elevator_id - 1, floor, "inside")
-
-        elif request == "reset":
-            for elevator in self.world.elevators:
-                elevator.reset()
+    # _assign_elevator and _add_target_floor are now called by api.py's internal handlers.
+    # They remain largely the same but no longer parse strings.
 
     def _assign_elevator(self, floor: int, direction: str) -> None:
-        # Find the elevator that can service the request with minimal estimated time
         best_elevator: Optional["Elevator"] = None
         min_time: float = float("inf")
 
+        # Convert string direction to MoveDirection for calculate_estimated_time
+        move_direction: Optional[MoveDirection] = None
+        if direction.lower() == "up":
+            move_direction = MoveDirection.UP
+        elif direction.lower() == "down":
+            move_direction = MoveDirection.DOWN
+
         for elevator in self.world.elevators:
-            est_time: float = elevator.calculate_estimated_time(floor, direction)
+            # Pass MoveDirection enum or None to calculate_estimated_time
+            est_time: float = elevator.calculate_estimated_time(floor, move_direction)
             if est_time < min_time:
                 min_time = est_time
                 best_elevator = elevator
 
         if best_elevator:
-            # This is an outside call (from a floor button)
             self._add_target_floor(best_elevator.id - 1, floor, "outside")
 
     def _add_target_floor(
         self, elevator_idx: int, floor: int, origin: str = "outside"
     ) -> None:
-        """Add target floor to elevator and optimize the sequence
-
-        Args:
-            elevator_idx: Index of the elevator (0-based)
-            floor: Floor number to add as target
-            origin: Origin of the request, either "inside" or "outside"
-        """
         elevator = self.world.elevators[elevator_idx]
 
-        # If elevator is already at this floor and door is closed, open door
         if floor == elevator.current_floor and elevator.door_state == DoorState.CLOSED:
-            # Send floor arrival notification first
-            direction_str: str = ""
-            self.world.send_msg(
-                f"{direction_str}floor_arrived@{elevator.current_floor}#{elevator.id}"
-            )
-            # Then open door
+            direction_str: str = ""  # No specific direction for arrival at current floor for door opening
+            # Use API to send message
+            self.api.send_floor_arrived_message(elevator.id, elevator.current_floor, direction_str)
             elevator.open_door()
             return
 

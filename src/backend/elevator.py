@@ -1,17 +1,20 @@
 import time
 from typing import List, Optional, Dict, TYPE_CHECKING
 
-from .models import ElevatorState, DoorState, MoveDirection  # Add MoveDirection import
+from .models import ElevatorState, DoorState, MoveDirection
 from .models import MoveRequest
 
 if TYPE_CHECKING:
     from .world import World
+    from .api import ElevatorAPI  # Added API import
 
 
 class Elevator:
-    def __init__(self, elevator_id: int, world: "World") -> None:
+    # Added api parameter to __init__
+    def __init__(self, elevator_id: int, world: "World", api: "ElevatorAPI") -> None:
         self.id: int = elevator_id
         self.world: "World" = world
+        self.api: "ElevatorAPI" = api  # Store API instance
         self.current_floor: int = 1  # Initial floor is 1
         self.previous_floor: int = 1  # Track previous floor for change detection
         self.target_floors: List[int] = []
@@ -66,9 +69,8 @@ class Elevator:
                     if self.state == ElevatorState.MOVING_UP
                     else "down_" if self.state == ElevatorState.MOVING_DOWN else ""
                 )
-                self.world.send_msg(
-                    f"{direction_str}floor_arrived@{self.current_floor}#{self.id}"
-                )
+                # Use API to send message
+                self.api.send_floor_arrived_message(self.id, self.current_floor, direction_str)
                 self.floor_arrival_announced = True
 
                 # Check if we've reached a target floor
@@ -95,13 +97,15 @@ class Elevator:
             if current_time - self.last_door_change > self.door_operation_time:
                 self.door_state = DoorState.OPEN
                 self.last_door_change = current_time
-                self.world.send_msg(f"door_opened#{self.id}")
+                # Use API to send message
+                self.api.send_door_opened_message(self.id)
 
         elif self.door_state == DoorState.CLOSING:
             if current_time - self.last_door_change > self.door_operation_time:
                 self.door_state = DoorState.CLOSED
                 self.last_door_change = current_time
-                self.world.send_msg(f"door_closed#{self.id}")
+                # Use API to send message
+                self.api.send_door_closed_message(self.id)
 
                 # After door is closed, check if we need to move
                 if current_time - self.last_door_change >= 0.3:

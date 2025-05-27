@@ -21,7 +21,7 @@ class WebSocketServer:
         """Process incoming message from client"""
         try:
             # Log the message for debugging
-            print(f"Received from client: {message}")
+            print(f"WebSocket: Received from client: {message}")
 
             if self.message_handler:
                 return self.message_handler(message)
