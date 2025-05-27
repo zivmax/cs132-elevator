@@ -1,5 +1,4 @@
 import zmq
-import os
 import threading
 import time
 from typing import Optional, List, Tuple

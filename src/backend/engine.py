@@ -1,7 +1,7 @@
 import time
 from typing import Dict, TYPE_CHECKING
 
-from .models import MoveRequest, MoveDirection
+from .models import MoveRequest
 
 if TYPE_CHECKING:
     from .world import World

@@ -1,5 +1,5 @@
 import json
-from typing import Dict, Any, TYPE_CHECKING, Optional  # Add Optional
+from typing import TYPE_CHECKING, Optional  # Add Optional
 
 from backend.api import ElevatorAPI
 from backend.server import WebSocketServer

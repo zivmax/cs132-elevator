@@ -14,21 +14,7 @@ class Dispatcher:
         self.world: "World" = world
         self.api: "ElevatorAPI" = api  # Store API instance
 
-    def update(self) -> None:
-        # Message handling is now done by World calling API's parse_and_handle_message.
-        # Dispatcher's update might become very simple or even be removed if all
-        # its actions are triggered directly by API calls.
-        # For now, let's keep it empty or for future logic not tied to message parsing.
-        pass
-
-    # Removed handle_request as it's now part of api.py's parse_and_handle_message
-    # def handle_request(self, request: str) -> None:
-    #     ...
-
-    # _assign_elevator and _add_target_floor are now called by api.py's internal handlers.
-    # They remain largely the same but no longer parse strings.
-
-    def _assign_elevator(self, floor: int, direction: str) -> None:
+    def assign_elevator(self, floor: int, direction: str) -> None:
         best_elevator: Optional["Elevator"] = None
         min_time: float = float("inf")
 
@@ -47,9 +33,9 @@ class Dispatcher:
                 best_elevator = elevator
 
         if best_elevator:
-            self._add_target_floor(best_elevator.id - 1, floor, "outside")
+            self.add_target_floor(best_elevator.id - 1, floor, "outside")
 
-    def _add_target_floor(
+    def add_target_floor(
         self, elevator_idx: int, floor: int, origin: str = "outside"
     ) -> None:
         elevator = self.world.elevators[elevator_idx]

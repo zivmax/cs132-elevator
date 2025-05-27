@@ -37,7 +37,6 @@ class World:
 
         # Update components in the correct order
         # Dispatcher no longer directly processes messages from world queue in its update
-        self.dispatcher.update()  # Dispatcher update might be simplified or removed if all actions are API-triggered
         self.engine.update()  # Process movement
 
         # Update elevators last

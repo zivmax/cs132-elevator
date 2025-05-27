@@ -84,7 +84,7 @@ class ElevatorAPI:
         if not self.world or not self.world.dispatcher:
             return json.dumps({"status": "error", "message": "World or Dispatcher not initialized"})
         print(f"API: Calling elevator to floor {floor}, direction {direction}")
-        self.world.dispatcher._assign_elevator(floor, direction)
+        self.world.dispatcher.assign_elevator(floor, direction)
         return json.dumps({"status": "success", "action": "call_elevator"})
 
     def handle_select_floor_internal(self, floor: int, elevator_id: int) -> str:
@@ -93,7 +93,7 @@ class ElevatorAPI:
             return json.dumps({"status": "error", "message": "World or Dispatcher not initialized"})
         print(f"API: Elevator {elevator_id} selecting floor {floor}")
         # Dispatcher's _add_target_floor expects 0-based elevator_idx
-        self.world.dispatcher._add_target_floor(elevator_id - 1, floor, "inside")
+        self.world.dispatcher.add_target_floor(elevator_id - 1, floor, "inside")
         return json.dumps({"status": "success", "action": "select_floor"})
 
     def handle_open_door_internal(self, elevator_id: int) -> str:

@@ -2,7 +2,7 @@ import asyncio
 import json
 import websockets
 import threading
-from typing import Dict, Any, Callable, Set, Optional, TYPE_CHECKING
+from typing import Dict, Any, Callable, Set, Optional
 
 class WebSocketServer:
     """WebSocket server for communication between backend and frontend"""
