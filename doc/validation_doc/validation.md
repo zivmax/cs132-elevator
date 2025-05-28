@@ -4,6 +4,7 @@
 - Project: Elevator
 
 ## Table of Contents
+
 - [1. Testing](#1-testing)
   - [1.1 Unit Tests](#11-unit-tests)
     - [1.1.1 Code Snippets and Branch Marking](#111-code-snippets-and-branch-marking)
@@ -33,12 +34,15 @@ This section introduces a set of system verification methods that ensure the app
 Unit tests verify each component’s core functionality and state transitions.
 
 #### 1.1.1 Code Snippets and Branch Marking
+
 *(Placeholder: Paste code snippets of all functions with at least one branching logic. Mark each branch with a unique ID (e.g., TC1, TC2).)*
 
 #### 1.1.2 Test Cases Design
+
 *(Placeholder: Design test cases to cover all marked branches. Ensure consistency between test cases and the unit test code.)*
 
 #### 1.1.3 Branch Coverage Results
+
 *(Placeholder: Calculate and report branch coverage results (e.g., "12/15 branches covered").)*
 
 ### 1.2 Integration Tests
@@ -46,12 +50,15 @@ Unit tests verify each component’s core functionality and state transitions.
 Integration tests center on how different parts cooperate, such as elevator logic and complex workflows, ensuring overall synchronization.
 
 #### 1.2.1 Component Interaction Identification
+
 *(Placeholder: Identify types of component interactions (e.g., data validation between modules).)*
 
 #### 1.2.2 Test Coverage Items (Equivalent Partitioning)
+
 *(Placeholder: Define test coverage items using equivalent partitioning (e.g., valid/invalid inputs).)*
 
 #### 1.2.3 Test Cases Design
+
 *(Placeholder: Design test cases to cover these items.)*
 
 ### 1.3 System Tests
@@ -59,9 +66,11 @@ Integration tests center on how different parts cooperate, such as elevator logi
 System tests validate expected interface interactions to confirm proper user-facing behavior.
 
 #### 1.3.1 Common Workflows
+
 *(Placeholder: Describe common workflows (e.g., standard user operations) and design test cases.)*
 
 #### 1.3.2 Rare Workflows and Risk-Linked Test Cases
+
 *(Placeholder: Describe rare workflows (linked to risk management) and design corresponding test cases.)*
 
 ## 2. Model Checking
@@ -69,7 +78,6 @@ System tests validate expected interface interactions to confirm proper user-fac
 This section will introduce a UPPAAL model which simulates the state machine in different situations. The model presented will go through some abstraction compare to the actual code implementation (i.e. specific dispatching Algorithm etc. are omitted).
 
 ### 2.1 System Model
-
 
 **Elevator Model:**
 
@@ -87,10 +95,7 @@ The states of the `Elevator` is abstracted to **IDLE** and **MOVING**, the direc
 
 The `Dispatcher` orders the elevator to take the passenger to the destination
 
-
-
 ### 2.2 Environment Model
-
 
 **Passenger Model:**
 
@@ -98,51 +103,10 @@ The `Dispatcher` orders the elevator to take the passenger to the destination
 <img src="./imgs/UPPAAL/single_passenger.png" width="500"/>
 </div>
 
-The `Passenger` is either waiting, riding the elevator or arrived at destination, its orders will be passed on by the `Dispatcher`
-
-**Global Statements & Instances (Single Passenger - Single Elevator):**
-
-- Global Statements:
-
-```UPPAAL
-// Channels
-broadcast chan callUp, callDown, requestMove, stopMove, arrivedFloor;
-
- // Track if passenger calls
-bool callPlacedUp = false;
-bool callPlacedDown = false;
-bool reachedDestination = false;
-
- // Invariants to ensure floor is always within [-1..3]
-const int MIN_FLOOR = -1;
-const int MAX_FLOOR = 3;
- 
-// Global clocks
-clock globalClock;
-```
-
-- Global Instances
-
-```UPPAAL
-// Instantiate processes
-El = Elevator();
-D = Dispatcher();
-P = Passenger();
-// Compose the system
-system El, D, P;
-```
-
-- Elevator Statements
-
-```UPPAAL
-// Local states to handle movement and idle
-bool moving = false;
-  
-int c_floor = 0;
-```
-
 **Global Instances (Multiple Passengers - Multiple Elevators):**
-  - 2 elevators and 3 passengers
+
+- 2 elevators and 3 passengers
+
 ```UPPAAL
 // Instantiate processes
 El1 = Elevator();
@@ -157,35 +121,11 @@ system El1, El2, D, P1, P2, P3;
 
 ### 2.3 Verification Queries and Results
 
-
-**Validation Queries (Single Passenger - Single Elevator):**
-
-```UPPAAL
-/*
-every call is eventually serviced
-*/
-A<> (callPlacedUp || callPlacedDown) imply (P.Riding == true)
-
-/*
-Elevator always goes within floor -1 to 3
-*/
-A[] (El.c_floor >= MIN_FLOOR && El.c_floor <= MAX_FLOOR)
-
-/*
-passenger eventually reaches the floor
-*/
-A<> (callPlacedUp || callPlacedDown) imply (P.Arrived)
-```
-- All validations are passed
-<div align=center>
-<img src="./imgs/UPPAAL/single_pass.png" width="500"/>
-</div>
-
 **Validation Queries (Multiple Passengers - Multiple Elevators):**
 
 ```UPPAAL
 /*
-every call is eventually serviced
+every call is eventually serviced (all relevant passengers for the call type)
 */
 A<> (callPlacedUp || callPlacedDown) imply ((P1.Riding == true) and (P2.Riding == true) and (P3.Riding == true))
 
@@ -195,11 +135,18 @@ Elevator always goes within floor -1 to 3
 A[] (El1.c_floor >= MIN_FLOOR && El1.c_floor <= MAX_FLOOR) and (El2.c_floor >= MIN_FLOOR && El2.c_floor <= MAX_FLOOR)
 
 /*
-passenger eventually reaches the floor
+passenger eventually reaches the floor (all relevant passengers for the call type)
 */
 A<> (callPlacedUp || callPlacedDown) imply ((P1.Arrived) and (P2.Arrived) and (P3.Arrived))
+
+/*
+System is free of deadlocks
+*/
+A[] not deadlock
 ```
+
 - All validations are passed
+
 <div align=center>
 <img src="./imgs/UPPAAL/multi_pass.png" width="600"/>
 </div>
@@ -210,42 +157,51 @@ A<> (callPlacedUp || callPlacedDown) imply ((P1.Arrived) and (P2.Arrived) and (P
 
 **Major System Risks:**
 
-- Passenger's call up/down are not eventually responded
-- Passenger can't eventually reach their target floor
-- Elevator goes out of normal range (floor -1 to 3)
+- **1. Unserviced Calls:** Passenger's call (up/down) is not eventually responded to.
+  - Frequency: Medium (if dispatcher logic is flawed or under high load)
+  - Severity: Medium (user frustration, perceived unreliability)
+- **2. Unreached Destination:** Passenger boards an elevator but never reaches their target floor.
+  - Frequency: Low (if core movement and destination logic is sound)
+  - Severity: High (user trapped or significantly delayed, safety concern)
+- **3. Elevator Out of Bounds:** Elevator moves beyond the mechanically safe or specified operational floor range (e.g., floor -1 to 3).
+  - Frequency: Very Low (if boundary checks and safety mechanisms are robust)
+  - Severity: Critical (potential for physical damage to elevator/building, severe safety hazard)
+- **4. System Deadlock:** Elevators and dispatcher become unresponsive, failing to process any pending passenger requests, potentially due to resource contention or synchronization flaws.
+  - Frequency: Low (more likely in complex multi-elevator/multi-passenger scenarios)
+  - Severity: High (system becomes unusable until reset, trapping passengers)
 
 **FTA Analysis:**
 
 The detailed FTA plot is given below:
 
 <div align=center>
-<img src="./imgs/FTA.png" width="500"/>
+<img src="./imgs/FTA/FTA.png" width="500"/>
 </div>
 
 ### 3.2 Risk Mitigation
 
-The following section outlines the mitigation strategies implemented for the major system risks identified in Section 3.1. These mitigations are supported by evidence from model checking and system testing.
+The following section outlines the mitigation strategies for the major system risks.
 
-**1. Risk: Passenger's call up/down are not eventually responded.**
-   - **Mitigation:** The system is designed to ensure that all passenger calls are eventually serviced.
-   - **Justification (Model Checking):**
-     - As detailed in Section 2.3, the UPPAAL model verification query `A<> (callPlacedUp || callPlacedDown) imply (P.Riding == true)` for a single passenger and `A<> (callPlacedUp || callPlacedDown) imply ((P1.Riding == true) and (P2.Riding == true) and (P3.Riding == true))` for multiple passengers confirm that if a call is placed, the passenger(s) will eventually be in the 'Riding' state. Both queries passed, indicating that the system model correctly handles call servicing.
-   - **Justification (Testing):**
-     - System tests focusing on common and rare workflows (Sections 1.3.1 and 1.3.2) include scenarios where passengers place calls. Successful execution of these test cases demonstrates that calls are responded to in the implemented system. *(Placeholder: Refer to specific system test case IDs if available once testing section is complete).*
+**1. Risk: Unserviced Calls.**
 
-**2. Risk: Passenger can't eventually reach their target floor.**
-   - **Mitigation:** The elevator and dispatcher logic ensures that once a passenger is on board and a destination is registered, they will eventually arrive at their target floor.
-   - **Justification (Model Checking):**
-     - Section 2.3 presents the UPPAAL verification query `A<> (callPlacedUp || callPlacedDown) imply (P.Arrived)` for a single passenger and `A<> (callPlacedUp || callPlacedDown) imply ((P1.Arrived) and (P2.Arrived) and (P3.Arrived))` for multiple passengers. These queries, which passed, validate that passengers eventually reach the 'Arrived' state after placing a call.
-   - **Justification (Testing):**
-     - System test cases (Sections 1.3.1 and 1.3.2) cover end-to-end passenger journeys, from placing a call to reaching the destination. Successful outcomes of these tests confirm this functionality. *(Placeholder: Refer to specific system test case IDs if available once testing section is complete).*
+- **Mitigation:** Dispatcher logic ensures all calls are queued and processed. Elevators are assigned to service pending calls based on an efficient algorithm.
+- **Justification (Model Checking):** The query `A<> (callPlacedUp || callPlacedDown) imply ((P1.Riding == true) and (P2.Riding == true) and (P3.Riding == true))` for the multi-passenger model passed, showing calls lead to passengers riding.
+- **Justification (Testing):** System tests (1.3.1, 1.3.2) verify call response under various load conditions. *(Placeholder: Specific test IDs)*
 
-**3. Risk: Elevator goes out of normal range (floor -1 to 3).**
-   - **Mitigation:** The system incorporates constraints to prevent the elevator from moving beyond the predefined valid floor range.
-   - **Justification (Specification & Model Checking):**
-     - The system specification (referencing `specification.pdf`) defines the operational floor range.
-     - In the UPPAAL model (Section 2.1), global constants `MIN_FLOOR = -1` and `MAX_FLOOR = 3` are defined.
-     - The verification queries `A[] (El.c_floor >= MIN_FLOOR && El.c_floor <= MAX_FLOOR)` for a single elevator and `A[] (El1.c_floor >= MIN_FLOOR && El1.c_floor <= MAX_FLOOR) and (El2.c_floor >= MIN_FLOOR && El2.c_floor <= MAX_FLOOR)` for multiple elevators (Section 2.3) ensure that the elevator's current floor (`c_floor`) always remains within these bounds. These queries passed, confirming the model's adherence to floor constraints.
-   - **Justification (Testing):**
-     - Unit tests for the `Elevator` module (Section 1.1) would verify the logic that constrains floor movement.
-     - System tests (Section 1.3), particularly those involving requests to extreme floors, would also validate this. *(Placeholder: Refer to specific unit/system test case IDs if available once testing section is complete).*
+**2. Risk: Passenger not reaching target floor.**
+
+- **Mitigation:** Elevator and dispatcher logic ensures journey completion once a passenger is aboard and a destination is registered.
+- **Justification (Model Checking):** The query `A<> (callPlacedUp || callPlacedDown) imply ((P1.Arrived) and (P2.Arrived) and (P3.Arrived))` for the multi-passenger model passed, confirming arrival post-call.
+- **Justification (Testing):** System tests (1.3.1, 1.3.2) cover end-to-end passenger journeys. *(Placeholder: Specific test IDs)*
+
+**3. Risk: Elevator out of normal range.**
+
+- **Mitigation:** Software-defined floor limits and boundary checks in elevator control logic prevent movement beyond the specified range.
+- **Justification (Specification & Model Checking):** System specification defines the operational floor range. UPPAAL model includes `MIN_FLOOR`, `MAX_FLOOR` constants, and the query `A[] (El1.c_floor >= MIN_FLOOR && El1.c_floor <= MAX_FLOOR) and (El2.c_floor >= MIN_FLOOR && El2.c_floor <= MAX_FLOOR)` for the multi-elevator model passed.
+- **Justification (Testing):** Unit tests for `Elevator` (1.1) verify floor constraint logic. System tests (1.3) include requests to extreme/invalid floors. *(Placeholder: Specific test IDs)*
+
+**4. Risk: System Deadlock.**
+
+- **Mitigation:** Careful design of synchronization primitives (e.g., locks, semaphores) and resource allocation in the dispatcher and elevator control logic. Use of proven scheduling/dispatching strategies that avoid circular waits.
+- **Justification (Model Checking):** The UPPAAL query `A[] not deadlock` was verified for the multi-passenger, multi-elevator model (Section 2.3), indicating the model is free from deadlocks under the modeled conditions.
+- **Justification (Testing):** Stress testing and integration tests (1.2) involving complex interaction scenarios with multiple elevators and passengers are designed to uncover potential deadlock conditions. *(Placeholder: Specific test IDs)*

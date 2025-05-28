@@ -1,0 +1,39 @@
+graph TD
+    ESSF[Elevator Software System Failure] -->|OR| USC_SW[Unserviced Calls Due to Software]
+    ESSF -->|OR| URD_SW[Unreached Destination Due to Software]
+    ESSF -->|OR| EOB_SW[Elevator Out of Bounds Due to Software]
+    ESSF -->|OR| SD_SW[System Deadlock Due to Software]
+
+    subgraph Unserviced Calls - Software
+        USC_SW -->|OR| DLF[Dispatcher Logic Flaw]
+        USC_SW -->|OR| SPB[Software Performance Bottleneck]
+        USC_SW -->|OR| SCPE[Software Communication Protocol Error]
+        USC_SW -->|OR| ECLF_SM[Elevator Control Logic Flaw - State Management]
+    end
+
+    subgraph Unreached Destination - Software
+        URD_SW -->|OR| ECLF_MV[Elevator Control Logic Flaw - Movement/Stop]
+        URD_SW -->|OR| IFDP[Incorrect Floor Data Processing Logic]
+        URD_SW -->|OR| DCLE[Door Control Logic Error - Software]
+        URD_SW -->|OR| DLF_DT[Dispatcher Logic Flaw - Destination Tracking]
+    end
+
+    subgraph Elevator Out of Bounds - Software
+        EOB_SW -->|OR| SBCF[Software Boundary Check Failure]
+        EOB_SW -->|OR| ESO[Erroneous Software Override Logic]
+        EOB_SW -->|OR| ECLF_PT[Elevator Control Logic Flaw - Position Tracking]
+    end
+
+    subgraph System Deadlock - Software
+        SD_SW -->|OR| DAF_RA[Dispatcher Algorithm Flaw - Resource Allocation]
+        SD_SW -->|OR| IESSF[Inter-Process Synchronization Flaw]
+        SD_SW -->|OR| CWC_SW[Circular Wait Condition in Software Logic]
+        SD_SW -->|OR| RCM_SW[Resource Contention Mishandling in Software]
+    end
+
+    %% Basic Event Styles
+    classDef basic_sw fill:#cde,stroke:#333,stroke-width:2px;
+    class DLF,SPB,SCPE,ECLF_SM basic_sw;
+    class ECLF_MV,IFDP,DCLE,DLF_DT basic_sw;
+    class SBCF,ESO,ECLF_PT basic_sw;
+    class DAF_RA,IESSF,CWC_SW,RCM_SW basic_sw;

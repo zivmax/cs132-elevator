@@ -163,6 +163,12 @@ clock globalClock;</declaration>
 			</result>
 		</query>
 		<query>
+			<formula>A[] not deadlock</formula>
+			<comment/>
+			<result outcome="success" type="quality" timestamp="2025-05-28 10:32:58 +0800">
+			</result>
+		</query>
+		<query>
 			<formula>A&lt;&gt; (callPlacedUp || callPlacedDown) imply ((P1.Arrived) and (P2.Arrived) and (P3.Arrived))</formula>
 			<comment>passenger eventually reaches the floor</comment>
 			<result outcome="success" type="quality" timestamp="2025-04-04 12:34:57 +0800">
