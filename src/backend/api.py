@@ -269,14 +269,13 @@ class ElevatorAPI:
     def send_floor_arrived_message(
         self, elevator_id: int, floor: int, direction_str: str
     ):
-        """Sends a floor arrival message in the format: {direction_prefix}floor_{floor_number}_arrived#{elevator_id}
-        e.g., up_floor_1_arrived#1, floor_2_arrived#2
+        """Sends a floor arrival message in the format: {direction_prefix}floor_arrived@{floor_number}#{elevator_id}
+        e.g., up_floor_arrived@1#1, floor_arrived@2#2
         """
         prefix = f"{direction_str}_" if direction_str else ""
 
-        # If direction_str is empty or any other unrecognized value, prefix remains empty,
-        # resulting in a message like "floor_1_arrived#1".
-        message = f"{prefix}floor_{floor}_arrived#{elevator_id}"
+        # Corrected message format to match the specification
+        message = f"{prefix}floor_arrived@{floor}#{elevator_id}"
         self._send_message_to_client(message)
 
     def send_door_opened_message(self, elevator_id: int):
