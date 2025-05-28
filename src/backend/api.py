@@ -274,8 +274,11 @@ class ElevatorAPI:
         """
         prefix = f"{direction_str}_" if direction_str else ""
 
+        # Correct floor representation for the message
+        display_floor = -1 if floor == 0 else floor
+
         # Corrected message format to match the specification
-        message = f"{prefix}floor_arrived@{floor}#{elevator_id}"
+        message = f"{prefix}floor_arrived@{display_floor}#{elevator_id}"
         self._send_message_to_client(message)
 
     def send_door_opened_message(self, elevator_id: int):
