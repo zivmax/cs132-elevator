@@ -65,9 +65,9 @@ class Elevator:
             ):
                 # Announce floor arrival
                 direction_str: str = (
-                    "up_"
+                    "up"
                     if self.state == ElevatorState.MOVING_UP
-                    else "down_" if self.state == ElevatorState.MOVING_DOWN else ""
+                    else "down" if self.state == ElevatorState.MOVING_DOWN else ""
                 )
                 # Use API to send message
                 self.api.send_floor_arrived_message(
