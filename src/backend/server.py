@@ -2,20 +2,28 @@ import asyncio
 import json
 import websockets
 import threading
-from typing import Dict, Any, Callable, Set, Optional
+from typing import Dict, Any, Callable, Set, Optional, List, Tuple
+
 
 class WebSocketServer:
     """WebSocket server for communication between backend and frontend"""
-    
-    def __init__(self, host: str = '127.0.0.1', port: int = 8765, message_handler: Optional[Callable[[str], str]] = None):
+
+    def __init__(
+        self,
+        host: str = "127.0.0.1",
+        port: int = 8765,
+        message_handler: Optional[Callable[[str], str]] = None,
+    ):
         self.host = host
         self.port = port
         self._clients: Set[websockets.WebSocketServerProtocol] = set()
-        self.message_handler = message_handler # New: message handler
+        self.message_handler = message_handler
         self._server = None
         self._thread = None
         self._stop_event = threading.Event()
-        self.loop: Optional[asyncio.AbstractEventLoop] = None # Added for storing the event loop
+        self.loop: Optional[asyncio.AbstractEventLoop] = (
+            None  # Added for storing the event loop
+        )
 
     async def _process_message(self, websocket, message: str) -> str:
         """Process incoming message from client"""
@@ -25,7 +33,7 @@ class WebSocketServer:
 
             if self.message_handler:
                 return self.message_handler(message)
-            
+
             # If no message handler, return an error
             return json.dumps(
                 {"status": "error", "message": "No message handler registered"}
@@ -51,7 +59,7 @@ class WebSocketServer:
         """Send a message to all connected clients"""
         if not self._clients:  # No clients connected
             return
-            
+
         tasks = [client.send(message) for client in self._clients]
         if tasks:
             await asyncio.gather(*tasks, return_exceptions=True)
@@ -65,14 +73,14 @@ class WebSocketServer:
 
     def _run_in_thread(self):
         """Run the server in a separate thread"""
-        self.loop = asyncio.new_event_loop() # Assign the new loop to self.loop
+        self.loop = asyncio.new_event_loop()  # Assign the new loop to self.loop
         asyncio.set_event_loop(self.loop)
         try:
             self.loop.run_until_complete(self._run_server())
         finally:
             if self.loop.is_running():
-                self.loop.stop() # Stop the loop if it's still running
-            self.loop.close() # Close the loop
+                self.loop.stop()  # Stop the loop if it's still running
+            self.loop.close()  # Close the loop
 
     def start(self):
         """Start the WebSocket server in a separate thread"""
@@ -85,9 +93,11 @@ class WebSocketServer:
         """Stop the WebSocket server"""
         self._stop_event.set()
         if self._thread:
-            self._thread.join(timeout=2.0) # Increased timeout slightly for graceful shutdown
+            self._thread.join(
+                timeout=2.0
+            )  # Increased timeout slightly for graceful shutdown
         print("WebSocket server stopped")
-        
+
     @property
     def is_running(self):
         """Return True if the server is running (not stopped)."""
@@ -95,15 +105,13 @@ class WebSocketServer:
 
     def send_elevator_states(self, data: Dict[str, Any]):
         """Send elevator state update to frontend"""
-        message = json.dumps({
-            "type": "elevatorUpdated",
-            "payload": data
-        })
-        
+        message = json.dumps({"type": "elevatorUpdated", "payload": data})
+
         if self.loop and not self.loop.is_closed():
             asyncio.run_coroutine_threadsafe(
-                self.broadcast(message),
-                self.loop # Use the stored loop
+                self.broadcast(message), self.loop  # Use the stored loop
             )
         else:
-            print("WebSocket server loop not available or closed when trying to send elevator_updated.")
+            print(
+                "WebSocket server loop not available or closed when trying to send elevator_updated."
+            )

@@ -70,7 +70,9 @@ class Elevator:
                     else "down_" if self.state == ElevatorState.MOVING_DOWN else ""
                 )
                 # Use API to send message
-                self.api.send_floor_arrived_message(self.id, self.current_floor, direction_str)
+                self.api.send_floor_arrived_message(
+                    self.id, self.current_floor, direction_str
+                )
                 self.floor_arrival_announced = True
 
                 # Check if we've reached a target floor
@@ -152,7 +154,9 @@ class Elevator:
             self._determine_direction()
             if self.direction and self.door_state == DoorState.CLOSED:
                 # Send move request to Engine instead of changing state directly
-                move_request = MoveRequest(self.id, self.direction) # self.direction is now MoveDirection
+                move_request = MoveRequest(
+                    self.id, self.direction
+                )  # self.direction is now MoveDirection
                 self.world.engine.request_movement(move_request)
         else:
             self.state = ElevatorState.IDLE
@@ -168,9 +172,9 @@ class Elevator:
 
     def set_moving_state(self, direction: str) -> None:
         """Called by Engine to set the elevator's moving state"""
-        if direction == MoveDirection.UP.value: # Use MoveDirection enum value
+        if direction == MoveDirection.UP.value:  # Use MoveDirection enum value
             self.state = ElevatorState.MOVING_UP
-        elif direction == MoveDirection.DOWN.value: # Use MoveDirection enum value
+        elif direction == MoveDirection.DOWN.value:  # Use MoveDirection enum value
             self.state = ElevatorState.MOVING_DOWN
         else:
             self.state = ElevatorState.IDLE
@@ -251,7 +255,9 @@ class Elevator:
             else:
                 self.direction = None  # No valid targets
 
-    def calculate_estimated_time(self, floor: int, direction: Optional[MoveDirection]) -> float:  # Change direction type to MoveDirection also allow None
+    def calculate_estimated_time(
+        self, floor: int, direction: Optional[MoveDirection]
+    ) -> float:  # Change direction type to MoveDirection also allow None
         # Calculate estimated time to service a request at floor with given direction
         if self.current_floor == floor and self.door_state in [
             DoorState.OPEN,
@@ -296,7 +302,9 @@ class Elevator:
                     simulated_current_floor = target  # Simulated position
 
                     # If this is our requested floor with matching direction
-                    if target == floor and (direction == MoveDirection.UP or direction == None):  # Use MoveDirection.UP
+                    if target == floor and (
+                        direction == MoveDirection.UP or direction == None
+                    ):  # Use MoveDirection.UP
                         # Restore original state before returning
                         self.current_floor = original_floor
                         self.target_floors = original_target_floors
@@ -307,7 +315,9 @@ class Elevator:
                 # This part assumes the elevator turns around
                 # If the request is in the opposite direction of current travel,
                 # it will be serviced after the current direction's requests are done.
-                if simulated_targets and simulated_current_floor != floor:  # if there were targets upwards or we are not at the floor
+                if (
+                    simulated_targets and simulated_current_floor != floor
+                ):  # if there were targets upwards or we are not at the floor
                     # Time to turn around (if it was moving up and now needs to go down)
                     # No explicit turn around time, but new direction starts
                     pass
@@ -322,7 +332,9 @@ class Elevator:
                     simulated_current_floor = target  # Simulated position
 
                     # If this is our requested floor with matching direction
-                    if target == floor and (direction == MoveDirection.DOWN or direction == None):  # Use MoveDirection.DOWN
+                    if target == floor and (
+                        direction == MoveDirection.DOWN or direction == None
+                    ):  # Use MoveDirection.DOWN
                         # Restore original state
                         self.current_floor = original_floor
                         self.target_floors = original_target_floors
@@ -340,7 +352,9 @@ class Elevator:
                     simulated_current_floor = target  # Simulated position
 
                     # If this is our requested floor with matching direction
-                    if target == floor and (direction == MoveDirection.DOWN or direction == None):  # Use MoveDirection.DOWN
+                    if target == floor and (
+                        direction == MoveDirection.DOWN or direction == None
+                    ):  # Use MoveDirection.DOWN
                         # Restore original state
                         self.current_floor = original_floor
                         self.target_floors = original_target_floors
@@ -348,7 +362,9 @@ class Elevator:
                         return total_time
 
                 # Then handle all floors above in ascending order
-                if simulated_targets and simulated_current_floor != floor:  # if there were targets downwards or we are not at the floor
+                if (
+                    simulated_targets and simulated_current_floor != floor
+                ):  # if there were targets downwards or we are not at the floor
                     # Time to turn around
                     pass
 
@@ -361,7 +377,9 @@ class Elevator:
                     simulated_current_floor = target  # Simulated position
 
                     # If this is our requested floor with matching direction
-                    if target == floor and (direction == MoveDirection.UP or direction == None):  # Use MoveDirection.UP
+                    if target == floor and (
+                        direction == MoveDirection.UP or direction == None
+                    ):  # Use MoveDirection.UP
                         # Restore original state
                         self.current_floor = original_floor
                         self.target_floors = original_target_floors

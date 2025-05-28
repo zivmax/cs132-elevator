@@ -1,72 +1,50 @@
 import time
-from typing import List, Tuple, Deque
-
-from collections import deque
-
-from .net_client import ZmqClientThread
+from typing import List, TYPE_CHECKING, Optional  # Added Optional
 from .elevator import Elevator
 from .engine import Engine
 from .dispatcher import Dispatcher
-from .api import ElevatorAPI
+from .net_client import ZmqCoordinator  # Import ZmqCoordinator
+
+if TYPE_CHECKING:
+    from .api import ElevatorAPI  # Keep for type hinting
 
 
 class World:
     def __init__(self) -> None:
-        self.testclient: ZmqClientThread = ZmqClientThread(identity="Team17")
-        self.api: ElevatorAPI = ElevatorAPI(self)  # Create API instance and pass self (world)
-        self.engine: Engine = Engine(self)  # Create engine first
-        # Pass the api instance to Elevator and Dispatcher
-        self.elevators: List[Elevator] = [Elevator(1, self, self.api), Elevator(2, self, self.api)]
-        self.dispatcher: Dispatcher = Dispatcher(self, self.api)
+        # Create ZmqCoordinator, which owns ZmqClientThread and the incoming message queue.
+        # ZmqCoordinator handles ZMQ client prints.
+        self.zmq_coordinator: ZmqCoordinator = ZmqCoordinator(identity="Team17")
 
-        # Message queue for storing messages from any source
-        self._message_queue: Deque[Tuple[str, int]] = deque()
-        self._last_checked_timestamp: int = -1
+        # API, Elevators, and Dispatcher will be initialized via set_api_and_initialize_components
+        self.api: Optional["ElevatorAPI"] = None
+        self.engine: Engine = Engine(self)  # Engine might not need API directly at init
+        self.elevators: List[Elevator] = []
+        self.dispatcher: Optional[Dispatcher] = None
 
-        time.sleep(1)  # Give time for the client to connect
+        # Message queue and its management methods (add_msg, get_next_msg, has_msg) are now in ZmqCoordinator.
+        print("World: Initialized. API and components to be set later.")
+
+    def set_api_and_initialize_components(self, api: "ElevatorAPI") -> None:
+        """Sets the ElevatorAPI instance and initializes components that depend on it."""
+        self.api = api
+        if self.api is None:  # Should not happen if logic is correct
+            raise ValueError("API instance cannot be None when initializing components")
+
+        self.elevators = [
+            Elevator(1, self, self.api),
+            Elevator(2, self, self.api),
+        ]
+        self.dispatcher = Dispatcher(self, self.api)
+        print("World: ElevatorAPI set and dependent components initialized.")
 
     def update(self) -> None:
-        # Check for new messages from network client
-        self._check_testclient_msg()
+        # Tell ZmqCoordinator to poll ZMQ and queue any new messages internally.
+        if self.zmq_coordinator:
+            self.zmq_coordinator.poll_and_queue_incoming_messages()
 
-        # Process messages from the queue using the API
-        while self.has_msg():
-            message, _ = self.get_next_msg()
-            if message:
-                self.api.parse_and_handle_message(message)  # API handles parsing
+        # The loop for processing messages from ZmqCoordinator's queue is in main.py.
 
-        # Update components in the correct order
-        # Dispatcher no longer directly processes messages from world queue in its update
-        self.engine.update()  # Process movement
-
-        # Update elevators last
+        # Update simulation components.
+        self.engine.update()
         for elevator in self.elevators:
             elevator.update()
-
-    def _check_testclient_msg(self) -> None:
-        """Check for new messages from the network client"""
-        if self.testclient.messageTimeStamp > self._last_checked_timestamp:
-            self._last_checked_timestamp = self.testclient.messageTimeStamp
-            message = self.testclient.receivedMessage
-            if message:
-                # Add message to queue with current timestamp
-                timestamp = int(round(time.time() * 1000))
-                self._message_queue.append((message, timestamp))
-
-    def add_msg(self, message: str) -> None:
-        """Add a message from any source (e.g., Qt API handlers in api.py)."""
-        # This method is still used by the API's frontend handlers to queue requests
-        # that originate from external sources like the web UI.
-        timestamp = int(round(time.time() * 1000))
-        self._message_queue.append((message, timestamp))
-        print(f"World: Message added to queue by API: {message}")
-
-    def get_next_msg(self) -> Tuple[str, int]:
-        """Get the next message from the queue"""
-        if self._message_queue:
-            return self._message_queue.popleft()
-        return ("", -1)
-
-    def has_msg(self) -> bool:
-        """Check if there are messages in the queue"""
-        return len(self._message_queue) > 0

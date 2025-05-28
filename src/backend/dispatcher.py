@@ -41,9 +41,13 @@ class Dispatcher:
         elevator = self.world.elevators[elevator_idx]
 
         if floor == elevator.current_floor and elevator.door_state == DoorState.CLOSED:
-            direction_str: str = ""  # No specific direction for arrival at current floor for door opening
+            direction_str: str = (
+                ""  # No specific direction for arrival at current floor for door opening
+            )
             # Use API to send message
-            self.api.send_floor_arrived_message(elevator.id, elevator.current_floor, direction_str)
+            self.api.send_floor_arrived_message(
+                elevator.id, elevator.current_floor, direction_str
+            )
             elevator.open_door()
             return
 

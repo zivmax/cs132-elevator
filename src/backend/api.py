@@ -1,146 +1,284 @@
 import json
-import time  # Added import for time.sleep
-from typing import TYPE_CHECKING, Dict, Any, Optional, List
+from typing import TYPE_CHECKING, Dict, Any, Optional, List, Union  # Added Union
 
-# Import ZmqClientThread directly
-from .net_client import ZmqClientThread
+from .net_client import (
+    ZmqCoordinator,
+    BaseCommand,
+    CallCommand,
+    SelectFloorCommand,
+    OpenDoorCommand,
+    CloseDoorCommand,
+    ResetCommand,
+    ParseError,
+)  # Import new command/error types
 
+
+# ZMQ client now provided by World; no direct instantiation needed
 if TYPE_CHECKING:
     from backend.world import World
-    from backend.elevator import Elevator
 
 
 class ElevatorAPI:
     """API for interacting with the elevator backend"""
 
-    # Modified __init__ to instantiate ZmqClientThread
-    def __init__(self, world: Optional["World"] = None):
+    def __init__(self, world: Optional["World"], zmq_coordinator: "ZmqCoordinator"):
         self.world = world
-        # Instantiate ZmqClientThread here
-        self.client: ZmqClientThread = ZmqClientThread(identity="Team17")
-        self._last_checked_timestamp: int = -1  # For tracking client messages
-        print("ElevatorAPI: ZmqClientThread initialized.")
-        time.sleep(1)  # Give time for the client to connect
-        print("ElevatorAPI: ZmqClientThread should be connected.")
+        self.zmq_coordinator = zmq_coordinator  # Changed from zmq_manager
+        print("ElevatorAPI: Initialized with ZmqCoordinator.")
 
-    def set_world(self, world: "World"):
+    def set_world(
+        self, world: "World"
+    ):  # This method might still be useful if world is set later
         """Update the world reference"""
         self.world = world
 
-    # Removed set_client method as client is instantiated internally
+    # Removed set_client method
 
-    def update(self):
-        """Checks for new messages from the ZMQ client and adds them to the world's queue."""
-        if not self.client or not self.world:
-            # print(\"API Update: Client or World not set, skipping message check.\") # Optional debug
+    # Removed update(self) method as ZMQ message polling is now handled by World via ZmqManager
+
+    # Methods to receive and parse messages from frontend/clients (WebSocket) or ZMQ (via World)
+    def parse_and_handle_message(
+        self, command_or_error: Union[BaseCommand, ParseError]
+    ) -> None:
+        """Handles a parsed command object or a ParseError from ZmqCoordinator.
+        Passes resulting data or error information to ZmqCoordinator for formatting and sending.
+        """
+        print(f"API received command/error object: {command_or_error}")
+
+        if not self.world:
+            # Prepare error data for ZmqCoordinator to format and send
+            error_info = {"type": "world_not_initialized_error"}
+            print(f"API Error: World not initialized.")
+            self.zmq_coordinator.send_formatted_message_to_server(error_info)
             return
 
-        if self.client.messageTimeStamp > self._last_checked_timestamp:
-            self._last_checked_timestamp = self.client.messageTimeStamp
-            message = self.client.receivedMessage
-            if message:
-                # Add message to world's queue
-                print(f"API Update: New message from ZMQ client: {message}")
-                self.world.add_msg(message)
+        response_data_from_handler: Optional[Dict[str, Any]] = None
+        command_context_str: str = ""
+        parsed_elevator_id_for_response: Optional[int] = None
 
-    # Methods to receive and parse messages from frontend/clients
-    def parse_and_handle_message(self, message_str: str) -> Optional[str]:
-        """Parses a message string and calls the appropriate handler."""
-        print(f"API received message: {message_str}")
-        if not self.world:
-            return json.dumps({"status": "error", "message": "World not initialized"})
+        if isinstance(command_or_error, ParseError):
+            # Pass ParseError details to ZmqCoordinator for formatting
+            error_info = {
+                "type": "parse_error",
+                "error_type": command_or_error.error_type,
+                "detail": command_or_error.detail,
+            }
+            print(
+                f"API received ParseError: type='{command_or_error.error_type}', detail='{command_or_error.detail}'"
+            )
+            self.zmq_coordinator.send_formatted_message_to_server(
+                error_info, command_context_str=command_or_error.original_message
+            )
+            return
+
+        command_context_str = command_or_error.original_message
 
         try:
-            if message_str.startswith("call_"):  # e.g. call_up@1, call_down@3
-                parts = message_str.split("@")
-                direction_floor = parts[0].split("_")[1]
-                floor = int(parts[1])
-                return self.handle_call_elevator_internal(floor, direction_floor)
-            elif message_str.startswith("select_floor@"):  # e.g. select_floor@5#1
-                parts = message_str.split("@")[1].split("#")
-                floor = int(parts[0])
-                elevator_id = int(parts[1])
-                return self.handle_select_floor_internal(floor, elevator_id)
-            elif message_str.startswith("open_door#"):  # e.g. open_door#1
-                elevator_id = int(message_str.split("#")[1])
-                return self.handle_open_door_internal(elevator_id)
-            elif message_str.startswith("close_door#"):  # e.g. close_door#1
-                elevator_id = int(message_str.split("#")[1])
-                return self.handle_close_door_internal(elevator_id)
-            elif message_str == "reset":
-                return self.handle_reset_internal()
-            else:
-                print(f"Unknown message format: {message_str}")
-                return json.dumps(
-                    {"status": "error", "message": f"Unknown message format: {message_str}"}
+            if isinstance(command_or_error, CallCommand):
+                response_data_from_handler = self.handle_call_elevator_internal(
+                    command_or_error.floor, command_or_error.direction
                 )
-        except Exception as e:
-            print(f"Error parsing message '{message_str}': {e}")
-            return json.dumps({"status": "error", "message": f"Error parsing message: {str(e)}"})
+            elif isinstance(command_or_error, SelectFloorCommand):
+                response_data_from_handler = self.handle_select_floor_internal(
+                    command_or_error.floor, command_or_error.elevator_id
+                )
+            elif isinstance(command_or_error, OpenDoorCommand):
+                parsed_elevator_id_for_response = command_or_error.elevator_id
+                response_data_from_handler = self.handle_open_door_internal(
+                    command_or_error.elevator_id
+                )
+            elif isinstance(command_or_error, CloseDoorCommand):
+                parsed_elevator_id_for_response = command_or_error.elevator_id
+                response_data_from_handler = self.handle_close_door_internal(
+                    command_or_error.elevator_id
+                )
+            elif isinstance(command_or_error, ResetCommand):
+                response_data_from_handler = self.handle_reset_internal()
+            else:
+                error_info = {
+                    "type": "unknown_command_type_error",
+                    "detail": command_context_str,
+                }
+                print(f"API Error: Unknown command type for '{command_context_str}'")
+                self.zmq_coordinator.send_formatted_message_to_server(
+                    error_info, command_context_str=command_context_str
+                )
+                return
+
+        except Exception as e:  # Catch errors from internal handlers
+            error_info = {
+                "type": "handler_processing_error",
+                "error_type": "handler_exception",  # Generic slug for this type of error
+                "detail": f"{command_context_str}:{str(e)}",
+            }
+            print(
+                f"API Error during handler execution for '{command_context_str}': {str(e)}"
+            )
+            self.zmq_coordinator.send_formatted_message_to_server(
+                error_info, command_context_str=command_context_str
+            )
+            return
+
+        # Pass response from internal handlers to ZmqCoordinator for formatting and sending
+        if response_data_from_handler:
+            self.zmq_coordinator.send_formatted_message_to_server(
+                response_data_from_handler,
+                command_context_str=command_context_str,
+                parsed_elevator_id_for_response=parsed_elevator_id_for_response,
+            )
+        else:
+            # This case should ideally be covered by handlers always returning a dict,
+            # or specific error handling above.
+            error_info = {
+                "type": "internal_processing_error",
+                "detail": command_context_str,
+            }
+            print(
+                f"API Warning: No response data from handler for command '{command_context_str}'"
+            )
+            self.zmq_coordinator.send_formatted_message_to_server(
+                error_info, command_context_str=command_context_str
+            )
 
     # Internal handlers, previously part of Dispatcher or direct calls from old API methods
-    def handle_call_elevator_internal(self, floor: int, direction: str) -> str:
+    # Modified to return Dict instead of JSON string
+    def handle_call_elevator_internal(
+        self, floor: int, direction: str
+    ) -> Dict[str, Any]:
         """Internal handler for elevator calls from a floor."""
         if not self.world or not self.world.dispatcher:
-            return json.dumps({"status": "error", "message": "World or Dispatcher not initialized"})
+            return {"status": "error", "message": "World or Dispatcher not initialized"}
         print(f"API: Calling elevator to floor {floor}, direction {direction}")
-        self.world.dispatcher.assign_elevator(floor, direction)
-        return json.dumps({"status": "success", "action": "call_elevator"})
+        # Assuming assign_elevator doesn't return a value indicating immediate success/failure of the call itself,
+        # but rather queues the request. So, we assume success at this stage if no exceptions.
+        try:
+            self.world.dispatcher.assign_elevator(floor, direction)
+            return {
+                "status": "success",
+                "action": "call_elevator",
+                "message": f"Elevator called to floor {floor} {direction}",
+            }
+        except Exception as e:
+            return {"status": "error", "message": f"Failed to call elevator: {str(e)}"}
 
-    def handle_select_floor_internal(self, floor: int, elevator_id: int) -> str:
+    def handle_select_floor_internal(
+        self, floor: int, elevator_id: int
+    ) -> Dict[str, Any]:
         """Internal handler for floor selections from inside an elevator."""
         if not self.world or not self.world.dispatcher:
-            return json.dumps({"status": "error", "message": "World or Dispatcher not initialized"})
+            return {"status": "error", "message": "World or Dispatcher not initialized"}
         print(f"API: Elevator {elevator_id} selecting floor {floor}")
-        # Dispatcher's _add_target_floor expects 0-based elevator_idx
-        self.world.dispatcher.add_target_floor(elevator_id - 1, floor, "inside")
-        return json.dumps({"status": "success", "action": "select_floor"})
+        try:
+            # Dispatcher's _add_target_floor expects 0-based elevator_idx
+            self.world.dispatcher.add_target_floor(elevator_id - 1, floor, "inside")
+            return {
+                "status": "success",
+                "action": "select_floor",
+                "message": f"Elevator {elevator_id} selected floor {floor}",
+            }
+        except Exception as e:
+            return {
+                "status": "error",
+                "message": f"Failed to select floor for elevator {elevator_id}: {str(e)}",
+            }
 
-    def handle_open_door_internal(self, elevator_id: int) -> str:
+    def handle_open_door_internal(self, elevator_id: int) -> Dict[str, Any]:
         """Internal handler to open a specific elevator's door."""
         if not self.world:
-            return json.dumps({"status": "error", "message": "World not initialized"})
+            return {"status": "error", "message": "World not initialized"}
         if 0 <= elevator_id - 1 < len(self.world.elevators):
             print(f"API: Opening door for elevator {elevator_id}")
-            self.world.elevators[elevator_id - 1].open_door()
-            return json.dumps({"status": "success", "action": "open_door"})
-        return json.dumps({"status": "error", "message": f"Elevator {elevator_id} not found"})
+            try:
+                self.world.elevators[
+                    elevator_id - 1
+                ].open_door()  # Assume this might raise an error or return status
+                return {
+                    "status": "success",
+                    "action": "open_door",
+                    "message": f"Door opening for elevator {elevator_id}",
+                }
+            except (
+                Exception
+            ) as e:  # Replace with specific exceptions if `open_door` can raise them
+                return {
+                    "status": "error",
+                    "message": f"Failed to open door for elevator {elevator_id}: {str(e)}",
+                }
+        return {"status": "error", "message": f"Elevator {elevator_id} not found"}
 
-    def handle_close_door_internal(self, elevator_id: int) -> str:
+    def handle_close_door_internal(self, elevator_id: int) -> Dict[str, Any]:
         """Internal handler to close a specific elevator's door."""
         if not self.world:
-            return json.dumps({"status": "error", "message": "World not initialized"})
+            return {"status": "error", "message": "World not initialized"}
         if 0 <= elevator_id - 1 < len(self.world.elevators):
             print(f"API: Closing door for elevator {elevator_id}")
-            self.world.elevators[elevator_id - 1].close_door()
-            return json.dumps({"status": "success", "action": "close_door"})
-        return json.dumps({"status": "error", "message": f"Elevator {elevator_id} not found"})
+            try:
+                self.world.elevators[
+                    elevator_id - 1
+                ].close_door()  # Assume this might raise an error or return status
+                return {
+                    "status": "success",
+                    "action": "close_door",
+                    "message": f"Door closing for elevator {elevator_id}",
+                }
+            except (
+                Exception
+            ) as e:  # Replace with specific exceptions if `close_door` can raise them
+                return {
+                    "status": "error",
+                    "message": f"Failed to close door for elevator {elevator_id}: {str(e)}",
+                }
+        return {"status": "error", "message": f"Elevator {elevator_id} not found"}
 
-    def handle_reset_internal(self) -> str:
+    def handle_reset_internal(self) -> Dict[str, Any]:
         """Internal handler for resetting the simulation."""
         if not self.world:
-            return json.dumps({"status": "error", "message": "World not initialized"})
+            return {"status": "error", "message": "World not initialized"}
         print("API: Resetting simulation")
-        for elevator in self.world.elevators:
-            elevator.reset()
-        # Potentially reset dispatcher or other world states if necessary
-        return json.dumps({"status": "success", "action": "reset"})
+        try:
+            for elevator in self.world.elevators:
+                elevator.reset()
+            # Potentially reset dispatcher or other world states if necessary
+            # self.world.dispatcher.reset() # If dispatcher has a reset method
+            return {
+                "status": "success",
+                "action": "reset",
+                "message": "Simulation reset successfully",
+            }
+        except Exception as e:
+            return {
+                "status": "error",
+                "message": f"Failed to reset simulation: {str(e)}",
+            }  # Methods to send messages/updates to the ZMQ client (test server)
 
-    # Methods to send messages/updates to the frontend/client
     def send_message_to_client(self, message: str):
-        """Sends a generic message to the ZMQ client."""
-        # Use the direct client reference
-        if self.client:
-            print(f"API sending to client: {message}")
-            self.client.sendMsg(message)
+        """Sends a generic raw message to the ZMQ client via ZmqCoordinator.
+        This is now primarily for messages not originating from parse_and_handle_message flow,
+        like floor_arrived.
+        """
+        if self.zmq_coordinator:
+            self.zmq_coordinator.send_message_to_server(
+                message
+            )  # Direct send, no formatting here
         else:
-            # This case should ideally not happen if client is initialized in __init__
-            print(f"API cannot send to client (client not initialized): {message}")
+            print(
+                f"ElevatorAPI: ZmqCoordinator not available. Cannot send ZMQ message: {message}"
+            )
 
-    def send_floor_arrived_message(self, elevator_id: int, floor: int, direction_str: str):
-        """Sends a floor arrival message."""
-        # direction_str could be "up_", "down_", or ""
-        message = f"{direction_str}floor_arrived@{floor}#{elevator_id}"
+    def send_floor_arrived_message(
+        self, elevator_id: int, floor: int, direction_str: str
+    ):
+        """Sends a floor arrival message in the format: {direction_prefix}floor_{floor_number}_arrived#{elevator_id}
+        e.g., up_floor_1_arrived#1, floor_2_arrived#2
+        """
+        prefix = ""
+        if direction_str == "up":
+            prefix = "up_"
+        elif direction_str == "down":
+            prefix = "down_"
+        # If direction_str is empty or any other unrecognized value, prefix remains empty,
+        # resulting in a message like "floor_1_arrived#1".
+        message = f"{prefix}floor_{floor}_arrived#{elevator_id}"
         self.send_message_to_client(message)
 
     def send_door_opened_message(self, elevator_id: int):
@@ -155,6 +293,10 @@ class ElevatorAPI:
 
     # Existing methods that are called by the frontend (e.g., via webserver)
     # These will now use the internal handlers or directly call world/dispatcher methods.
+    # Their return type might change if they are expected to return the raw dict now,
+    # or they can still return JSON if the webserver part expects JSON.
+    # For now, let's assume they still need to return JSON for the webserver.
+
     def handle_call_elevator(self, data: Dict[str, Any]) -> str:
         """Handle call elevator request from frontend"""
         try:
@@ -162,11 +304,14 @@ class ElevatorAPI:
             direction = data.get("direction")  # "up" or "down"
 
             if floor is None or direction is None:
-                return json.dumps({"status": "error", "message": "Missing floor or direction"})
+                return json.dumps(
+                    {"status": "error", "message": "Missing floor or direction"}
+                )
 
             print(f"API: Frontend call elevator: floor={floor}, direction={direction}")
             # Use the internal handler which now calls dispatcher directly
-            return self.handle_call_elevator_internal(int(floor), direction)
+            result_dict = self.handle_call_elevator_internal(int(floor), direction)
+            return json.dumps(result_dict)  # Still return JSON for this path
         except Exception as e:
             print(f"Error in handle_call_elevator: {e}")
             return json.dumps({"status": "error", "message": str(e)})
@@ -178,11 +323,18 @@ class ElevatorAPI:
             elevator_id = data.get("elevatorId")
 
             if floor is None or elevator_id is None:
-                return json.dumps({"status": "error", "message": "Missing floor or elevatorId"})
+                return json.dumps(
+                    {"status": "error", "message": "Missing floor or elevatorId"}
+                )
 
-            print(f"API: Frontend select floor: floor={floor}, elevator_id={elevator_id}")
+            print(
+                f"API: Frontend select floor: floor={floor}, elevator_id={elevator_id}"
+            )
             # Use the internal handler
-            return self.handle_select_floor_internal(int(floor), int(elevator_id))
+            result_dict = self.handle_select_floor_internal(
+                int(floor), int(elevator_id)
+            )
+            return json.dumps(result_dict)  # Still return JSON for this path
         except Exception as e:
             print(f"Error in handle_select_floor: {e}")
             return json.dumps({"status": "error", "message": str(e)})
@@ -195,7 +347,8 @@ class ElevatorAPI:
                 return json.dumps({"status": "error", "message": "Missing elevatorId"})
 
             print(f"API: Frontend open door: elevator_id={elevator_id}")
-            return self.handle_open_door_internal(int(elevator_id))
+            result_dict = self.handle_open_door_internal(int(elevator_id))
+            return json.dumps(result_dict)  # Still return JSON for this path
         except Exception as e:
             print(f"Error in handle_open_door: {e}")
             return json.dumps({"status": "error", "message": str(e)})
@@ -208,7 +361,8 @@ class ElevatorAPI:
                 return json.dumps({"status": "error", "message": "Missing elevatorId"})
 
             print(f"API: Frontend close door: elevator_id={elevator_id}")
-            return self.handle_close_door_internal(int(elevator_id))
+            result_dict = self.handle_close_door_internal(int(elevator_id))
+            return json.dumps(result_dict)  # Still return JSON for this path
         except Exception as e:
             print(f"Error in handle_close_door: {e}")
             return json.dumps({"status": "error", "message": str(e)})
@@ -237,7 +391,11 @@ class ElevatorAPI:
             direction_val = elevator.direction
             direction_str = "none"
             if direction_val:
-                direction_str = direction_val.name if hasattr(direction_val, "name") else str(direction_val)
+                direction_str = (
+                    direction_val.name
+                    if hasattr(direction_val, "name")
+                    else str(direction_val)
+                )
 
             elevator_state = {
                 "elevator_id": elevator.id,
