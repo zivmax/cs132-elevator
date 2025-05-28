@@ -75,25 +75,25 @@ class ElevatorAPI:
 
         try:
             if isinstance(command_or_error, CallCommand):
-                response_data_from_handler = self.handle_call_elevator_internal(
+                response_data_from_handler = self._handle_call_elevator_internal(
                     command_or_error.floor, command_or_error.direction
                 )
             elif isinstance(command_or_error, SelectFloorCommand):
-                response_data_from_handler = self.handle_select_floor_internal(
+                response_data_from_handler = self._handle_select_floor_internal(
                     command_or_error.floor, command_or_error.elevator_id
                 )
             elif isinstance(command_or_error, OpenDoorCommand):
                 parsed_elevator_id_for_response = command_or_error.elevator_id
-                response_data_from_handler = self.handle_open_door_internal(
+                response_data_from_handler = self._handle_open_door_internal(
                     command_or_error.elevator_id
                 )
             elif isinstance(command_or_error, CloseDoorCommand):
                 parsed_elevator_id_for_response = command_or_error.elevator_id
-                response_data_from_handler = self.handle_close_door_internal(
+                response_data_from_handler = self._handle_close_door_internal(
                     command_or_error.elevator_id
                 )
             elif isinstance(command_or_error, ResetCommand):
-                response_data_from_handler = self.handle_reset_internal()
+                response_data_from_handler = self._handle_reset_internal()
             else:
                 error_info = {
                     "type": "unknown_command_type_error",
@@ -142,7 +142,7 @@ class ElevatorAPI:
 
     # Internal handlers, previously part of Dispatcher or direct calls from old API methods
     # Modified to return Dict instead of JSON string
-    def handle_call_elevator_internal(
+    def _handle_call_elevator_internal(
         self, floor: int, direction: str
     ) -> Dict[str, Any]:
         """Internal handler for elevator calls from a floor."""
@@ -161,7 +161,7 @@ class ElevatorAPI:
         except Exception as e:
             return {"status": "error", "message": f"Failed to call elevator: {str(e)}"}
 
-    def handle_select_floor_internal(
+    def _handle_select_floor_internal(
         self, floor: int, elevator_id: int
     ) -> Dict[str, Any]:
         """Internal handler for floor selections from inside an elevator."""
@@ -182,7 +182,7 @@ class ElevatorAPI:
                 "message": f"Failed to select floor for elevator {elevator_id}: {str(e)}",
             }
 
-    def handle_open_door_internal(self, elevator_id: int) -> Dict[str, Any]:
+    def _handle_open_door_internal(self, elevator_id: int) -> Dict[str, Any]:
         """Internal handler to open a specific elevator's door."""
         if not self.world:
             return {"status": "error", "message": "World not initialized"}
@@ -206,7 +206,7 @@ class ElevatorAPI:
                 }
         return {"status": "error", "message": f"Elevator {elevator_id} not found"}
 
-    def handle_close_door_internal(self, elevator_id: int) -> Dict[str, Any]:
+    def _handle_close_door_internal(self, elevator_id: int) -> Dict[str, Any]:
         """Internal handler to close a specific elevator's door."""
         if not self.world:
             return {"status": "error", "message": "World not initialized"}
@@ -230,7 +230,7 @@ class ElevatorAPI:
                 }
         return {"status": "error", "message": f"Elevator {elevator_id} not found"}
 
-    def handle_reset_internal(self) -> Dict[str, Any]:
+    def _handle_reset_internal(self) -> Dict[str, Any]:
         """Internal handler for resetting the simulation."""
         if not self.world:
             return {"status": "error", "message": "World not initialized"}
@@ -251,7 +251,7 @@ class ElevatorAPI:
                 "message": f"Failed to reset simulation: {str(e)}",
             }  # Methods to send messages/updates to the ZMQ client (test server)
 
-    def send_message_to_client(self, message: str):
+    def _send_message_to_client(self, message: str):
         """Sends a generic raw message to the ZMQ client via ZmqCoordinator.
         This is now primarily for messages not originating from parse_and_handle_message flow,
         like floor_arrived.
@@ -260,9 +260,10 @@ class ElevatorAPI:
             self.zmq_coordinator.send_message_to_server(
                 message
             )  # Direct send, no formatting here
+            print(f"API: Sent ZMQ message: {message}")
         else:
             print(
-                f"ElevatorAPI: ZmqCoordinator not available. Cannot send ZMQ message: {message}"
+                f"API: ZmqCoordinator not available. Cannot send ZMQ message: {message}"
             )
 
     def send_floor_arrived_message(
@@ -279,17 +280,17 @@ class ElevatorAPI:
         # If direction_str is empty or any other unrecognized value, prefix remains empty,
         # resulting in a message like "floor_1_arrived#1".
         message = f"{prefix}floor_{floor}_arrived#{elevator_id}"
-        self.send_message_to_client(message)
+        self._send_message_to_client(message)
 
     def send_door_opened_message(self, elevator_id: int):
         """Sends a door opened message."""
         message = f"door_opened#{elevator_id}"
-        self.send_message_to_client(message)
+        self._send_message_to_client(message)
 
     def send_door_closed_message(self, elevator_id: int):
         """Sends a door closed message."""
         message = f"door_closed#{elevator_id}"
-        self.send_message_to_client(message)
+        self._send_message_to_client(message)
 
     # Existing methods that are called by the frontend (e.g., via webserver)
     # These will now use the internal handlers or directly call world/dispatcher methods.
@@ -310,7 +311,7 @@ class ElevatorAPI:
 
             print(f"API: Frontend call elevator: floor={floor}, direction={direction}")
             # Use the internal handler which now calls dispatcher directly
-            result_dict = self.handle_call_elevator_internal(int(floor), direction)
+            result_dict = self._handle_call_elevator_internal(int(floor), direction)
             return json.dumps(result_dict)  # Still return JSON for this path
         except Exception as e:
             print(f"Error in handle_call_elevator: {e}")
@@ -331,7 +332,7 @@ class ElevatorAPI:
                 f"API: Frontend select floor: floor={floor}, elevator_id={elevator_id}"
             )
             # Use the internal handler
-            result_dict = self.handle_select_floor_internal(
+            result_dict = self._handle_select_floor_internal(
                 int(floor), int(elevator_id)
             )
             return json.dumps(result_dict)  # Still return JSON for this path
@@ -347,7 +348,7 @@ class ElevatorAPI:
                 return json.dumps({"status": "error", "message": "Missing elevatorId"})
 
             print(f"API: Frontend open door: elevator_id={elevator_id}")
-            result_dict = self.handle_open_door_internal(int(elevator_id))
+            result_dict = self._handle_open_door_internal(int(elevator_id))
             return json.dumps(result_dict)  # Still return JSON for this path
         except Exception as e:
             print(f"Error in handle_open_door: {e}")
@@ -361,7 +362,7 @@ class ElevatorAPI:
                 return json.dumps({"status": "error", "message": "Missing elevatorId"})
 
             print(f"API: Frontend close door: elevator_id={elevator_id}")
-            result_dict = self.handle_close_door_internal(int(elevator_id))
+            result_dict = self._handle_close_door_internal(int(elevator_id))
             return json.dumps(result_dict)  # Still return JSON for this path
         except Exception as e:
             print(f"Error in handle_close_door: {e}")
