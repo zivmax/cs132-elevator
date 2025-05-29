@@ -4,9 +4,6 @@ from typing import TYPE_CHECKING, Optional
 from backend.api import ElevatorAPI
 from backend.server import WebSocketServer  # WebSocketServer is still in server.py
 from backend.models import MoveDirection
-from backend.net_client import (
-    ZmqCoordinator,
-)  # Ensure ZmqCoordinator is imported if needed here
 
 if TYPE_CHECKING:
     from backend.world import World

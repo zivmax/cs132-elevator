@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import QApplication, QMainWindow
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtGui import QIcon
 
-from backend.bridge import WebSocketBridge
+from frontend.bridge import WebSocketBridge
 from backend.api import ElevatorAPI  # Import ElevatorAPI
 
 if TYPE_CHECKING:
@@ -22,11 +22,13 @@ class ElevatorWebSocketView(QMainWindow):
         api: ElevatorAPI,  # Added api parameter
         show_debug: bool = True,
         remote_debugging_port: int = 0,
+        ws_port: int = 8765,
     ):
         super().__init__()
-        # Pass the existing api instance to WebSocketBridge
-        self.bridge = WebSocketBridge(world=world, api=api)
+        # Pass the existing api instance to WebSocketBridge, and pass ws_port
+        self.bridge = WebSocketBridge(world=world, api=api, port=ws_port)
         self.show_debug = show_debug
+        self.ws_port = ws_port
 
         # Enable remote debugging if a port is specified
         if remote_debugging_port > 0:
@@ -45,15 +47,13 @@ class ElevatorWebSocketView(QMainWindow):
         self.web_view = QWebEngineView(self)
         self.setCentralWidget(self.web_view)
 
-        # Load the HTML file that uses WebSockets
+        # Load the HTML file that uses WebSockets, append ws_port as URL param
         current_dir = os.path.dirname(os.path.abspath(__file__))
         html_path = os.path.join(current_dir, "ui", "index.html")
-
-        # Prepare to pass the debug flag to the web page
+        url = QUrl.fromLocalFile(html_path)
+        url.setQuery(f"ws_port={ws_port}")
         self.web_view.loadFinished.connect(self.on_load_finished)
-
-        # Load the HTML
-        self.web_view.load(QUrl.fromLocalFile(html_path))
+        self.web_view.load(url)
 
     def update(self):
         """Update the UI based on backend state"""

@@ -24,7 +24,10 @@ window.onload = function() {
         },
         get() { return _showDebugPanel; }
     });
-    backend.init('ws://127.0.0.1:8765');
+    // Get ws_port from URL parameter, fallback to 8765
+    const urlParams = new URLSearchParams(window.location.search);
+    const wsPort = urlParams.get('ws_port') || '8765';
+    backend.init(`ws://127.0.0.1:${wsPort}`);
     backend.elevatorUpdated.connect(function(message) {
         const data = message;
         if (data.target_floors_origin) {

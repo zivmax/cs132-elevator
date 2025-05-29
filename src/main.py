@@ -10,7 +10,7 @@ from frontend.webview import ElevatorWebSocketView
 
 
 class ElevatorApplication:
-    def __init__(self, show_debug=True, remote_debugging_port=0):
+    def __init__(self, show_debug=True, remote_debugging_port=0, ws_port=8765):
         # Create Qt application
         self.app = QApplication(sys.argv)
 
@@ -24,12 +24,13 @@ class ElevatorApplication:
         # Now, set the API for the world and initialize its dependent components
         self.backend.set_api_and_initialize_components(self.elevator_api)
 
-        # Initialize frontend with WebSocket communication, passing the API
+        # Initialize frontend with WebSocket communication, passing the API and ws_port
         self.frontend = ElevatorWebSocketView(
             self.backend,  # World instance
             self.elevator_api,  # ElevatorAPI instance
             show_debug=show_debug,
             remote_debugging_port=remote_debugging_port,
+            ws_port=ws_port,
         )
         self.frontend.show()
 
@@ -82,9 +83,10 @@ if __name__ == "__main__":
         "--debug", action="store_true", help="Show debug information panel"
     )
     parser.add_argument("--cdp", type=int, default=0, help="Chromium debugging port")
+    parser.add_argument("--ws-port", type=int, default=8765, help="WebSocket server port")
     args = parser.parse_args()
 
     # Create and run the application
-    app = ElevatorApplication(show_debug=args.debug, remote_debugging_port=args.cdp)
+    app = ElevatorApplication(show_debug=args.debug, remote_debugging_port=args.cdp, ws_port=args.ws_port)
     app.run()
     os._exit(0)
