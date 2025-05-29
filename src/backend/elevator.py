@@ -63,22 +63,26 @@ class Elevator:
                 and not self.floor_arrival_announced
                 and current_time - self.arrival_time >= 0.5
             ):
-                # Announce floor arrival
-                direction_str: str = (
-                    "up"
-                    if self.state == ElevatorState.MOVING_UP
-                    else "down" if self.state == ElevatorState.MOVING_DOWN else ""
-                )
-                # Use API to send message
-                self.api.send_floor_arrived_message(
-                    self.id, self.current_floor, direction_str
-                )
+
                 self.floor_arrival_announced = True
 
                 # Check if we've reached a target floor
                 if self.current_floor in self.target_floors:
                     # Stop at this floor
                     self.state = ElevatorState.IDLE
+
+                    # Announce floor arrival
+                    direction_str: str = (
+                        "up"
+                        if self.state == ElevatorState.MOVING_UP
+                        else "down" if self.state == ElevatorState.MOVING_DOWN else ""
+                    )
+                    
+                    # Use API to send message
+                    self.api.send_floor_arrived_message(
+                        self.id, self.current_floor, direction_str
+                    )
+
                     self.last_state_change = current_time
                 else:
                     # Continue movement if we have more floors to visit
