@@ -1,7 +1,7 @@
 import time
 from typing import List, Optional, Dict, TYPE_CHECKING
 
-from .models import ElevatorState, DoorState, MoveDirection
+from .models import ElevatorState, DoorState, MoveDirection, Task
 from .models import MoveRequest
 
 if TYPE_CHECKING:
@@ -17,10 +17,7 @@ class Elevator:
         self.api: "ElevatorAPI" = api  # Store API instance
         self.current_floor: int = 1  # Initial floor is 1
         self.previous_floor: int = 1  # Track previous floor for change detection
-        self.target_floors: List[int] = []
-        self.target_floors_origin: dict = (
-            {}
-        )  # Track origin of target floors: "inside" or "outside"
+        self.task_queue: List[Task] = []  # Replaces target_floors and target_floors_origin
         self.state: ElevatorState = ElevatorState.IDLE  # Movement state
         self.door_state: DoorState = DoorState.CLOSED  # Door state
         self.direction: Optional[MoveDirection] = None  # Use MoveDirection enum
@@ -63,26 +60,22 @@ class Elevator:
                 and not self.floor_arrival_announced
                 and current_time - self.arrival_time >= 0.5
             ):
-
                 self.floor_arrival_announced = True
 
                 # Check if we've reached a target floor
-                if self.current_floor in self.target_floors:
+                if self.task_queue and self.current_floor == self.task_queue[0].floor:
                     # Stop at this floor
                     self.state = ElevatorState.IDLE
 
-                    # Announce floor arrival
-                    direction_str: str = (
-                        "up"
-                        if self.state == ElevatorState.MOVING_UP
-                        else "down" if self.state == ElevatorState.MOVING_DOWN else ""
-                    )
-                    
-                    # Use API to send message
+                    # Announce floor arrival with correct prefix
+                    task = self.task_queue[0]
+                    if task.origin == "outside" and task.direction:
+                        direction_str = f"{task.direction}_"
+                    else:
+                        direction_str = ""
                     self.api.send_floor_arrived_message(
-                        self.id, self.current_floor, direction_str
+                        self.id, self.current_floor, direction_str.rstrip("_")
                     )
-
                     self.last_state_change = current_time
                 else:
                     # Continue movement if we have more floors to visit
@@ -128,17 +121,14 @@ class Elevator:
             and self.door_state == DoorState.CLOSED
             and self.floor_arrival_announced
             and not self.serviced_current_arrival
-        ):  # Check if this floor is a target
-            if self.current_floor in self.target_floors:
+        ):
+            if self.task_queue and self.current_floor == self.task_queue[0].floor:
                 # Open doors for target floor
                 self.open_door()
                 self.serviced_current_arrival = True
-
-                # Remove this floor from targets and origins
-                self.target_floors.remove(self.current_floor)
-                if self.current_floor in self.target_floors_origin:
-                    del self.target_floors_origin[self.current_floor]
-            elif not self.target_floors:
+                # Remove this task from the queue
+                self.task_queue.pop(0)
+            elif not self.task_queue:
                 # Open doors if we have no targets (e.g., initial floor)
                 self.open_door()
                 self.serviced_current_arrival = True
@@ -147,14 +137,14 @@ class Elevator:
         elif (
             self.state == ElevatorState.IDLE
             and self.door_state == DoorState.CLOSED
-            and self.target_floors
+            and self.task_queue
             and current_time - self.last_state_change >= 0.5
         ):
             self.request_movement_if_needed()
 
     def request_movement_if_needed(self) -> None:
         """Request movement from the Engine if there are target floors"""
-        if self.target_floors:
+        if self.task_queue:
             self._determine_direction()
             if self.direction and self.door_state == DoorState.CLOSED:
                 # Send move request to Engine instead of changing state directly
@@ -216,35 +206,35 @@ class Elevator:
             self.last_door_change = time.time()
 
     def _determine_direction(self) -> None:
-        if not self.target_floors:
+        if not self.task_queue:
             self.direction = None
             return
-
         # If all target floors are above current floor
-        if all(floor > self.current_floor for floor in self.target_floors):
+        if all(task.floor > self.current_floor for task in self.task_queue):
             self.direction = MoveDirection.UP
         # If all target floors are below current floor
-        elif all(floor < self.current_floor for floor in self.target_floors):
+        elif all(task.floor < self.current_floor for task in self.task_queue):
             self.direction = MoveDirection.DOWN
         # If current direction is up, keep going up until no more floors above
         elif self.direction == MoveDirection.UP and any(
-            floor > self.current_floor for floor in self.target_floors
+            task.floor > self.current_floor for task in self.task_queue
         ):
             self.direction = MoveDirection.UP
         # If current direction is down, keep going down until no more floors below
         elif self.direction == MoveDirection.DOWN and any(
-            floor < self.current_floor for floor in self.target_floors
+            task.floor < self.current_floor for task in self.task_queue
         ):
             self.direction = MoveDirection.DOWN
         # Otherwise pick the closest floor
         else:
             closest_above: Optional[int] = min(
-                [f for f in self.target_floors if f > self.current_floor], default=None
+                [task.floor for task in self.task_queue if task.floor > self.current_floor],
+                default=None,
             )
             closest_below: Optional[int] = max(
-                [f for f in self.target_floors if f < self.current_floor], default=None
+                [task.floor for task in self.task_queue if task.floor < self.current_floor],
+                default=None,
             )
-
             if closest_above and closest_below:
                 self.direction = (
                     MoveDirection.UP
@@ -254,157 +244,105 @@ class Elevator:
                 )
             elif closest_above:
                 self.direction = MoveDirection.UP
-            elif closest_below:  # Added explicit check for closest_below
+            elif closest_below:
                 self.direction = MoveDirection.DOWN
             else:
                 self.direction = None  # No valid targets
 
     def calculate_estimated_time(
         self, floor: int, direction: Optional[MoveDirection]
-    ) -> float:  # Change direction type to MoveDirection also allow None
-        # Calculate estimated time to service a request at floor with given direction
+    ) -> float:
         if self.current_floor == floor and self.door_state in [
             DoorState.OPEN,
             DoorState.OPENING,
         ]:
             return 0  # Already at floor with open door
-
-        # Calculate time based on current state and target floors
         total_time = 0.0
-
-        # Time to close door if open
         if self.door_state in [DoorState.OPEN, DoorState.OPENING]:
             total_time += 1.0  # Door closing time
-
-        # Simulate the path to determine time
-        # Store original state to restore later
         original_floor = self.current_floor
-        original_target_floors = self.target_floors.copy()
+        original_task_queue = self.task_queue.copy()
         original_state = self.state
-
         simulated_current_floor = self.current_floor
-
         if self.state == ElevatorState.IDLE or not self.is_moving():
-            # Direct path to requested floor
             total_time += abs(simulated_current_floor - floor) * self.floor_travel_time
         else:
-            # We need to consider the current direction and all target floors
-            simulated_targets = self.target_floors.copy()
-
-            # Determine when this floor would be serviced based on current direction
+            simulated_targets = self.task_queue.copy()
             currently_moving_up = self.state == ElevatorState.MOVING_UP
-
-            # Calculate time based on elevator movement pattern
             if currently_moving_up:
-                # First handle all floors above current in ascending order
                 for target in sorted(
-                    [f for f in simulated_targets if f > simulated_current_floor]
+                    [task.floor for task in simulated_targets if task.floor > simulated_current_floor]
                 ):
                     total_time += (
                         abs(target - simulated_current_floor) * self.floor_travel_time
                     )
-                    simulated_current_floor = target  # Simulated position
-
-                    # If this is our requested floor with matching direction
+                    simulated_current_floor = target
                     if target == floor and (
-                        direction == MoveDirection.UP or direction == None
-                    ):  # Use MoveDirection.UP
-                        # Restore original state before returning
+                        direction == MoveDirection.UP or direction is None
+                    ):
                         self.current_floor = original_floor
-                        self.target_floors = original_target_floors
+                        self.task_queue = original_task_queue
                         self.state = original_state
                         return total_time
-
-                # Then handle all floors below in descending order
-                # This part assumes the elevator turns around
-                # If the request is in the opposite direction of current travel,
-                # it will be serviced after the current direction's requests are done.
-                if (
-                    simulated_targets and simulated_current_floor != floor
-                ):  # if there were targets upwards or we are not at the floor
-                    # Time to turn around (if it was moving up and now needs to go down)
-                    # No explicit turn around time, but new direction starts
+                if simulated_targets and simulated_current_floor != floor:
                     pass
-
                 for target in sorted(
-                    [f for f in simulated_targets if f < simulated_current_floor],
+                    [task.floor for task in simulated_targets if task.floor < simulated_current_floor],
                     reverse=True,
                 ):
                     total_time += (
                         abs(target - simulated_current_floor) * self.floor_travel_time
                     )
-                    simulated_current_floor = target  # Simulated position
-
-                    # If this is our requested floor with matching direction
+                    simulated_current_floor = target
                     if target == floor and (
-                        direction == MoveDirection.DOWN or direction == None
-                    ):  # Use MoveDirection.DOWN
-                        # Restore original state
+                        direction == MoveDirection.DOWN or direction is None
+                    ):
                         self.current_floor = original_floor
-                        self.target_floors = original_target_floors
+                        self.task_queue = original_task_queue
                         self.state = original_state
                         return total_time
-            else:  # Currently moving down
-                # First handle all floors below current in descending order
+            else:
                 for target in sorted(
-                    [f for f in simulated_targets if f < simulated_current_floor],
+                    [task.floor for task in simulated_targets if task.floor < simulated_current_floor],
                     reverse=True,
                 ):
                     total_time += (
                         abs(target - simulated_current_floor) * self.floor_travel_time
                     )
-                    simulated_current_floor = target  # Simulated position
-
-                    # If this is our requested floor with matching direction
+                    simulated_current_floor = target
                     if target == floor and (
-                        direction == MoveDirection.DOWN or direction == None
-                    ):  # Use MoveDirection.DOWN
-                        # Restore original state
+                        direction == MoveDirection.DOWN or direction is None
+                    ):
                         self.current_floor = original_floor
-                        self.target_floors = original_target_floors
+                        self.task_queue = original_task_queue
                         self.state = original_state
                         return total_time
-
-                # Then handle all floors above in ascending order
-                if (
-                    simulated_targets and simulated_current_floor != floor
-                ):  # if there were targets downwards or we are not at the floor
-                    # Time to turn around
+                if simulated_targets and simulated_current_floor != floor:
                     pass
-
                 for target in sorted(
-                    [f for f in simulated_targets if f > simulated_current_floor]
+                    [task.floor for task in simulated_targets if task.floor > simulated_current_floor]
                 ):
                     total_time += (
                         abs(target - simulated_current_floor) * self.floor_travel_time
                     )
-                    simulated_current_floor = target  # Simulated position
-
-                    # If this is our requested floor with matching direction
+                    simulated_current_floor = target
                     if target == floor and (
-                        direction == MoveDirection.UP or direction == None
-                    ):  # Use MoveDirection.UP
-                        # Restore original state
+                        direction == MoveDirection.UP or direction is None
+                    ):
                         self.current_floor = original_floor
-                        self.target_floors = original_target_floors
+                        self.task_queue = original_task_queue
                         self.state = original_state
                         return total_time
-
-            # If we didn't find it in the normal path (e.g. it's a new call not in target_floors or requires a turn)
-            # Add time for direct path from the last simulated position
             total_time += abs(simulated_current_floor - floor) * self.floor_travel_time
-
-        # Restore original state
         self.current_floor = original_floor
-        self.target_floors = original_target_floors
+        self.task_queue = original_task_queue
         self.state = original_state
         return total_time
 
     def reset(self) -> None:
         self.current_floor = 1
         self.previous_floor = 1
-        self.target_floors = []
-        self.target_floors_origin = {}  # Clear the origins dictionary
+        self.task_queue = []
         self.state = ElevatorState.IDLE
         self.door_state = DoorState.CLOSED
         self.direction = None

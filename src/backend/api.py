@@ -169,8 +169,8 @@ class ElevatorAPI:
             return {"status": "error", "message": "World or Dispatcher not initialized"}
         print(f"API: Elevator {elevator_id} selecting floor {floor}")
         try:
-            # Dispatcher's _add_target_floor expects 0-based elevator_idx
-            self.world.dispatcher.add_target_floor(elevator_id - 1, floor, "inside")
+            # Dispatcher's add_target_task expects 0-based elevator_idx
+            self.world.dispatcher.add_target_task(elevator_id - 1, floor, "inside")
             return {
                 "status": "success",
                 "action": "select_floor",
@@ -397,16 +397,19 @@ class ElevatorAPI:
                     else str(direction_val)
                 )
 
+            # Compose targetFloors and targetFloorsOrigin for frontend compatibility
+            target_floors = [task.floor for task in elevator.task_queue]
+            target_floors_origin = {task.floor: task.origin for task in elevator.task_queue}
+
             elevator_state = {
                 "elevator_id": elevator.id,
                 "floor": elevator.current_floor,
                 "state": state_str,
                 "door_state": door_state_str,
                 "direction": direction_str,  # Use the processed direction string
-                "target_floors": elevator.target_floors,
-                "target_floors_origin": elevator.target_floors_origin,
+                "target_floors": target_floors,
+                "target_floors_origin": target_floors_origin,
             }
 
             elevator_states.append(elevator_state)
-        # print(f"API: Fetched states: {elevator_states}") # Optional: for debugging
         return elevator_states

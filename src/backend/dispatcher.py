@@ -1,5 +1,5 @@
 from typing import List, Optional, TYPE_CHECKING, Tuple
-from .models import ElevatorState, DoorState, MoveDirection  # Added MoveDirection
+from .models import ElevatorState, DoorState, MoveDirection, Task
 from .elevator import Elevator
 
 
@@ -33,100 +33,61 @@ class Dispatcher:
                 best_elevator = elevator
 
         if best_elevator:
-            self.add_target_floor(best_elevator.id - 1, floor, "outside")
+            self.add_target_task(best_elevator.id - 1, floor, "outside", direction)
 
-    def add_target_floor(
-        self, elevator_idx: int, floor: int, origin: str = "outside"
+    def add_target_task(
+        self, elevator_idx: int, floor: int, origin: str = "outside", direction: str = None
     ) -> None:
         elevator = self.world.elevators[elevator_idx]
 
+        # If already at the floor and doors closed, open doors and send message
         if floor == elevator.current_floor and elevator.door_state == DoorState.CLOSED:
-            direction_str: str = (
-                ""  # No specific direction for arrival at current floor for door opening
-            )
-            # Use API to send message
+            direction_str = direction if origin == "outside" else ""
             self.api.send_floor_arrived_message(
-                elevator.id, elevator.current_floor, direction_str
+                elevator.id, elevator.current_floor, direction_str or ""
             )
             elevator.open_door()
             return
 
-        # Skip if already in target list or currently at this floor
-        if floor in elevator.target_floors or (
+        # Skip if already in queue or currently at this floor with doors open
+        if any(t.floor == floor for t in elevator.task_queue) or (
             floor == elevator.current_floor and elevator.door_state != DoorState.CLOSED
         ):
             return
 
-        # Add floor to target list
-        elevator.target_floors.append(floor)
-
-        # Store the origin of this floor request
-        elevator.target_floors_origin[floor] = origin
-
-        # Optimize the sequence for efficiency
-        self._optimize_target_sequence(elevator)
+        # Add new task
+        elevator.task_queue.append(Task(floor, origin, direction if origin == "outside" else None))
+        self._optimize_task_queue(elevator)
 
         # If door is open, close it to start moving
         if elevator.door_state == DoorState.OPEN:
             elevator.close_door()
         else:
-            # Request movement if possible
             elevator.request_movement_if_needed()
 
-    def _optimize_target_sequence(self, elevator: "Elevator") -> None:
-        """Optimize the sequence of target floors for efficiency"""
-        if not elevator.target_floors or len(elevator.target_floors) <= 1:
+    def _optimize_task_queue(self, elevator: "Elevator") -> None:
+        if not elevator.task_queue or len(elevator.task_queue) <= 1:
             return
-
-        # Determine current direction if elevator is moving
         current_direction = None
         if elevator.state == ElevatorState.MOVING_UP:
             current_direction = "up"
         elif elevator.state == ElevatorState.MOVING_DOWN:
             current_direction = "down"
-
-        # If elevator has a direction, prioritize floors in that direction first
         if current_direction == "up":
-            # Serve floors above current floor first, in ascending order
-            above_floors = sorted(
-                [f for f in elevator.target_floors if f > elevator.current_floor]
-            )
-            below_floors = sorted(
-                [f for f in elevator.target_floors if f < elevator.current_floor]
-            )
-            elevator.target_floors = above_floors + below_floors
+            above = [t for t in elevator.task_queue if t.floor > elevator.current_floor]
+            below = [t for t in elevator.task_queue if t.floor < elevator.current_floor]
+            elevator.task_queue = sorted(above, key=lambda t: t.floor) + sorted(below, key=lambda t: t.floor)
         elif current_direction == "down":
-            # Serve floors below current floor first, in descending order
-            above_floors = sorted(
-                [f for f in elevator.target_floors if f > elevator.current_floor]
-            )
-            below_floors = sorted(
-                [f for f in elevator.target_floors if f < elevator.current_floor],
-                reverse=True,
-            )
-            elevator.target_floors = below_floors + above_floors
+            above = [t for t in elevator.task_queue if t.floor > elevator.current_floor]
+            below = [t for t in elevator.task_queue if t.floor < elevator.current_floor]
+            elevator.task_queue = sorted(below, key=lambda t: -t.floor) + sorted(above, key=lambda t: t.floor)
         else:
-            # If idle, pick the closest direction
-            closest_floor = min(
-                elevator.target_floors, key=lambda f: abs(elevator.current_floor - f)
-            )
-            if closest_floor > elevator.current_floor:
-                # Move up first
-                above_floors = sorted(
-                    [f for f in elevator.target_floors if f > elevator.current_floor]
-                )
-                below_floors = sorted(
-                    [f for f in elevator.target_floors if f < elevator.current_floor],
-                    reverse=True,
-                )
-                elevator.target_floors = above_floors + below_floors
+            closest = min(elevator.task_queue, key=lambda t: abs(elevator.current_floor - t.floor))
+            if closest.floor > elevator.current_floor:
+                above = [t for t in elevator.task_queue if t.floor > elevator.current_floor]
+                below = [t for t in elevator.task_queue if t.floor < elevator.current_floor]
+                elevator.task_queue = sorted(above, key=lambda t: t.floor) + sorted(below, key=lambda t: t.floor)
             else:
-                # Move down first
-                above_floors = sorted(
-                    [f for f in elevator.target_floors if f > elevator.current_floor]
-                )
-                below_floors = sorted(
-                    [f for f in elevator.target_floors if f < elevator.current_floor],
-                    reverse=True,
-                )
-                elevator.target_floors = below_floors + above_floors
+                above = [t for t in elevator.task_queue if t.floor > elevator.current_floor]
+                below = [t for t in elevator.task_queue if t.floor < elevator.current_floor]
+                elevator.task_queue = sorted(below, key=lambda t: -t.floor) + sorted(above, key=lambda t: t.floor)

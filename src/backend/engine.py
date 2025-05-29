@@ -41,7 +41,7 @@ class Engine:
 
                     # Remove the request once processed
                     if (
-                        not elevator.target_floors
-                        or next_floor == elevator.target_floors[0]
+                        not elevator.task_queue
+                        or (elevator.task_queue and next_floor == elevator.task_queue[0].floor)
                     ):
                         self.movement_requests.pop(elevator.id, None)

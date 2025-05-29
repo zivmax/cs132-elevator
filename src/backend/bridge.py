@@ -81,18 +81,16 @@ class WebSocketBridge:
         if isinstance(direction, MoveDirection):
             direction_value = direction.value
         elif direction is None:
-            direction_value = (
-                None  # Or an empty string, depending on frontend expectation
-            )
+            direction_value = None
 
         data = {
             "id": elevator_id,
             "floor": floor,
             "state": state,
             "doorState": door_state,
-            "direction": direction_value,  # Use the converted value
+            "direction": direction_value,
             "targetFloors": target_floors,
-            "target_floors_origin": target_floors_origin or {},
+            "targetFloorsOrigin": target_floors_origin or {},
         }
         if self.server.is_running:
             self.server.send_elevator_states(data)
