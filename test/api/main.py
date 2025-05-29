@@ -56,12 +56,12 @@ def testing(server: server.ZmqServerThread):
     timeStamp = -1  # default time stamp is -1
     clientMessage = ""  # default received message is ""
     count = 0
-    server.send_string(server.bindedClient, "reset")  # Reset the client
+    server.send_string(server.bondClient, "reset")  # Reset the client
     time.sleep(1)
 
     # for passenger in passengers:
     #     time.sleep(1)
-    server.send_string(server.bindedClient, "call_up@1")
+    server.send_string(server.bondClient, "call_up@1")
 
     def is_received_new_message(
         oldTimeStamp: int, oldServerMessage: str, Msgunprocessed: bool = False
@@ -150,7 +150,7 @@ def testing(server: server.ZmqServerThread):
                                 PassengerState.IN_ELEVATOR_2_AT_OTHER_FLOOR
                             )
                         server.send_string(
-                            server.bindedClient,
+                            server.bondClient,
                             f"select_floor@{passenger.target_floor}#{passenger.get_elevator_code()}",
                         )
 
@@ -166,7 +166,7 @@ def testing(server: server.ZmqServerThread):
         if count == len(passengers):
             print("PASSED: ALL PASSENGERS HAS ARRIVED AT THE TARGET FLOOR!")
             time.sleep(1)
-            server.send_string(server.bindedClient, "reset")
+            server.send_string(server.bondClient, "reset")
             break
 
 
@@ -182,7 +182,7 @@ if __name__ == "__main__":
             addr = list(my_server.clients_addr)[0]
             msg = input(f"Initiate evaluation for {addr}?: (y/n)\n")
             if msg == "y":
-                my_server.bindedClient = addr
+                my_server.bondClient = addr
                 testing(my_server)
             else:
                 continue
