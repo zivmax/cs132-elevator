@@ -3,6 +3,9 @@ import json
 import websockets
 import threading
 from typing import Dict, Any, Callable, Set, Optional, List, Tuple
+import http.server
+import socketserver
+import os
 
 
 class WebSocketServer:
@@ -115,3 +118,47 @@ class WebSocketServer:
             print(
                 "WebSocket server loop not available or closed when trying to send elevator_updated."
             )
+
+
+class HTTPServer(threading.Thread):
+    """Simple HTTP server to serve static files for the frontend"""
+
+    def __init__(
+        self, host: str = "127.0.0.1", port: int = 8080, directory: str = None
+    ):
+        super().__init__(daemon=True)
+        self.host = host
+        self.port = port
+        # Determine the directory for static files
+        if directory is None:
+            # Assuming server.py is in src/backend, navigate to src/frontend/ui
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            self.directory = os.path.join(current_dir, "..", "frontend", "ui")
+        else:
+            self.directory = directory
+        self.httpd = None
+
+    def run(self):
+        handler = lambda *args, **kwargs: SimpleHTTPRequestHandler(
+            *args, directory=self.directory, **kwargs
+        )
+        self.httpd = socketserver.TCPServer((self.host, self.port), handler)
+        print(
+            f"HTTP server started on http://{self.host}:{self.port}, serving from {os.path.abspath(self.directory)}"
+        )
+        self.httpd.serve_forever()
+
+    def stop(self):
+        if self.httpd:
+            self.httpd.shutdown()
+            self.httpd.server_close()
+            print("HTTP server stopped")
+
+
+class SimpleHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
+    def __init__(self, *args, directory=None, **kwargs):
+        # The 'directory' kwarg is from HTTPServer, pointing to 'src/frontend/ui'.
+        # Pass this to the superclass constructor.
+        # The superclass will set its self.directory to this value.
+        # The superclass's translate_path and other methods will then use this correct directory.
+        super().__init__(*args, directory=directory, **kwargs)

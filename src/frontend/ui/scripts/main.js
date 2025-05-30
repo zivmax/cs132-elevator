@@ -9,24 +9,31 @@ window.openDoor = openDoor;
 window.closeDoor = closeDoor;
 
 window.onload = function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const wsPort = urlParams.get('ws_port') || '8765';
+    // Read show_debug from URL parameter, default to false if not present
+    const showDebug = urlParams.get('show_debug') === 'true';
+
     const style = document.createElement('style');
     document.head.appendChild(style);
     const updateDebugPanelVisibility = function() {
-        const isVisible = window.showDebugPanel !== false;
-        style.textContent = '.debug-section { display: ' + (isVisible ? 'block' : 'none') + ' !important; }';
+        // Use the showDebug value from URL parameters
+        style.textContent = '.debug-section { display: ' + (showDebug ? 'block' : 'none') + ' !important; }';
     };
     updateDebugPanelVisibility();
-    let _showDebugPanel = window.showDebugPanel;
+
+    // The Object.defineProperty for window.showDebugPanel might still be useful if you want to toggle it from console
+    // but its initial state is now controlled by the URL parameter.
+    let _showDebugPanel = showDebug; // Initialize with URL param value
     Object.defineProperty(window, 'showDebugPanel', {
         set(value) {
             _showDebugPanel = value;
-            updateDebugPanelVisibility();
+            // Update visibility if changed dynamically via console
+            style.textContent = '.debug-section { display: ' + (_showDebugPanel ? 'block' : 'none') + ' !important; }';
         },
         get() { return _showDebugPanel; }
     });
-    // Get ws_port from URL parameter, fallback to 8765
-    const urlParams = new URLSearchParams(window.location.search);
-    const wsPort = urlParams.get('ws_port') || '8765';
+
     backend.init(`ws://127.0.0.1:${wsPort}`);
     backend.elevatorUpdated.connect(function(message) {
         const data = message;

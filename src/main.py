@@ -2,17 +2,22 @@ import sys
 import os
 import time
 import argparse
-from PyQt6.QtWidgets import QApplication
 
 from backend.world import World
 from backend.api import ElevatorAPI  # Import ElevatorAPI
-from frontend.webview import ElevatorWebSocketView
+from frontend.webview import ElevatorWebview
+from frontend.bridge import WebSocketBridge # Import WebSocketBridge
+from backend.server import HTTPServer # Import HTTPServer
 
 
 class ElevatorApplication:
-    def __init__(self, show_debug=True, remote_debugging_port=0, ws_port=8765):
-        # Create Qt application
-        self.app = QApplication(sys.argv)
+    def __init__(self, show_debug=False, remote_debugging_port=0, ws_port=8765, http_port=None, headless=False): # MODIFIED
+        self.headless = headless # Store headless state
+        if not self.headless:
+            from PyQt6.QtWidgets import QApplication # Conditional import
+            self.app = QApplication(sys.argv)
+        else:
+            self.app = None
 
         # Initialize backend World first (without API yet)
         self.backend = World()
@@ -24,15 +29,32 @@ class ElevatorApplication:
         # Now, set the API for the world and initialize its dependent components
         self.backend.set_api_and_initialize_components(self.elevator_api)
 
-        # Initialize frontend with WebSocket communication, passing the API and ws_port
-        self.frontend = ElevatorWebSocketView(
-            self.backend,  # World instance
-            self.elevator_api,  # ElevatorAPI instance
-            show_debug=show_debug,
-            remote_debugging_port=remote_debugging_port,
-            ws_port=ws_port,
-        )
-        self.frontend.show()
+        # Initialize WebSocketBridge
+        self.bridge = WebSocketBridge(world=self.backend, api=self.elevator_api, port=ws_port)
+
+        # self.headless = headless # Duplicate assignment removed
+        self.http_server = None
+
+        if http_port is not None: # MODIFIED
+            # Start HTTP server if http_port is specified
+            self.http_server = HTTPServer(port=http_port)
+            self.http_server.start()
+            print(f"HTTP server running. Access frontend at http://127.0.0.1:{http_port}/?ws_port={ws_port}&show_debug={str(show_debug).lower()}") # MODIFIED
+        
+        if headless:
+            # Actions specific to headless mode (if any beyond HTTP server which is now separate)
+            if http_port is None: # If headless and no http_port, user might expect a message or default.
+                 print("Running in headless mode. No HTTP server started as http_port was not specified.")
+            # If http_port was specified, the message above already printed.
+        else:
+            # Initialize frontend with WebSocket communication, passing the API and ws_port
+            self.frontend = ElevatorWebview(
+                self.bridge, # Pass WebSocketBridge instance
+                show_debug=show_debug,
+                remote_debugging_port=remote_debugging_port,
+                ws_port=ws_port,
+            )
+            self.frontend.show()
 
         # Setup timer for UI updates
         self.last_update_time = time.time()
@@ -41,8 +63,8 @@ class ElevatorApplication:
         """Update the UI based on backend state"""
         current_time = time.time()
         if current_time - self.last_update_time >= 0.1:  # Update 10 times per second
-            self.frontend.update()
-
+            if not self.headless:
+                self.frontend.update()
             # Process messages from the backend's ZmqCoordinator queue using its API
             if (
                 self.backend
@@ -66,12 +88,14 @@ class ElevatorApplication:
                         )  # Pass the object directly
 
             self.backend.update()  # Backend update (polls ZMQ via ZmqCoordinator, updates engine, elevators)
+            self.bridge.sync_backend()
             self.last_update_time = current_time
 
     def run(self):
         """Run the application main loop"""
         while True:
-            self.app.processEvents()
+            if self.app: # This check correctly handles if self.app is None
+                self.app.processEvents()
             self.update()
             time.sleep(0.01)  # Small sleep to avoid CPU hogging
 
@@ -84,9 +108,17 @@ if __name__ == "__main__":
     )
     parser.add_argument("--cdp", type=int, default=0, help="Chromium debugging port")
     parser.add_argument("--ws-port", type=int, default=8765, help="WebSocket server port")
+    parser.add_argument("--http-port", type=int, default=None, help="HTTP server port. If specified, an HTTP server will host the frontend.") # MODIFIED
+    parser.add_argument("--headless", action="store_true", help="Run in headless mode without launching webview")
     args = parser.parse_args()
 
     # Create and run the application
-    app = ElevatorApplication(show_debug=args.debug, remote_debugging_port=args.cdp, ws_port=args.ws_port)
+    app = ElevatorApplication(
+        show_debug=args.debug, 
+        remote_debugging_port=args.cdp, 
+        ws_port=args.ws_port,
+        http_port=args.http_port,
+        headless=args.headless
+    )
     app.run()
     os._exit(0)

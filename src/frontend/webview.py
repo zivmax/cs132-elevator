@@ -1,33 +1,30 @@
 import os
 import sys
 from typing import TYPE_CHECKING, Dict, Any
-from PyQt6.QtCore import QUrl
+from PyQt6.QtCore import QUrl, QUrlQuery  # Import QUrlQuery
 from PyQt6.QtWidgets import QApplication, QMainWindow
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtGui import QIcon
 
 from frontend.bridge import WebSocketBridge
-from backend.api import ElevatorAPI  # Import ElevatorAPI
 
 if TYPE_CHECKING:
     from backend.world import World
 
 
-class ElevatorWebSocketView(QMainWindow):
+class ElevatorWebview(QMainWindow):
     """Main window for the elevator UI using QtWebEngine with WebSocket communication"""
 
     def __init__(
         self,
-        world: "World",  # Made world non-optional as it's required by bridge
-        api: ElevatorAPI,  # Added api parameter
-        show_debug: bool = True,
+        bridge: WebSocketBridge,  # Changed to accept WebSocketBridge instance
+        show_debug: bool = False,  # Default changed to False
         remote_debugging_port: int = 0,
-        ws_port: int = 8765,
+        ws_port: int = 8765,  # ws_port is still needed for the URL query
     ):
         super().__init__()
-        # Pass the existing api instance to WebSocketBridge, and pass ws_port
-        self.bridge = WebSocketBridge(world=world, api=api, port=ws_port)
-        self.show_debug = show_debug
+        self.bridge = bridge  # Use the passed WebSocketBridge instance
+        self.show_debug = show_debug  # Store show_debug status
         self.ws_port = ws_port
 
         # Enable remote debugging if a port is specified
@@ -47,28 +44,24 @@ class ElevatorWebSocketView(QMainWindow):
         self.web_view = QWebEngineView(self)
         self.setCentralWidget(self.web_view)
 
-        # Load the HTML file that uses WebSockets, append ws_port as URL param
+        # Load the HTML file that uses WebSockets, append ws_port and show_debug as URL params
         current_dir = os.path.dirname(os.path.abspath(__file__))
         html_path = os.path.join(current_dir, "ui", "index.html")
         url = QUrl.fromLocalFile(html_path)
-        url.setQuery(f"ws_port={ws_port}")
-        self.web_view.loadFinished.connect(self.on_load_finished)
+
+        query = QUrlQuery()
+        query.addQueryItem("ws_port", str(ws_port))
+        query.addQueryItem("show_debug", "true" if self.show_debug else "false")  # Pass show_debug as a URL parameter
+        url.setQuery(query)
+
         self.web_view.load(url)
 
     def update(self):
         """Update the UI based on backend state"""
         self.bridge.sync_backend()
 
-    def on_load_finished(self, success):
-        """Handle the web page load finished event"""
-        if success:
-            # Pass the debug flag to JavaScript
-            script = f"window.showDebugPanel = {str(self.show_debug).lower()}; console.log('Python set showDebugPanel to: {str(self.show_debug).lower()}');"
-            self.web_view.page().runJavaScript(script)
-
     def closeEvent(self, event):
         """Clean up resources when the window is closed"""
-        self.bridge.stop()
         super().closeEvent(event)
 
 
