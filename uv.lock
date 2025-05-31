@@ -69,7 +69,6 @@ name = "cs132-elevator"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
-    { name = "playwright" },
     { name = "pyqt6" },
     { name = "pyqt6-webengine" },
     { name = "pytest-playwright" },
@@ -79,7 +78,6 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "playwright", specifier = ">=1.52.0" },
     { name = "pyqt6", specifier = ">=6.9.0" },
     { name = "pyqt6-webengine", specifier = ">=6.9.0" },
     { name = "pytest-playwright", specifier = ">=0.7.0" },
