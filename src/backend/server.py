@@ -19,7 +19,7 @@ class WebSocketServer:
     ):
         self.host = host
         self.port = port
-        self._clients: Set[websockets.WebSocketServerProtocol] = set()
+        self._clients: Set[websockets.ServerConnection] = set()
         self.message_handler = message_handler
         self._server = None
         self._thread = None
@@ -29,7 +29,7 @@ class WebSocketServer:
         )
 
     async def _process_message(
-        self, websocket: websockets.WebSocketServerProtocol, message: str
+        self, websocket: websockets.ServerConnection, message: str
     ) -> str:
         """Process incoming message from client"""
         try:
@@ -48,7 +48,7 @@ class WebSocketServer:
             return json.dumps({"status": "error", "message": str(e)})
 
     async def _handle_connection(
-        self, websocket: websockets.WebSocketServerProtocol
+        self, websocket: websockets.ServerConnection
     ) -> None:
         """Handle a new WebSocket connection"""
         self._clients.add(websocket)
