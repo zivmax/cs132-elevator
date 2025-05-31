@@ -1,4 +1,3 @@
-from PyQt6.QtCore import QThread
 from typing import Optional, List, Tuple, Deque, Union  # Added Union
 from collections import deque
 import time  # Added for timestamping in add_msg_externally
@@ -60,6 +59,7 @@ class ZmqClientThread(threading.Thread):
         self, serverIp: str = "127.0.0.1", port: str = "27132", identity: str = "GroupX"
     ) -> None:
         threading.Thread.__init__(self)
+        self.daemon = True  # Mark as daemon thread to allow graceful shutdown
         self.context: zmq.Context = zmq.Context()
         self.socket: zmq.Socket = self.context.socket(zmq.DEALER)
         self.serverIp: str = serverIp
@@ -134,35 +134,39 @@ class ZmqClientThread(threading.Thread):
     # You can rewrite this part as long as it can receive messages from server.
     def __launch(self, socket: zmq.Socket) -> None:
         while not self._stop_event.is_set():
-            if not socket.closed:
-                try:
-                    message = socket.recv_string(
-                        flags=zmq.NOBLOCK
-                    )  # Use NOBLOCK to avoid hanging if thread is asked to stop
-                    if message:  # Check if a message was actually received
-                        timestamp = int(round(time.time() * 1000))
-                        with self.lock:
-                            self.messageQueue.append(message)
-                            self.timestampQueue.append(timestamp)
-                            # Update the single message properties for backward compatibility or other uses
-                            self._receivedMessage = message
-                            self._messageTimeStamp = timestamp
-                    else:
-                        # Short sleep if no message to prevent busy-waiting if NOBLOCK is used
-                        time.sleep(0.01)
-                except zmq.Again:
-                    # No message received, sleep briefly
-                    time.sleep(0.01)
-                except zmq.ZMQError as e:
-                    print(f"ZmqClientThread: ZMQ Error on recv: {e}")
-                    break  # Exit loop on error
-                except (
-                    Exception
-                ) as e:  # Catch other potential exceptions during shutdown
-                    print(f"ZmqClientThread: Error during __launch: {e}")
-                    break
-            else:
+            if socket.closed:
                 print("ZmqClientThread: Socket closed, listener terminating.")
+                break
+
+            try:
+                # Check if stop event is set before each recv attempt
+                if self._stop_event.is_set():
+                    break
+
+                message = socket.recv_string(
+                    flags=zmq.NOBLOCK
+                )  # Use NOBLOCK to avoid hanging if thread is asked to stop
+                if message:  # Check if a message was actually received
+                    timestamp = int(round(time.time() * 1000))
+                    with self.lock:
+                        self.messageQueue.append(message)
+                        self.timestampQueue.append(timestamp)
+                        # Update the single message properties for backward compatibility or other uses
+                        self._receivedMessage = message
+                        self._messageTimeStamp = timestamp
+            except zmq.Again:
+                # No message received, sleep briefly and check stop event
+                if self._stop_event.wait(
+                    0.01
+                ):  # Wait with timeout, returns True if event is set
+                    break
+            except zmq.ZMQError as e:
+                if not self._stop_event.is_set():  # Only log if not shutting down
+                    print(f"ZmqClientThread: ZMQ Error on recv: {e}")
+                break  # Exit loop on error
+            except Exception as e:  # Catch other potential exceptions during shutdown
+                if not self._stop_event.is_set():  # Only log if not shutting down
+                    print(f"ZmqClientThread: Error during __launch: {e}")
                 break
         print("ZmqClientThread: Exited __launch loop.")
 
@@ -173,22 +177,36 @@ class ZmqClientThread(threading.Thread):
     # Send messages to the server
     # You can rewrite this part as long as you can send messages to server.
     def sendMsg(self, data: str) -> None:
-        if not self.socket.closed:
-            self.socket.send_string(data)
-        else:
-            print("socket is closed,can't send message...")
+        try:
+            if hasattr(self, "socket") and not self.socket.closed:
+                self.socket.send_string(data)
+            else:
+                print("socket is closed, can't send message...")
+        except Exception as e:
+            print(f"ZmqClientThread: Error sending message: {e}")
 
     def close(self):
         """Close the ZMQ socket and terminate the context."""
-        if not self.socket.closed:
-            self.socket.close()
-            self.context.term()
-        print("ZmqClientThread: Closed socket and terminated context.")
+        try:
+            if hasattr(self, "socket") and not self.socket.closed:
+                self.socket.close()
+                print("ZmqClientThread: Socket closed.")
+            if hasattr(self, "context"):
+                self.context.term()
+                print("ZmqClientThread: Context terminated.")
+        except Exception as e:
+            print(f"ZmqClientThread: Error during close: {e}")
 
     def stop(self):
         """Signals the thread to stop and waits for it to finish."""
         print("ZmqClientThread: Stop called.")
         self._stop_event.set()
+        # Close socket to unblock any potential recv operations
+        try:
+            if hasattr(self, "socket") and not self.socket.closed:
+                self.socket.close()
+        except Exception as e:
+            print(f"ZmqClientThread: Error closing socket during stop: {e}")
         # self.join() # Ensure the thread has finished. ZmqCoordinator will call join.
         # It's often better to call close from the thread itself or after join.
         # For now, ZmqCoordinator will call close() after stopping.
@@ -355,32 +373,42 @@ class ZmqCoordinator:
         if self.zmq_client:  # Check if zmq_client exists
             print("ZmqCoordinator: Stopping ZmqClientThread...")
             self.zmq_client.stop()  # Signal the thread to stop
-            self.zmq_client.join(
-                timeout=7
-            )  # Wait for the thread to finish with a timeout
+
+            # Wait for the thread to finish with a shorter timeout first
+            self.zmq_client.join(timeout=3)
 
             if self.zmq_client.is_alive():
                 print(
                     "ZmqCoordinator: ZmqClientThread did not stop in time, forcing close."
                 )
-                # If thread is still alive, it might be stuck in socket.recv_string()
-                # Closing the socket from here might help it unblock,
-                # but it's generally safer if the thread manages its own resources.
-                # However, QThread's terminate was a more forceful way.
-                # Forcing close here as a last resort.
-                self.zmq_client.close()  # Try to close socket to unblock
-                self.zmq_client.join(timeout=2)  # Wait a bit more
+                # Try to close the context to force the socket to close
+                try:
+                    if hasattr(self.zmq_client, "context"):
+                        self.zmq_client.context.term()
+                except Exception as e:
+                    print(f"ZmqCoordinator: Error terminating context: {e}")
+
+                # Wait a bit more after forced termination
+                self.zmq_client.join(timeout=1)
+
                 if self.zmq_client.is_alive():
                     print(
-                        "ZmqCoordinator: ZmqClientThread still alive after forced close attempt."
+                        "ZmqCoordinator: Warning - ZmqClientThread still alive after forced termination."
                     )
+                    # Since the thread is daemon, it will be terminated when main thread exits
             else:
                 print("ZmqCoordinator: ZmqClientThread stopped successfully.")
 
-            # Ensure close is called if thread stopped but didn't close itself fully
-            # (though the ZmqClientThread.stop() or __launch() should handle this)
-            if not self.zmq_client.socket.closed:
-                self.zmq_client.close()
+            # Clean up resources if needed
+            try:
+                if (
+                    hasattr(self.zmq_client, "socket")
+                    and not self.zmq_client.socket.closed
+                ):
+                    self.zmq_client.close()
+            except Exception as e:
+                print(f"ZmqCoordinator: Error during final cleanup: {e}")
+
         print("ZmqCoordinator: Stopped.")
 
     def _parse_message_to_command(
