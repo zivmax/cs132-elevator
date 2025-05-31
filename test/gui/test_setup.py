@@ -18,15 +18,14 @@ MAIN_SCRIPT_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "src", "m
 
 
 @pytest.fixture(scope="session")
-def elevator_app():
-    """Fixture to start and stop the elevator application in headless mode."""
+def app():
+    """Fixture to start and stop the application in headless mode."""
     command = [
         sys.executable,
         MAIN_SCRIPT_PATH,
         "--headless",
         f"--http-port={APP_HTTP_PORT}",
         f"--ws-port={APP_WS_PORT}",
-        # "--debug" # Optionally add this if you want to test with debug panel on
     ]
 
     print(f"Starting app with command: {' '.join(command)}")
@@ -77,11 +76,11 @@ def elevator_app():
         stdout, stderr = process.communicate(timeout=5)
         print(f"STDOUT on failure:\\n{stdout}")
         print(f"STDERR on failure:\\n{stderr}")
-        pytest.fail("Elevator app server failed to start")
+        pytest.fail("App server failed to start")
 
     yield APP_URL  # Provide the URL to the tests
 
-    print("Shutting down elevator app...")
+    print("Shutting down app...")
     if os.name == "nt":
         process.send_signal(
             signal.CTRL_BREAK_EVENT
@@ -104,14 +103,14 @@ def elevator_app():
         stdout, stderr = process.communicate()
         # print(f"STDOUT after kill:\\n{stdout}")
         # print(f"STDERR after kill:\\n{stderr}")
-    print("Elevator app stopped.")
+    print("App stopped.")
 
 
-def test_app_loads_and_has_correct_title(page: Page, elevator_app):
+def test_app_loads_and_has_correct_title(page: Page, app):
     """
     Tests if the application loads in headless mode and has the correct title.
     """
-    app_url = elevator_app  # Get the URL from the fixture
+    app_url = app  # Get the URL from the fixture
 
     print(f"Navigating to {app_url}")
     page.goto(
@@ -123,6 +122,3 @@ def test_app_loads_and_has_correct_title(page: Page, elevator_app):
     expect(page).to_have_title(expected_title)
     print(f'Page title is: "{page.title()}". Expected: "{expected_title}"')
 
-    # You can add more assertions here, for example, checking for specific elements:
-    # expect(page.locator(\'#elevator-1\')).to_be_visible()
-    # print("Elevator 1 element is visible.")
