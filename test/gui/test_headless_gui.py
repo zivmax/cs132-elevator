@@ -12,9 +12,10 @@ from requests.exceptions import ConnectionError
 # Configuration
 APP_HOST = "127.0.0.1"
 APP_HTTP_PORT = 9876  # Using a different port for testing to avoid conflicts
-APP_WS_PORT = 9875   # Using a different port for testing
+APP_WS_PORT = 9875  # Using a different port for testing
 APP_URL = f"http://{APP_HOST}:{APP_HTTP_PORT}/?ws_port={APP_WS_PORT}&show_debug=false"
 MAIN_SCRIPT_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "src", "main.py")
+
 
 @pytest.fixture(scope="session")
 def elevator_app():
@@ -27,11 +28,17 @@ def elevator_app():
         f"--ws-port={APP_WS_PORT}",
         # "--debug" # Optionally add this if you want to test with debug panel on
     ]
-    
+
     print(f"Starting app with command: {' '.join(command)}")
     # Start the process in a new process group to ensure it can be killed properly
-    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == 'nt' else 0)
-    
+    process = subprocess.Popen(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0,
+    )
+
     # Wait for the server to be ready
     max_wait_time = 30  # seconds
     start_time = time.time()
@@ -48,8 +55,8 @@ def elevator_app():
                 break
         except ConnectionError:
             # print("HTTP server not yet available, retrying...")
-            pass # Server not up yet
-        
+            pass  # Server not up yet
+
         # Check for process termination or output indicating readiness (optional)
         if process.poll() is not None:
             print("Application process terminated prematurely.")
@@ -57,13 +64,13 @@ def elevator_app():
             print(f"STDOUT:\\n{stdout}")
             print(f"STDERR:\\n{stderr}")
             break
-        
+
         time.sleep(0.5)
 
     if not server_ready:
         print("Server did not start within the allocated time.")
         # Try to kill the process if it's still running
-        if os.name == 'nt':
+        if os.name == "nt":
             process.send_signal(signal.CTRL_BREAK_EVENT)
         else:
             process.os.killpg(os.getpgid(process.pid), signal.SIGTERM)
@@ -75,13 +82,19 @@ def elevator_app():
     yield APP_URL  # Provide the URL to the tests
 
     print("Shutting down elevator app...")
-    if os.name == 'nt':
-        process.send_signal(signal.CTRL_BREAK_EVENT) # Preferred way to terminate process group on Windows
+    if os.name == "nt":
+        process.send_signal(
+            signal.CTRL_BREAK_EVENT
+        )  # Preferred way to terminate process group on Windows
     else:
-        os.killpg(os.getpgid(process.pid), signal.SIGTERM) # Terminate the process group
+        os.killpg(
+            os.getpgid(process.pid), signal.SIGTERM
+        )  # Terminate the process group
 
     try:
-        stdout, stderr = process.communicate(timeout=10) # Wait for process to terminate
+        stdout, stderr = process.communicate(
+            timeout=10
+        )  # Wait for process to terminate
         print("App process terminated.")
         # print(f"STDOUT:\\n{stdout}")
         # print(f"STDERR:\\n{stderr}")
@@ -93,15 +106,18 @@ def elevator_app():
         # print(f"STDERR after kill:\\n{stderr}")
     print("Elevator app stopped.")
 
+
 def test_app_loads_and_has_correct_title(page: Page, elevator_app):
     """
     Tests if the application loads in headless mode and has the correct title.
     """
     app_url = elevator_app  # Get the URL from the fixture
-    
+
     print(f"Navigating to {app_url}")
-    page.goto(app_url, wait_until="networkidle") # wait_until can be 'load', 'domcontentloaded', 'networkidle'
-    
+    page.goto(
+        app_url, wait_until="networkidle"
+    )  # wait_until can be 'load', 'domcontentloaded', 'networkidle'
+
     # Check the title of the page
     expected_title = "Elevator Simulation"
     expect(page).to_have_title(expected_title)

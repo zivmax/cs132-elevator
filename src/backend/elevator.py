@@ -17,7 +17,9 @@ class Elevator:
         self.api: "ElevatorAPI" = api  # Store API instance
         self.current_floor: int = 1  # Initial floor is 1
         self.previous_floor: int = 1  # Track previous floor for change detection
-        self.task_queue: List[Task] = []  # Replaces target_floors and target_floors_origin
+        self.task_queue: List[Task] = (
+            []
+        )  # Replaces target_floors and target_floors_origin
         self.state: ElevatorState = ElevatorState.IDLE  # Movement state
         self.door_state: DoorState = DoorState.CLOSED  # Door state
         self.direction: Optional[MoveDirection] = None  # Use MoveDirection enum
@@ -228,11 +230,19 @@ class Elevator:
         # Otherwise pick the closest floor
         else:
             closest_above: Optional[int] = min(
-                [task.floor for task in self.task_queue if task.floor > self.current_floor],
+                [
+                    task.floor
+                    for task in self.task_queue
+                    if task.floor > self.current_floor
+                ],
                 default=None,
             )
             closest_below: Optional[int] = max(
-                [task.floor for task in self.task_queue if task.floor < self.current_floor],
+                [
+                    task.floor
+                    for task in self.task_queue
+                    if task.floor < self.current_floor
+                ],
                 default=None,
             )
             if closest_above and closest_below:
@@ -271,7 +281,11 @@ class Elevator:
             currently_moving_up = self.state == ElevatorState.MOVING_UP
             if currently_moving_up:
                 for target in sorted(
-                    [task.floor for task in simulated_targets if task.floor > simulated_current_floor]
+                    [
+                        task.floor
+                        for task in simulated_targets
+                        if task.floor > simulated_current_floor
+                    ]
                 ):
                     total_time += (
                         abs(target - simulated_current_floor) * self.floor_travel_time
@@ -287,7 +301,11 @@ class Elevator:
                 if simulated_targets and simulated_current_floor != floor:
                     pass
                 for target in sorted(
-                    [task.floor for task in simulated_targets if task.floor < simulated_current_floor],
+                    [
+                        task.floor
+                        for task in simulated_targets
+                        if task.floor < simulated_current_floor
+                    ],
                     reverse=True,
                 ):
                     total_time += (
@@ -303,7 +321,11 @@ class Elevator:
                         return total_time
             else:
                 for target in sorted(
-                    [task.floor for task in simulated_targets if task.floor < simulated_current_floor],
+                    [
+                        task.floor
+                        for task in simulated_targets
+                        if task.floor < simulated_current_floor
+                    ],
                     reverse=True,
                 ):
                     total_time += (
@@ -320,7 +342,11 @@ class Elevator:
                 if simulated_targets and simulated_current_floor != floor:
                     pass
                 for target in sorted(
-                    [task.floor for task in simulated_targets if task.floor > simulated_current_floor]
+                    [
+                        task.floor
+                        for task in simulated_targets
+                        if task.floor > simulated_current_floor
+                    ]
                 ):
                     total_time += (
                         abs(target - simulated_current_floor) * self.floor_travel_time

@@ -36,7 +36,11 @@ class Dispatcher:
             self.add_target_task(best_elevator.id - 1, floor, "outside", direction)
 
     def add_target_task(
-        self, elevator_idx: int, floor: int, origin: str = "outside", direction: str = None
+        self,
+        elevator_idx: int,
+        floor: int,
+        origin: str = "outside",
+        direction: str = None,
     ) -> None:
         elevator = self.world.elevators[elevator_idx]
 
@@ -56,7 +60,9 @@ class Dispatcher:
             return
 
         # Add new task
-        elevator.task_queue.append(Task(floor, origin, direction if origin == "outside" else None))
+        elevator.task_queue.append(
+            Task(floor, origin, direction if origin == "outside" else None)
+        )
         self._optimize_task_queue(elevator)
 
         # If door is open, close it to start moving
@@ -76,18 +82,36 @@ class Dispatcher:
         if current_direction == "up":
             above = [t for t in elevator.task_queue if t.floor > elevator.current_floor]
             below = [t for t in elevator.task_queue if t.floor < elevator.current_floor]
-            elevator.task_queue = sorted(above, key=lambda t: t.floor) + sorted(below, key=lambda t: t.floor)
+            elevator.task_queue = sorted(above, key=lambda t: t.floor) + sorted(
+                below, key=lambda t: t.floor
+            )
         elif current_direction == "down":
             above = [t for t in elevator.task_queue if t.floor > elevator.current_floor]
             below = [t for t in elevator.task_queue if t.floor < elevator.current_floor]
-            elevator.task_queue = sorted(below, key=lambda t: -t.floor) + sorted(above, key=lambda t: t.floor)
+            elevator.task_queue = sorted(below, key=lambda t: -t.floor) + sorted(
+                above, key=lambda t: t.floor
+            )
         else:
-            closest = min(elevator.task_queue, key=lambda t: abs(elevator.current_floor - t.floor))
+            closest = min(
+                elevator.task_queue, key=lambda t: abs(elevator.current_floor - t.floor)
+            )
             if closest.floor > elevator.current_floor:
-                above = [t for t in elevator.task_queue if t.floor > elevator.current_floor]
-                below = [t for t in elevator.task_queue if t.floor < elevator.current_floor]
-                elevator.task_queue = sorted(above, key=lambda t: t.floor) + sorted(below, key=lambda t: t.floor)
+                above = [
+                    t for t in elevator.task_queue if t.floor > elevator.current_floor
+                ]
+                below = [
+                    t for t in elevator.task_queue if t.floor < elevator.current_floor
+                ]
+                elevator.task_queue = sorted(above, key=lambda t: t.floor) + sorted(
+                    below, key=lambda t: t.floor
+                )
             else:
-                above = [t for t in elevator.task_queue if t.floor > elevator.current_floor]
-                below = [t for t in elevator.task_queue if t.floor < elevator.current_floor]
-                elevator.task_queue = sorted(below, key=lambda t: -t.floor) + sorted(above, key=lambda t: t.floor)
+                above = [
+                    t for t in elevator.task_queue if t.floor > elevator.current_floor
+                ]
+                below = [
+                    t for t in elevator.task_queue if t.floor < elevator.current_floor
+                ]
+                elevator.task_queue = sorted(below, key=lambda t: -t.floor) + sorted(
+                    above, key=lambda t: t.floor
+                )

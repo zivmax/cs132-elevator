@@ -399,7 +399,9 @@ class ElevatorAPI:
 
             # Compose targetFloors and targetFloorsOrigin for frontend compatibility
             target_floors = [task.floor for task in elevator.task_queue]
-            target_floors_origin = {task.floor: task.origin for task in elevator.task_queue}
+            target_floors_origin = {
+                task.floor: task.origin for task in elevator.task_queue
+            }
 
             elevator_state = {
                 "elevator_id": elevator.id,
