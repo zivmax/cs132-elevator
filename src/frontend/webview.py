@@ -52,9 +52,9 @@ class ElevatorWebview(QMainWindow):
         url = QUrl.fromLocalFile(html_path)
 
         query = QUrlQuery()
-        query.addQueryItem("ws_port", str(ws_port))
+        query.addQueryItem("wsPort", str(ws_port))
         query.addQueryItem(
-            "show_debug", "true" if self.show_debug else "false"
+            "showDebug", "true" if self.show_debug else "false"
         )  # Pass show_debug as a URL parameter
         url.setQuery(query)
 

@@ -59,7 +59,7 @@ class ElevatorApp:
             self.http_server = ElevatorHTTPServer(port=http_port)
             self.http_server.start()
             print(
-                f"HTTP server running. Access frontend at http://127.0.0.1:{http_port}/?ws_port={ws_port}&show_debug={str(show_debug).lower()}"
+                f"HTTP server running. Access frontend at http://127.0.0.1:{http_port}/?wsPort={ws_port}&showDebug={str(show_debug).lower()}"
             )
 
         if headless:

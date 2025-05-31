@@ -10,9 +10,8 @@ window.closeDoor = closeDoor;
 
 window.onload = function() {
     const urlParams = new URLSearchParams(window.location.search);
-    const wsPort = urlParams.get('ws_port') || '8765';
-    // Read show_debug from URL parameter, default to false if not present
-    const showDebug = urlParams.get('show_debug') === 'true';
+    const wsPort = urlParams.get('wsPort') || '8765';
+    const showDebug = urlParams.get('showDebug') === 'true';
 
     const style = document.createElement('style');
     document.head.appendChild(style);
