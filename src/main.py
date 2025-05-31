@@ -1,5 +1,4 @@
 import sys
-import os
 import time
 import signal
 import argparse
@@ -11,7 +10,7 @@ from frontend.bridge import WebSocketBridge  # Import WebSocketBridge
 from backend.server import ElevatorHTTPServer  # Import HTTPServer
 
 
-class ElevatorApplication:
+class ElevatorApp:
     def __init__(
         self,
         show_debug=False,
@@ -207,7 +206,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Create and run the application
-    app = ElevatorApplication(
+    app = ElevatorApp(
         show_debug=args.debug,
         remote_debugging_port=args.cdp,
         ws_port=args.ws_port,
