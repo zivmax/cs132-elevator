@@ -95,7 +95,7 @@ class WebSocketBridge:
     def sync_backend(self):
         """Update the UI based on backend state"""
         # Get elevator states from the API
-        elevator_states = self.api.fetch_elevator_states()
+        elevator_states = self.api.ui_fetch_states()
 
         # Update the UI for each elevator
         for elevator_state in elevator_states:

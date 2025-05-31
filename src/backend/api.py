@@ -75,25 +75,25 @@ class ElevatorAPI:
 
         try:
             if isinstance(command_or_error, CallCommand):
-                response_data_from_handler = self._handle_call_elevator_internal(
+                response_data_from_handler = self._handle_call_elevator(
                     command_or_error.floor, command_or_error.direction
                 )
             elif isinstance(command_or_error, SelectFloorCommand):
-                response_data_from_handler = self._handle_select_floor_internal(
+                response_data_from_handler = self._handle_select_floor(
                     command_or_error.floor, command_or_error.elevator_id
                 )
             elif isinstance(command_or_error, OpenDoorCommand):
                 parsed_elevator_id_for_response = command_or_error.elevator_id
-                response_data_from_handler = self._handle_open_door_internal(
+                response_data_from_handler = self._handle_open_door(
                     command_or_error.elevator_id
                 )
             elif isinstance(command_or_error, CloseDoorCommand):
                 parsed_elevator_id_for_response = command_or_error.elevator_id
-                response_data_from_handler = self._handle_close_door_internal(
+                response_data_from_handler = self._handle_close_door(
                     command_or_error.elevator_id
                 )
             elif isinstance(command_or_error, ResetCommand):
-                response_data_from_handler = self._handle_reset_internal()
+                response_data_from_handler = self._handle_reset()
             else:
                 error_info = {
                     "type": "unknown_command_type_error",
@@ -142,7 +142,7 @@ class ElevatorAPI:
 
     # Internal handlers, previously part of Dispatcher or direct calls from old API methods
     # Modified to return Dict instead of JSON string
-    def _handle_call_elevator_internal(
+    def _handle_call_elevator(
         self, floor: int, direction: str
     ) -> Dict[str, Any]:
         """Internal handler for elevator calls from a floor."""
@@ -161,7 +161,7 @@ class ElevatorAPI:
         except Exception as e:
             return {"status": "error", "message": f"Failed to call elevator: {str(e)}"}
 
-    def _handle_select_floor_internal(
+    def _handle_select_floor(
         self, floor: int, elevator_id: int
     ) -> Dict[str, Any]:
         """Internal handler for floor selections from inside an elevator."""
@@ -182,7 +182,7 @@ class ElevatorAPI:
                 "message": f"Failed to select floor for elevator {elevator_id}: {str(e)}",
             }
 
-    def _handle_open_door_internal(self, elevator_id: int) -> Dict[str, Any]:
+    def _handle_open_door(self, elevator_id: int) -> Dict[str, Any]:
         """Internal handler to open a specific elevator's door."""
         if not self.world:
             return {"status": "error", "message": "World not initialized"}
@@ -206,7 +206,7 @@ class ElevatorAPI:
                 }
         return {"status": "error", "message": f"Elevator {elevator_id} not found"}
 
-    def _handle_close_door_internal(self, elevator_id: int) -> Dict[str, Any]:
+    def _handle_close_door(self, elevator_id: int) -> Dict[str, Any]:
         """Internal handler to close a specific elevator's door."""
         if not self.world:
             return {"status": "error", "message": "World not initialized"}
@@ -230,7 +230,7 @@ class ElevatorAPI:
                 }
         return {"status": "error", "message": f"Elevator {elevator_id} not found"}
 
-    def _handle_reset_internal(self) -> Dict[str, Any]:
+    def _handle_reset(self) -> Dict[str, Any]:
         """Internal handler for resetting the simulation."""
         if not self.world:
             return {"status": "error", "message": "World not initialized"}
@@ -297,7 +297,7 @@ class ElevatorAPI:
     # or they can still return JSON if the webserver part expects JSON.
     # For now, let's assume they still need to return JSON for the webserver.
 
-    def handle_call_elevator(self, data: Dict[str, Any]) -> str:
+    def ui_call_elevator(self, data: Dict[str, Any]) -> str:
         """Handle call elevator request from frontend"""
         try:
             floor = data.get("floor")
@@ -310,13 +310,13 @@ class ElevatorAPI:
 
             print(f"API: Frontend call elevator: floor={floor}, direction={direction}")
             # Use the internal handler which now calls dispatcher directly
-            result_dict = self._handle_call_elevator_internal(int(floor), direction)
+            result_dict = self._handle_call_elevator(int(floor), direction)
             return json.dumps(result_dict)  # Still return JSON for this path
         except Exception as e:
-            print(f"Error in handle_call_elevator: {e}")
+            print(f"Error in call_elevator: {e}")
             return json.dumps({"status": "error", "message": str(e)})
 
-    def handle_select_floor(self, data: Dict[str, Any]) -> str:
+    def ui_select_floor(self, data: Dict[str, Any]) -> str:
         """Handle floor selection request from frontend"""
         try:
             floor = data.get("floor")
@@ -331,15 +331,15 @@ class ElevatorAPI:
                 f"API: Frontend select floor: floor={floor}, elevator_id={elevator_id}"
             )
             # Use the internal handler
-            result_dict = self._handle_select_floor_internal(
+            result_dict = self._handle_select_floor(
                 int(floor), int(elevator_id)
             )
             return json.dumps(result_dict)  # Still return JSON for this path
         except Exception as e:
-            print(f"Error in handle_select_floor: {e}")
+            print(f"Error in select_floor: {e}")
             return json.dumps({"status": "error", "message": str(e)})
 
-    def handle_open_door(self, data: Dict[str, Any]) -> str:
+    def ui_open_door(self, data: Dict[str, Any]) -> str:
         """Handle open door request from frontend"""
         try:
             elevator_id = data.get("elevatorId")
@@ -347,13 +347,13 @@ class ElevatorAPI:
                 return json.dumps({"status": "error", "message": "Missing elevatorId"})
 
             print(f"API: Frontend open door: elevator_id={elevator_id}")
-            result_dict = self._handle_open_door_internal(int(elevator_id))
+            result_dict = self._handle_open_door(int(elevator_id))
             return json.dumps(result_dict)  # Still return JSON for this path
         except Exception as e:
-            print(f"Error in handle_open_door: {e}")
+            print(f"Error in open_door: {e}")
             return json.dumps({"status": "error", "message": str(e)})
 
-    def handle_close_door(self, data: Dict[str, Any]) -> str:
+    def ui_close_door(self, data: Dict[str, Any]) -> str:
         """Handle close door request from frontend"""
         try:
             elevator_id = data.get("elevatorId")
@@ -361,13 +361,13 @@ class ElevatorAPI:
                 return json.dumps({"status": "error", "message": "Missing elevatorId"})
 
             print(f"API: Frontend close door: elevator_id={elevator_id}")
-            result_dict = self._handle_close_door_internal(int(elevator_id))
+            result_dict = self._handle_close_door(int(elevator_id))
             return json.dumps(result_dict)  # Still return JSON for this path
         except Exception as e:
-            print(f"Error in handle_close_door: {e}")
+            print(f"Error in close_door: {e}")
             return json.dumps({"status": "error", "message": str(e)})
 
-    def fetch_elevator_states(self) -> List[Dict[str, Any]]:
+    def ui_fetch_states(self) -> List[Dict[str, Any]]:
         """Get updated elevator states from the backend"""
         elevator_states = []
 
