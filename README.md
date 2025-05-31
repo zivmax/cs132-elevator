@@ -52,4 +52,32 @@ Assume that both elevators(#1, #2) initially stop on the first floor and the doo
 
 - A `World` class:
   - Simluate the world.
-  - Call the `update` method of each instances. 
+  - Call the `update` method of each instances.
+
+# Running the Application
+
+## Standard GUI Mode
+```bash
+python src/main.py
+```
+
+## Headless Mode with Custom Frontends
+
+The elevator system supports headless mode, allowing you to run the simulation backend without the default GUI and connect custom frontend applications via WebSocket.
+
+### Headless Mode (WebSocket only)
+```bash
+python src/main.py --headless --ws-port 8765
+```
+
+This will:
+- Start the elevator simulation backend
+- Expose a WebSocket server at `ws://127.0.0.1:8765`
+- Allow custom frontends to connect and control the system
+
+### Headless Mode with HTTP Server
+```bash
+python src/main.py --headless --ws-port 8765 --http-port 8080
+```
+
+This additionally serves the default frontend at `http://127.0.0.1:8080`

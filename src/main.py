@@ -27,25 +27,28 @@ class ElevatorApplication:
         self.elevator_api = ElevatorAPI(self.backend, self.backend.zmq_coordinator)
 
         # Now, set the API for the world and initialize its dependent components
-        self.backend.set_api_and_initialize_components(self.elevator_api)
-
-        # Initialize WebSocketBridge
+        self.backend.set_api_and_initialize_components(self.elevator_api)        # Initialize WebSocketBridge
         self.bridge = WebSocketBridge(world=self.backend, api=self.elevator_api, port=ws_port)
 
         # self.headless = headless # Duplicate assignment removed
         self.http_server = None
 
-        if http_port is not None: # MODIFIED
+        if http_port is not None:
             # Start HTTP server if http_port is specified
             self.http_server = HTTPServer(port=http_port)
             self.http_server.start()
-            print(f"HTTP server running. Access frontend at http://127.0.0.1:{http_port}/?ws_port={ws_port}&show_debug={str(show_debug).lower()}") # MODIFIED
+            print(f"HTTP server running. Access frontend at http://127.0.0.1:{http_port}/?ws_port={ws_port}&show_debug={str(show_debug).lower()}")
         
         if headless:
-            # Actions specific to headless mode (if any beyond HTTP server which is now separate)
-            if http_port is None: # If headless and no http_port, user might expect a message or default.
-                 print("Running in headless mode. No HTTP server started as http_port was not specified.")
-            # If http_port was specified, the message above already printed.
+            # In headless mode, only WebSocket server runs for custom frontend connections
+            if http_port is None:
+                print(f"Running in headless mode with WebSocket server only.")
+                print(f"WebSocket server accessible at: ws://127.0.0.1:{ws_port}")
+                print(f"Connect your custom frontend to this WebSocket endpoint.")
+                print(f"API documentation: See backend/api.py for available functions.")
+            else:
+                print(f"Running in headless mode with both HTTP server and WebSocket server.")
+                print(f"WebSocket server accessible at: ws://127.0.0.1:{ws_port}")
         else:
             # Initialize frontend with WebSocket communication, passing the API and ws_port
             self.frontend = ElevatorWebview(
