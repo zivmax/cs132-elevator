@@ -28,7 +28,7 @@ class ElevatorAPI:
 
     def set_world(
         self, world: "World"
-    ):  # This method might still be useful if world is set later
+    ) -> None:  # This method might still be useful if world is set later
         """Update the world reference"""
         self.world = world
 
@@ -251,7 +251,7 @@ class ElevatorAPI:
                 "message": f"Failed to reset simulation: {str(e)}",
             }  # Methods to send messages/updates to the ZMQ client (test server)
 
-    def _send_message_to_client(self, message: str):
+    def _send_message_to_client(self, message: str) -> None:
         """Sends a generic raw message to the ZMQ client via ZmqCoordinator.
         This is now primarily for messages not originating from parse_and_handle_message flow,
         like floor_arrived.
@@ -268,7 +268,7 @@ class ElevatorAPI:
 
     def send_floor_arrived_message(
         self, elevator_id: int, floor: int, direction_str: str
-    ):
+    ) -> None:
         """Sends a floor arrival message in the format: {direction_prefix}floor_arrived@{floor_number}#{elevator_id}
         e.g., up_floor_arrived@1#1, floor_arrived@2#2
         """
@@ -281,12 +281,12 @@ class ElevatorAPI:
         message = f"{prefix}floor_arrived@{display_floor}#{elevator_id}"
         self._send_message_to_client(message)
 
-    def send_door_opened_message(self, elevator_id: int):
+    def send_door_opened_message(self, elevator_id: int) -> None:
         """Sends a door opened message."""
         message = f"door_opened#{elevator_id}"
         self._send_message_to_client(message)
 
-    def send_door_closed_message(self, elevator_id: int):
+    def send_door_closed_message(self, elevator_id: int) -> None:
         """Sends a door closed message."""
         message = f"door_closed#{elevator_id}"
         self._send_message_to_client(message)

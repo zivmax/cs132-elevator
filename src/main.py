@@ -23,7 +23,7 @@ class ElevatorApplication:
         self.headless = headless  # Store headless state
         self.running = True  # Add running flag for clean shutdown
         self._cleanup_done = False  # Add cleanup guard to prevent redundant cleanup
-        
+
         if not self.headless:
             from PyQt6.QtWidgets import QApplication  # Conditional import
 
@@ -100,14 +100,14 @@ class ElevatorApplication:
         """Clean up all resources"""
         if self._cleanup_done:
             return  # Prevent redundant cleanup
-        
+
         print("Cleaning up application resources...")
         self._cleanup_done = True
         self.running = False
-        
+
         try:
             # Stop WebSocket bridge
-            if hasattr(self, 'bridge') and self.bridge:
+            if hasattr(self, "bridge") and self.bridge:
                 self.bridge.stop()
                 print("WebSocket bridge stopped.")
         except Exception as e:
@@ -115,7 +115,7 @@ class ElevatorApplication:
 
         try:
             # Stop HTTP server if running
-            if hasattr(self, 'http_server') and self.http_server:
+            if hasattr(self, "http_server") and self.http_server:
                 self.http_server.stop()
                 print("HTTP server stopped.")
         except Exception as e:
@@ -123,7 +123,11 @@ class ElevatorApplication:
 
         try:
             # Stop backend ZMQ coordinator
-            if hasattr(self, 'backend') and self.backend and hasattr(self.backend, 'zmq_coordinator'):
+            if (
+                hasattr(self, "backend")
+                and self.backend
+                and hasattr(self.backend, "zmq_coordinator")
+            ):
                 self.backend.zmq_coordinator.stop()
                 print("ZMQ coordinator stopped.")
         except Exception as e:

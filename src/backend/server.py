@@ -28,7 +28,9 @@ class WebSocketServer:
             None  # Added for storing the event loop
         )
 
-    async def _process_message(self, websocket, message: str) -> str:
+    async def _process_message(
+        self, websocket: websockets.WebSocketServerProtocol, message: str
+    ) -> str:
         """Process incoming message from client"""
         try:
             # Log the message for debugging
@@ -45,7 +47,9 @@ class WebSocketServer:
             print(f"Error processing message: {e}")
             return json.dumps({"status": "error", "message": str(e)})
 
-    async def _handle_connection(self, websocket):
+    async def _handle_connection(
+        self, websocket: websockets.WebSocketServerProtocol
+    ) -> None:
         """Handle a new WebSocket connection"""
         self._clients.add(websocket)
         try:
@@ -58,7 +62,7 @@ class WebSocketServer:
         finally:
             self._clients.remove(websocket)
 
-    async def broadcast(self, message: str):
+    async def broadcast(self, message: str) -> None:
         """Send a message to all connected clients"""
         if not self._clients:  # No clients connected
             return
@@ -67,14 +71,14 @@ class WebSocketServer:
         if tasks:
             await asyncio.gather(*tasks, return_exceptions=True)
 
-    async def _run_server(self):
+    async def _run_server(self) -> None:
         """Run the WebSocket server"""
         async with websockets.serve(self._handle_connection, self.host, self.port):
             print(f"WebSocket server started on ws://{self.host}:{self.port}")
             while not self._stop_event.is_set():
                 await asyncio.sleep(0.1)  # Small sleep to avoid CPU hogging
 
-    def _run_in_thread(self):
+    def _run_in_thread(self) -> None:
         """Run the server in a separate thread"""
         self.loop = asyncio.new_event_loop()  # Assign the new loop to self.loop
         asyncio.set_event_loop(self.loop)
@@ -85,14 +89,14 @@ class WebSocketServer:
                 self.loop.stop()  # Stop the loop if it's still running
             self.loop.close()  # Close the loop
 
-    def start(self):
+    def start(self) -> "WebSocketServer":
         """Start the WebSocket server in a separate thread"""
         self._thread = threading.Thread(target=self._run_in_thread, daemon=True)
         self._thread.start()
         print(f"WebSocket server thread started")
         return self
 
-    def stop(self):
+    def stop(self) -> None:
         """Stop the WebSocket server"""
         self._stop_event.set()
         if self._thread:
@@ -102,11 +106,11 @@ class WebSocketServer:
         print("WebSocket server stopped")
 
     @property
-    def is_running(self):
+    def is_running(self) -> bool:
         """Return True if the server is running (not stopped)."""
         return not self._stop_event.is_set()
 
-    def send_elevator_states(self, data: Dict[str, Any]):
+    def send_elevator_states(self, data: Dict[str, Any]) -> None:
         """Send elevator state update to frontend"""
         message = json.dumps({"type": "elevatorUpdated", "payload": data})
 
@@ -125,7 +129,7 @@ class HTTPServer(threading.Thread):
 
     def __init__(
         self, host: str = "127.0.0.1", port: int = 8080, directory: str = None
-    ):
+    ) -> None:
         super().__init__(daemon=True)
         self.host = host
         self.port = port
@@ -138,7 +142,7 @@ class HTTPServer(threading.Thread):
             self.directory = directory
         self.httpd = None
 
-    def run(self):
+    def run(self) -> None:
         handler = lambda *args, **kwargs: SimpleHTTPRequestHandler(
             *args, directory=self.directory, **kwargs
         )
@@ -148,7 +152,7 @@ class HTTPServer(threading.Thread):
         )
         self.httpd.serve_forever()
 
-    def stop(self):
+    def stop(self) -> None:
         if self.httpd:
             self.httpd.shutdown()
             self.httpd.server_close()
@@ -156,7 +160,7 @@ class HTTPServer(threading.Thread):
 
 
 class SimpleHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
-    def __init__(self, *args, directory=None, **kwargs):
+    def __init__(self, *args, directory: str = None, **kwargs) -> None:
         # The 'directory' kwarg is from HTTPServer, pointing to 'src/frontend/ui'.
         # Pass this to the superclass constructor.
         # The superclass will set its self.directory to this value.

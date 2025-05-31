@@ -23,7 +23,7 @@ class MoveDirection(Enum):
 
 
 class MoveRequest:
-    def __init__(self, elevator_id: int, direction: MoveDirection):
+    def __init__(self, elevator_id: int, direction: MoveDirection) -> None:
         self.elevator_id = elevator_id
         self.direction = direction  # "up" or "down"
 

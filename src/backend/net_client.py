@@ -185,7 +185,7 @@ class ZmqClientThread(threading.Thread):
         except Exception as e:
             print(f"ZmqClientThread: Error sending message: {e}")
 
-    def close(self):
+    def close(self) -> None:
         """Close the ZMQ socket and terminate the context."""
         try:
             if hasattr(self, "socket") and not self.socket.closed:
@@ -197,7 +197,7 @@ class ZmqClientThread(threading.Thread):
         except Exception as e:
             print(f"ZmqClientThread: Error during close: {e}")
 
-    def stop(self):
+    def stop(self) -> None:
         """Signals the thread to stop and waits for it to finish."""
         print("ZmqClientThread: Stop called.")
         self._stop_event.set()
