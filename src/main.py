@@ -1,6 +1,7 @@
 import sys
 import os
 import time
+import signal
 import argparse
 
 from backend.world import World
@@ -20,12 +21,21 @@ class ElevatorApplication:
         headless=False,
     ):  # MODIFIED
         self.headless = headless  # Store headless state
+        self.running = True  # Add running flag for clean shutdown
+        self._cleanup_done = False  # Add cleanup guard to prevent redundant cleanup
+        
         if not self.headless:
             from PyQt6.QtWidgets import QApplication  # Conditional import
 
             self.app = QApplication(sys.argv)
+            # Connect aboutToQuit signal to cleanup
+            self.app.aboutToQuit.connect(self.cleanup)
         else:
             self.app = None
+
+        # Setup signal handlers for graceful shutdown
+        signal.signal(signal.SIGINT, self._signal_handler)
+        signal.signal(signal.SIGTERM, self._signal_handler)
 
         # Initialize backend World first (without API yet)
         self.backend = World()
@@ -72,11 +82,54 @@ class ElevatorApplication:
                 show_debug=show_debug,
                 remote_debugging_port=remote_debugging_port,
                 ws_port=ws_port,
+                app_cleanup_callback=self.cleanup,  # Pass cleanup callback
             )
             self.frontend.show()
 
         # Setup timer for UI updates
         self.last_update_time = time.time()
+
+    def _signal_handler(self, signum, frame):
+        """Handle system signals for graceful shutdown"""
+        print(f"\nReceived signal {signum}. Initiating shutdown...")
+        self.running = False
+        if self.app:
+            self.app.quit()
+
+    def cleanup(self):
+        """Clean up all resources"""
+        if self._cleanup_done:
+            return  # Prevent redundant cleanup
+        
+        print("Cleaning up application resources...")
+        self._cleanup_done = True
+        self.running = False
+        
+        try:
+            # Stop WebSocket bridge
+            if hasattr(self, 'bridge') and self.bridge:
+                self.bridge.stop()
+                print("WebSocket bridge stopped.")
+        except Exception as e:
+            print(f"Error stopping WebSocket bridge: {e}")
+
+        try:
+            # Stop HTTP server if running
+            if hasattr(self, 'http_server') and self.http_server:
+                self.http_server.stop()
+                print("HTTP server stopped.")
+        except Exception as e:
+            print(f"Error stopping HTTP server: {e}")
+
+        try:
+            # Stop backend ZMQ coordinator
+            if hasattr(self, 'backend') and self.backend and hasattr(self.backend, 'zmq_coordinator'):
+                self.backend.zmq_coordinator.stop()
+                print("ZMQ coordinator stopped.")
+        except Exception as e:
+            print(f"Error stopping ZMQ coordinator: {e}")
+
+        print("Application cleanup completed.")
 
     def update(self):
         """Update the UI based on backend state"""
@@ -112,11 +165,18 @@ class ElevatorApplication:
 
     def run(self):
         """Run the application main loop"""
-        while True:
-            if self.app:  # This check correctly handles if self.app is None
-                self.app.processEvents()
-            self.update()
-            time.sleep(0.01)  # Small sleep to avoid CPU hogging
+        try:
+            while self.running:
+                if self.app:  # This check correctly handles if self.app is None
+                    self.app.processEvents()
+                    if not self.running:  # Check again after processing events
+                        break
+                self.update()
+                time.sleep(0.01)  # Small sleep to avoid CPU hogging
+        except KeyboardInterrupt:
+            print("\nKeyboard interrupt received")
+        finally:
+            self.cleanup()
 
 
 if __name__ == "__main__":
@@ -150,5 +210,5 @@ if __name__ == "__main__":
         http_port=args.http_port,
         headless=args.headless,
     )
+
     app.run()
-    os._exit(0)

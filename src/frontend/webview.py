@@ -21,11 +21,13 @@ class ElevatorWebview(QMainWindow):
         show_debug: bool = False,  # Default changed to False
         remote_debugging_port: int = 0,
         ws_port: int = 8765,  # ws_port is still needed for the URL query
+        app_cleanup_callback=None,  # Add cleanup callback parameter
     ):
         super().__init__()
         self.bridge = bridge  # Use the passed WebSocketBridge instance
         self.show_debug = show_debug  # Store show_debug status
         self.ws_port = ws_port
+        self.app_cleanup_callback = app_cleanup_callback  # Store cleanup callback
 
         # Enable remote debugging if a port is specified
         if remote_debugging_port > 0:
@@ -64,6 +66,9 @@ class ElevatorWebview(QMainWindow):
 
     def closeEvent(self, event):
         """Clean up resources when the window is closed"""
+        print("Window close event triggered")
+        if self.app_cleanup_callback:
+            self.app_cleanup_callback()
         super().closeEvent(event)
 
 
