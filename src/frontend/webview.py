@@ -34,7 +34,7 @@ class ElevatorWebview(QMainWindow):
             os.environ["QTWEBENGINE_REMOTE_DEBUGGING"] = str(remote_debugging_port)
 
         # Setup the UI
-        self.setWindowTitle("Elevator Simulation (WebSocket)")
+        self.setWindowTitle("Elevator Simulation")
         self.resize(1024, 768)
 
         # Set the window icon
