@@ -14,7 +14,7 @@ class WebSocketServer:
     def __init__(
         self,
         host: str = "127.0.0.1",
-        port: int = 8765,
+        port: int = 18765,
         message_handler: Optional[Callable[[str], str]] = None,
     ):
         self.host = host
