@@ -14,7 +14,7 @@ class WebSocketServer:
     def __init__(
         self,
         host: str = "127.0.0.1",
-        port: int = 18765,
+        port: int = 18675,
         message_handler: Optional[Callable[[str], str]] = None,
     ):
         self.host = host
@@ -128,7 +128,7 @@ class ElevatorHTTPServer(threading.Thread):
     """Simple HTTP server to serve static files for the frontend"""
 
     def __init__(
-        self, host: str = "127.0.0.1", port: int = 8080, directory: str = None
+        self, host: str = "127.0.0.1", port: int = 19090, directory: str = None
     ) -> None:
         super().__init__(daemon=True)
         self.host = host

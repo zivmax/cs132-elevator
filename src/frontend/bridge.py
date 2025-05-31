@@ -17,7 +17,7 @@ class WebSocketBridge:
         world: "World",
         api: ElevatorAPI,  # Added api parameter
         host: str = "127.0.0.1",
-        port: int = 8765,
+        port: int = 18675,
     ):
         # World object should provide access to its ZmqCoordinator instance
         if not world or not hasattr(world, "zmq_coordinator"):

@@ -10,7 +10,7 @@ window.closeDoor = closeDoor;
 
 window.onload = function() {
     const urlParams = new URLSearchParams(window.location.search);
-    const wsPort = urlParams.get('wsPort') || '8765';
+    const wsPort = urlParams.get('wsPort') || '18765';
     const showDebug = urlParams.get('showDebug') === 'true';
 
     const style = document.createElement('style');

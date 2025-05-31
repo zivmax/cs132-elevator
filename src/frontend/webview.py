@@ -20,7 +20,7 @@ class ElevatorWebview(QMainWindow):
         bridge: WebSocketBridge,  # Changed to accept WebSocketBridge instance
         show_debug: bool = False,  # Default changed to False
         remote_debugging_port: int = 0,
-        ws_port: int = 8765,  # ws_port is still needed for the URL query
+        ws_port: int = 18675,  # ws_port is still needed for the URL query
         app_cleanup_callback=None,  # Add cleanup callback parameter
     ):
         super().__init__()

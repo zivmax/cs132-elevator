@@ -14,9 +14,9 @@ class ElevatorApp:
     def __init__(
         self,
         show_debug=False,
-        remote_debugging_port=0,
-        ws_port=8765,
-        http_port=None,
+        remote_debugging_port=19982,
+        ws_port=18675,
+        http_port=19090,
         headless=False,
     ):  # MODIFIED
         self.headless = headless  # Store headless state
@@ -188,14 +188,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--debug", action="store_true", help="Show debug information panel"
     )
-    parser.add_argument("--cdp", type=int, default=0, help="Chromium debugging port")
+    parser.add_argument("--cdp", type=int, default=19982, help="Chromium debugging port")
     parser.add_argument(
-        "--ws-port", type=int, default=8765, help="WebSocket server port"
+        "--ws-port", type=int, default=18675, help="WebSocket server port"
     )
     parser.add_argument(
         "--http-port",
         type=int,
-        default=None,
+        default=19090,
         help="HTTP server port. If specified, an HTTP server will host the frontend.",
     )  # MODIFIED
     parser.add_argument(
