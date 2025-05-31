@@ -2,10 +2,10 @@ import asyncio
 import json
 import websockets
 import threading
-from typing import Dict, Any, Callable, Set, Optional, List, Tuple
-import http.server
-import socketserver
+from typing import Dict, Any, Callable, Set, Optional
+from http.server import HTTPServer, SimpleHTTPRequestHandler
 import os
+import functools  # Add functools import
 
 
 class WebSocketServer:
@@ -124,7 +124,7 @@ class WebSocketServer:
             )
 
 
-class HTTPServer(threading.Thread):
+class ElevatorHTTPServer(threading.Thread):
     """Simple HTTP server to serve static files for the frontend"""
 
     def __init__(
@@ -143,10 +143,11 @@ class HTTPServer(threading.Thread):
         self.httpd = None
 
     def run(self) -> None:
-        handler = lambda *args, **kwargs: SimpleHTTPRequestHandler(
-            *args, directory=self.directory, **kwargs
+        # Use functools.partial to pass the directory to SimpleHTTPRequestHandler
+        handler_with_directory = functools.partial(
+            SimpleHTTPRequestHandler, directory=self.directory
         )
-        self.httpd = socketserver.TCPServer((self.host, self.port), handler)
+        self.httpd = HTTPServer((self.host, self.port), handler_with_directory)
         print(
             f"HTTP server started on http://{self.host}:{self.port}, serving from {os.path.abspath(self.directory)}"
         )
@@ -157,12 +158,3 @@ class HTTPServer(threading.Thread):
             self.httpd.shutdown()
             self.httpd.server_close()
             print("HTTP server stopped")
-
-
-class SimpleHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
-    def __init__(self, *args, directory: str = None, **kwargs) -> None:
-        # The 'directory' kwarg is from HTTPServer, pointing to 'src/frontend/ui'.
-        # Pass this to the superclass constructor.
-        # The superclass will set its self.directory to this value.
-        # The superclass's translate_path and other methods will then use this correct directory.
-        super().__init__(*args, directory=directory, **kwargs)

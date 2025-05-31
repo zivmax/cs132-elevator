@@ -8,7 +8,7 @@ from backend.world import World
 from backend.api import ElevatorAPI  # Import ElevatorAPI
 from frontend.webview import ElevatorWebview
 from frontend.bridge import WebSocketBridge  # Import WebSocketBridge
-from backend.server import HTTPServer  # Import HTTPServer
+from backend.server import ElevatorHTTPServer  # Import HTTPServer
 
 
 class ElevatorApplication:
@@ -57,7 +57,7 @@ class ElevatorApplication:
 
         if http_port is not None:
             # Start HTTP server if http_port is specified
-            self.http_server = HTTPServer(port=http_port)
+            self.http_server = ElevatorHTTPServer(port=http_port)
             self.http_server.start()
             print(
                 f"HTTP server running. Access frontend at http://127.0.0.1:{http_port}/?ws_port={ws_port}&show_debug={str(show_debug).lower()}"
