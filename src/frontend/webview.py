@@ -1,90 +1,58 @@
 import os
 import sys
-from typing import TYPE_CHECKING, Dict, Any
-from PyQt6.QtCore import QUrl, QUrlQuery  # Import QUrlQuery
-from PyQt6.QtWidgets import QApplication, QMainWindow
-from PyQt6.QtWebEngineWidgets import QWebEngineView
-from PyQt6.QtGui import QIcon
+import webview
 
-from frontend.bridge import WebSocketBridge
-
-if TYPE_CHECKING:
-    from backend.world import World
-
-
-class ElevatorWebview(QMainWindow):
-    """Main window for the elevator UI using QtWebEngine with WebSocket communication"""
+class ElevatorWebview:  # Renamed from VendingWebview
+    """Main window for the Elevator UI using pywebview to display the webpage."""
 
     def __init__(
         self,
-        bridge: WebSocketBridge,  # Changed to accept WebSocketBridge instance
-        show_debug: bool = False,  # Default changed to False
-        remote_debugging_port: int = 0,
-        ws_port: int = 18675,  # ws_port is still needed for the URL query
-        app_cleanup_callback=None,  # Add cleanup callback parameter
-    ):
-        super().__init__()
-        self.bridge = bridge  # Use the passed WebSocketBridge instance
-        self.show_debug = show_debug  # Store show_debug status
+        ws_port: int = 8765,  # Default from your pywebview code, main.py uses 18675
+        http_port: int | None = None,
+    ) -> None:
         self.ws_port = ws_port
-        self.app_cleanup_callback = app_cleanup_callback  # Store cleanup callback
+        self.http_port = http_port  # Store http_port
+        self.window = None
 
-        # Enable remote debugging if a port is specified
-        if remote_debugging_port > 0:
-            os.environ["QTWEBENGINE_REMOTE_DEBUGGING"] = str(remote_debugging_port)
+        if self.http_port:
+            # Load from HTTP server if http_port is provided
+            self.html_url = f"http://localhost:{self.http_port}?wsPort={self.ws_port}"
+            print(
+                f"ElevatorWebview: Initializing with pywebview. HTTP URL: {self.html_url}"
+            )
+        else:
+            # Fallback to file URL if http_port is not available (though less ideal)
+            html_file_path = os.path.abspath(
+                os.path.join(os.path.dirname(__file__), "ui", "index.html")
+            )
+            if not os.path.exists(html_file_path):
+                print(
+                    f"Error: HTML file not found at {html_file_path}", file=sys.stderr
+                )
+                sys.exit(1)
+            self.html_url = f"file://{html_file_path}?wsPort={self.ws_port}"
+            print(
+                f"ElevatorWebview: Initializing with pywebview. File URL: {self.html_url}"
+            )
 
-        # Setup the UI
-        self.setWindowTitle("Elevator Simulation")
-        self.resize(1024, 768)
-
-        # Set the window icon
+    def start(self) -> None:
+        """Create and show the pywebview window."""
+        # No js_api is passed if all communication is handled by existing WebSocket bridge
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        icon_path = os.path.join(current_dir, "ui", "assets", "elevator.png")
-        self.setWindowIcon(QIcon(icon_path))
+        icon_path = os.path.join(current_dir, "ui", "assets", "elevator.ico")
+        self.window = webview.create_window(
+            "Elevator Simulation",
+            url=self.html_url,
+            width=1200,  # Adjust as needed
+            height=800,  # Adjust as needed
+        )
+        webview.start(icon=icon_path)
 
-        # Create the web view
-        self.web_view = QWebEngineView(self)
-        self.setCentralWidget(self.web_view)
-
-        # Load the HTML file that uses WebSockets, append ws_port and show_debug as URL params
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        html_path = os.path.join(current_dir, "ui", "index.html")
-        url = QUrl.fromLocalFile(html_path)
-
-        query = QUrlQuery()
-        query.addQueryItem("wsPort", str(ws_port))
-        query.addQueryItem(
-            "showDebug", "true" if self.show_debug else "false"
-        )  # Pass show_debug as a URL parameter
-        url.setQuery(query)
-
-        self.web_view.load(url)
-
-    def update(self):
-        """Update the UI based on backend state"""
-        self.bridge.sync_backend()
-
-    def closeEvent(self, event):
-        """Clean up resources when the window is closed"""
-        print("Window close event triggered")
-        if self.app_cleanup_callback:
-            self.app_cleanup_callback()
-        super().closeEvent(event)
-
-
-def run_standalone():
-    """Run the elevator UI as a standalone application for testing"""
-    # This function would need a mock World and API to run standalone now.
-    # For simplicity, I'll comment out its direct runnability without them.
-    # app = QApplication(sys.argv)
-    # window = ElevatorWebSocketView() # This would fail without world and api
-    # window.show()
-    # sys.exit(app.exec())
-    print(
-        "run_standalone needs to be updated to provide World and ElevatorAPI instances."
-    )
-
-
-if __name__ == "__main__":
-    # run_standalone()
-    print("To run webview standalone, it now requires World and ElevatorAPI instances.")
+    def stop(self) -> None:
+        """Stops the pywebview window and application."""
+        if self.window:
+            print("ElevatorWebview: Destroying window.")
+            self.window.destroy()
+        # Note: webview.start() is blocking. Stopping might need to be handled
+        # from another thread or by how the main application loop is structured
+        # if pywebview doesn't exit the process on window close.
