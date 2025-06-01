@@ -7,7 +7,7 @@ import queue
 
 
 class ZmqServerThread(threading.Thread):
-    _port = 27132
+    _port = 19982
     clients_addr = set()
 
     def __init__(self, server_port: int = None) -> None:

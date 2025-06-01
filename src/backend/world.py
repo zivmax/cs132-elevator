@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 
 class World:
-    def __init__(self, zmq_port: str = "27132") -> None:  # Added zmq_port parameter
+    def __init__(self, zmq_port: str = "19982") -> None:  # Added zmq_port parameter
         # Create ZmqCoordinator, which owns ZmqClientThread and the incoming message queue.
         # ZmqCoordinator handles ZMQ client prints.
         self.zmq_coordinator: ZmqCoordinator = ZmqCoordinator(identity="Team17", zmq_port=zmq_port)

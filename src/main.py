@@ -23,7 +23,7 @@ class ElevatorApp:
         show_debug=False,
         ws_port: int | None = None, # Modified to accept None
         http_port: int | None = None, # Modified to accept None
-        zmq_port: str = "27132", # Added zmq_port parameter
+        zmq_port: str = "19982", # Added zmq_port parameter
         headless=False,
     ):
         self.headless = headless
@@ -282,8 +282,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--zmq-port",
         type=str,
-        default="27132",
-        help="ZMQ server port for client communication (default: 27132)",
+        default="19982",
+        help="ZMQ server port for client communication (default: 19982)",
     )
     parser.add_argument(
         "--console",

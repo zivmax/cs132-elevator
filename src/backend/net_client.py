@@ -56,7 +56,7 @@ class ParseError(
 class ZmqClientThread(threading.Thread):
 
     def __init__(
-        self, serverIp: str = "127.0.0.1", port: str = "27132", identity: str = "GroupX"
+        self, serverIp: str = "127.0.0.1", port: str = "19982", identity: str = "GroupX"
     ) -> None:
         threading.Thread.__init__(self)
         self.daemon = True  # Mark as daemon thread to allow graceful shutdown
@@ -82,7 +82,7 @@ class ZmqClientThread(threading.Thread):
 
         self.socket.connect(
             f"tcp://{serverIp}:{port}"
-        )  # Both ("tcp://localhost:27132") and ("tcp://127.0.0.1:27132") are OK
+        )  # Both ("tcp://localhost:19982") and ("tcp://127.0.0.1:19982") are OK
 
         self.sendMsg(f"Client[{self.identity}] is online")  ##Telling server I'm online
         # self.start() # start() should be called by the creator of the thread instance.
@@ -218,7 +218,7 @@ class ZmqCoordinator:
     queuing incoming messages, and providing methods to access them and send messages.
     """
 
-    def __init__(self, identity: str, zmq_port: str = "27132"):  # Added zmq_port parameter
+    def __init__(self, identity: str, zmq_port: str = "19982"):  # Added zmq_port parameter
         """Initialize ZmqCoordinator, create and start ZmqClientThread."""
         self.zmq_client = ZmqClientThread(identity=identity, port=zmq_port)  # Pass port to ZmqClientThread
         # self._last_checked_timestamp: int = -1 # No longer needed with direct queue polling
