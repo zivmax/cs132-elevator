@@ -279,10 +279,21 @@ if __name__ == "__main__":
         action="store_true",
         help="Run in headless mode without launching webview",
     )
+    parser.add_argument(
+        "--zmq-port",
+        type=str,
+        default="27132",
+        help="ZMQ server port for client communication (default: 27132)",
+    )
+    parser.add_argument(
+        "--console",
+        action="store_true",
+        help="Force output to console"
+    )
     args = parser.parse_args()
 
     # Conditionally allocate console for headless/debug mode if packaged as windowed app
-    if (args.headless or args.debug):
+    if (args.headless or args.debug or args.console):
         if os.name == 'nt': # Windows-specific console allocation
             # Check if a console is already attached
             # GetStdHandle(-10) is STDIN, -11 is STDOUT, -12 is STDERR
