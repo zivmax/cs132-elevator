@@ -1,0 +1,26 @@
+graph TD
+    subgraph "State Sync Failures (Backend-Frontend)"
+        SSF[State Synchronization Failure] -->|OR| WCE[WebSocket Communication Errors]
+        SSF -->|OR| IDM[Inconsistent Data Models]
+        SSF -->|OR| DSU[Delayed/Lost State Updates]
+        SSF -->|OR| FMI[Frontend Misinterprets State]
+        
+        WCE -->|OR| CLD[Connection Lost/Dropped]
+        WCE -->|OR| MPF[Message Protocol Failure]
+        
+        IDM -->|OR| SVD[State Version Differences]
+        IDM -->|OR| DFS[Data Format Synchronization]
+        
+        DSU -->|OR| NB[Network Bottleneck]
+        DSU -->|OR| QPO[Queue Processing Overload]
+        
+        FMI -->|OR| JSE[JavaScript Execution Error]
+        FMI -->|OR| UDP[UI Data Processing Error]
+    end
+
+    %% Styling
+    classDef intermediate fill:#ffcc99,stroke:#333,stroke-width:2px;
+    classDef basicEvent fill:#ccffcc,stroke:#333,stroke-width:2px;
+    
+    class SSF,WCE,IDM,DSU,FMI intermediate;
+    class CLD,MPF,SVD,DFS,NB,QPO,JSE,UDP basicEvent;
