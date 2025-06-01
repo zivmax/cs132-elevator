@@ -307,7 +307,6 @@ Based on comprehensive code analysis and the FTA diagram, we have identified fou
 | R-002   | **GUI Desynchronization with Headless Operations:** If the elevator system is operated headlessly via ZMQ messages, the GUI may not reflect the current state, leading to inconsistencies. Maintaining two-way communication (JSON for UI, ZMQ for headless) requires careful synchronization. | Medium     | Medium | `src/backend/api.py`, `src/backend/server.py`, `src/frontend/bridge.py`, `src/backend/net_client.py` |
 | R-003   | **Application Size/Distribution:** Standalone mode currently bundles a full browser kernel (e.g., QtWebEngine), adding significant size (~100 MB+) to installers. This results in inflated download sizes, slower installs/updates, higher disk usage, and potential user friction. | High     | Medium | `src/frontend/webview.py`, `release/packaging.spec`, `.github/workflows/release.yml` |
 | R-004   | **Port Occupation:** The application may fail to start if the default WebSocket (WS) or HTTP ports are already in use by another process, potentially requiring manual intervention.                                                              | Low        | Medium | `src/backend/server.py`, `src/main.py`                 |
-| R-005   | **Inconvenient Frontend Debugging:** Debugging on the frontend can be inconvenient.                                                                                                                             | High       | Low    | `src/frontend/ui/scripts/main.js`, `src/frontend/ui/index.html`, `src/main.py` |
 
 **FTA Analysis:**
 
@@ -359,11 +358,3 @@ The following section outlines implemented and recommended mitigation strategies
   - User notification if no available ports are found in the range.
 - **Evidence:**
   - **(Testing):** Unit tests for port scanning and selection logic.
-
-**5. Inconvenient Frontend Debugging (R-005)**
-
-- **Current Mitigations:**
-  - Added a debug panel in the frontend UI that can be activated by passing the `--debug` command-line argument when running the application.
-- **Evidence:**
-  - **(Implementation):** Debug panel activation logic can be found in `src/frontend/ui/scripts/main.js`.
-  - **(Implementation):** Command-line argument parsing for `--debug` is handled in `src/main.py`.
