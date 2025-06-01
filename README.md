@@ -32,14 +32,15 @@ The backend is written in Python and manages the core simulation logic:
 - **`Dispatcher`**: Responsible for receiving elevator call requests (from outside the elevators) and assigning them to the most suitable elevator to optimize efficiency. It manages and optimizes the task queue for each elevator.
 - **`Engine`**: Simulates the physical movement of the elevators. It processes movement requests from `Elevator` objects and updates their floor positions over time.
 - **`ElevatorAPI`**: Acts as a central interface for handling incoming requests from both the ZMQ client (test server) and WebSocket clients (frontend). It parses these requests and delegates actions to the `Dispatcher` or `Elevator` objects. It also formats and sends system responses/events.
-- **`ZmqCoordinator`**: Manages ZMQ communication with an external test server, handling incoming commands and sending outgoing messages.
-- **`WebSocketServer`**: (Used by `WebSocketBridge`) Provides a WebSocket endpoint for frontend clients to connect to, enabling real-time bidirectional communication.
-- **`ElevatorHTTPServer`**: An optional simple HTTP server to serve the static frontend files (HTML, CSS, JS).
+- **`ZmqCoordinator` (primarily in `src/backend/net_client.py`)**: Manages ZMQ communication with an external test server, handling incoming commands and sending outgoing messages.
+- **`WebSocketServer` and `ElevatorHTTPServer` (within `src/backend/server.py`)**:
+    - `WebSocketServer`: Provides a WebSocket endpoint for frontend clients to connect to, enabling real-time bidirectional communication (used by `WebSocketBridge`).
+    - `ElevatorHTTPServer`: An optional simple HTTP server to serve the static frontend files (HTML, CSS, JS).
 
 ### Frontend (GUI Mode)
 
 - **`ElevatorWebview`**: A PyQt6 `QMainWindow` that uses `QWebEngineView` to render the web-based user interface.
-- **User Interface:** Built with HTML, CSS, and JavaScript, located in `src/frontend/ui/`. It visualizes elevator positions, states, and allows user interaction.
+- **User Interface:** Built with HTML, CSS, and JavaScript, located in `src/frontend/ui/` (containing `index.html`, `styles.css`, and subdirectories like `assets/` and `scripts/`). It visualizes elevator positions, states, and allows user interaction.
 - **`WebSocketBridge`**: Facilitates communication between the Python backend (specifically `ElevatorAPI` and `World`) and the JavaScript frontend through WebSockets. It sends state updates to the frontend and relays user actions from the frontend to the backend.
 
 ### Communication Protocols
@@ -141,22 +142,10 @@ python src/main.py --headless --ws-port <ws_port> --http-port <http_port>
 ### Command-Line Options
 
 - `--debug`: Action, if specified, may enable debug features (e.g., show debug panel in GUI).
-- `--cdp <port>`: Specify the Chromium DevTools Protocol port for debugging the QWebEngineView content. Default: `19982`.
 - `--ws-port <port>`: Set the port for the WebSocket server. Default: `18675`.
 - `--http-port <port>`: Set the port for the HTTP server (for serving frontend files). Default: `19090`.
 - `--headless`: Action, if specified, runs the application in headless mode (no GUI).
 
-## Directory Structure
-
-- `src/`: Contains the main source code.
-    - `main.py`: The main entry point for the application.
-    - `backend/`: Core backend logic (simulation engine, elevator controls, API, ZMQ/WebSocket servers).
-    - `frontend/`: Components related to the graphical frontend (PyQt6 webview, WebSocket bridge, HTML/CSS/JS UI files in `frontend/ui/`).
-- `doc/`: Project documentation, including requirements, design specifications, and user manuals.
-- `test/`: Test scripts and related files for verifying system functionality.
-- `release/`: Files related to packaging and distribution, including `requirements.txt`.
-- `LICENSE`: Project license file.
-- `README.md`: This file.
 
 ## License
 
