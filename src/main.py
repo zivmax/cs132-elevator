@@ -2,6 +2,12 @@ import time
 import signal
 import argparse
 import threading  # Added for background tasks
+import sys # Added for console allocation
+import os # Added for console allocation
+
+# For Windows console allocation
+if os.name == 'nt':
+    import ctypes
 
 from backend.world import World
 from backend.api import ElevatorAPI  # Import ElevatorAPI
@@ -273,6 +279,32 @@ if __name__ == "__main__":
         help="Run in headless mode without launching webview",
     )
     args = parser.parse_args()
+
+    # Conditionally allocate console for headless/debug mode if packaged as windowed app
+    if (args.headless or args.debug):
+        if os.name == 'nt': # Windows-specific console allocation
+            # Check if a console is already attached
+            # GetStdHandle(-10) is STDIN, -11 is STDOUT, -12 is STDERR
+            # If GetConsoleWindow is 0, it means no console is attached to the process
+            # stdout_handle = ctypes.windll.kernel32.GetStdHandle(ctypes.c_ulong(-11))
+            if ctypes.windll.kernel32.GetConsoleWindow() == 0:
+                if ctypes.windll.kernel32.AllocConsole():
+                    # Redirect standard streams to the new console
+                    # Note: This might not be perfect for all scenarios, especially with input.
+                    # For more robust redirection, especially for input,
+                    # one might need to use CreateFile for CONIN$ and CONOUT$.
+                    sys.stdout = open("CONOUT$", "w")
+                    sys.stderr = open("CONOUT$", "w")
+                    sys.stdin = open("CONIN$", "r")
+                    print("Allocated a new console for headless/debug mode.")
+                else:
+                    # This case should ideally not happen if AllocConsole is available
+                    # and no other console is attached by a parent process that AllocConsole would detect.
+                    print("Failed to allocate a new console.", file=sys.stderr if sys.stderr else sys.__stderr__) # Fallback to original stderr
+        # For other OS (Linux/macOS), console is typically available if launched from terminal.
+        # If launched by double-clicking a .app bundle on macOS or a .desktop file on Linux
+        # without a terminal, output might still go to system logs or be lost.
+        # Handling for those cases is more complex and platform-specific.
 
     app = ElevatorApp(
         show_debug=args.debug,
