@@ -188,7 +188,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--debug", action="store_true", help="Show debug information panel"
     )
-    parser.add_argument("--cdp", type=int, default=19982, help="Chromium debugging port")
+    parser.add_argument(
+        "--cdp", type=int, default=19982, help="Chromium debugging port"
+    )
     parser.add_argument(
         "--ws-port", type=int, default=18675, help="WebSocket server port"
     )

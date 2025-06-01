@@ -47,9 +47,7 @@ class WebSocketServer:
             print(f"Error processing message: {e}")
             return json.dumps({"status": "error", "message": str(e)})
 
-    async def _handle_connection(
-        self, websocket: websockets.ServerConnection
-    ) -> None:
+    async def _handle_connection(self, websocket: websockets.ServerConnection) -> None:
         """Handle a new WebSocket connection"""
         self._clients.add(websocket)
         try:

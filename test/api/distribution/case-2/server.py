@@ -14,15 +14,15 @@ class ZmqServerThread(threading.Thread):
         threading.Thread.__init__(self)
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.ROUTER)
-        self.bondClient = None
-        self._sentTimeStamp: int = None
+        self.binded_client = None
+        self._sent_timestamp: int = None
         # 新增接收队列和最后消息缓存
         self.recv_queue = queue.Queue()
         self._last_received = {
             "message": "",
             "timestamp": -1,
         }  # 第一个为message，第二个为timestamp
-        self.msgQueue: queue.Queue = queue.Queue()
+        self.msg_queue: queue.Queue = queue.Queue()
 
         if server_port is not None:
             self.port = server_port
@@ -44,11 +44,11 @@ class ZmqServerThread(threading.Thread):
         self._port = value
 
     @property
-    def messageTimeStamp(self) -> int:
+    def message_timestamp(self) -> int:
         return self._last_received["timestamp"]
 
     @property
-    def receivedMessage(self) -> str:
+    def received_message(self) -> str:
         try:
             msg = self.recv_queue.get_nowait()
 
@@ -59,15 +59,15 @@ class ZmqServerThread(threading.Thread):
         return self._last_received["message"]
 
     @property
-    def sentTimeStamp(self) -> int:
-        if self._sentTimeStamp == None:
+    def sent_timestamp(self) -> int:
+        if self._sent_timestamp is None:
             return -1
         else:
-            return self._sentTimeStamp
+            return self._sent_timestamp
 
-    @sentTimeStamp.setter
-    def sentTimeStamp(self, value: int):
-        self._sentTimeStamp = value
+    @sent_timestamp.setter
+    def sent_timestamp(self, value: int):
+        self._sent_timestamp = value
 
     # start listening
     def hosting(self, server_port: int = None) -> None:
@@ -83,26 +83,26 @@ class ZmqServerThread(threading.Thread):
             timestamp = int(round(time.time() * 1000))
             if contents_str.endswith("is online") or ("door_closed" in contents_str):
                 print(
-                    "(skipped message) Client:[%s] message:%s Timestamp:%s\n"
+                    "(skipped message) client:[%s] message:%s Timestamp:%s\n"
                     % (address_str, contents_str, str(timestamp))
                 )
                 continue
             self.recv_queue.put({"message": contents_str, "timestamp": timestamp})
             print(
-                "Client:[%s] message:%s Timestamp:%s\n"
+                "client:[%s] message:%s Timestamp:%s\n"
                 % (address_str, contents_str, str(timestamp))
             )
 
     def listen_queue(self):
         while True:
-            if (not self.msgQueue.empty()) and (
-                (int(round(time.time() * 1000)) - self.sentTimeStamp) > 800
+            if (not self.msg_queue.empty()) and (
+                (int(round(time.time() * 1000)) - self.sent_timestamp) > 800
             ):
-                self.sentTimeStamp = int(round(time.time() * 1000))
-                self.__send_string(self.bondClient, self.msgQueue.get())
+                self.sent_timestamp = int(round(time.time() * 1000))
+                self.__send_string(self.binded_client, self.msg_queue.get())
 
     def send_string(self, address: str, msg: str = ""):
-        self.msgQueue.put(msg)
+        self.msg_queue.put(msg)
 
     def __send_string(self, address: str, msg: str = ""):
         if not self.socket.closed:

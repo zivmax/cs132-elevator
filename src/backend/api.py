@@ -1,7 +1,13 @@
 import json
 from typing import TYPE_CHECKING, Dict, Any, Optional, List, Union  # Added Union
 
-from .models import validate_floor, validate_elevator_id, validate_direction, MIN_FLOOR, MAX_FLOOR
+from .models import (
+    validate_floor,
+    validate_elevator_id,
+    validate_direction,
+    MIN_FLOOR,
+    MAX_FLOOR,
+)
 from .net_client import (
     ZmqCoordinator,
     BaseCommand,
@@ -143,12 +149,13 @@ class ElevatorAPI:
 
     # Internal handlers, previously part of Dispatcher or direct calls from old API methods
     # Modified to return Dict instead of JSON string
-    def _handle_call_elevator(
-        self, floor: int, direction: str
-    ) -> Dict[str, Any]:
+    def _handle_call_elevator(self, floor: int, direction: str) -> Dict[str, Any]:
         """Internal handler for elevator calls from a floor."""
         if not self.world or not self.world.dispatcher:
-            return {"status": "error", "message": "World or Dispatcher not initialized"}        # Validate floor bounds
+            return {
+                "status": "error",
+                "message": "World or Dispatcher not initialized",
+            }  # Validate floor bounds
         if not validate_floor(floor):
             return {
                 "status": "error",
@@ -157,7 +164,7 @@ class ElevatorAPI:
 
         print(f"API: Calling elevator to floor {floor}, direction {direction}")
         # Assuming assign_elevator doesn't return a value indicating immediate success/failure of the call itself,
-        # but rather queues the request. So, we assume success at this stage if no exceptions.        
+        # but rather queues the request. So, we assume success at this stage if no exceptions.
         try:
             self.world.dispatcher.assign_elevator(floor, direction)
             return {
@@ -168,23 +175,21 @@ class ElevatorAPI:
         except Exception as e:
             return {"status": "error", "message": f"Failed to call elevator: {str(e)}"}
 
-    def _handle_select_floor(
-        self, floor: int, elevator_id: int
-    ) -> Dict[str, Any]:
+    def _handle_select_floor(self, floor: int, elevator_id: int) -> Dict[str, Any]:
         """Internal handler for floor selections from inside an elevator."""
         if not self.world or not self.world.dispatcher:
             return {"status": "error", "message": "World or Dispatcher not initialized"}
-          # Validate floor bounds
+        # Validate floor bounds
         if not validate_floor(floor):
             return {
-                "status": "error", 
-                "message": f"Invalid floor: {floor}. Must be between {MIN_FLOOR} and {MAX_FLOOR}"
+                "status": "error",
+                "message": f"Invalid floor: {floor}. Must be between {MIN_FLOOR} and {MAX_FLOOR}",
             }
-          # Validate elevator ID
+        # Validate elevator ID
         if not validate_elevator_id(elevator_id):
             return {
-                "status": "error", 
-                "message": f"Invalid elevator ID: {elevator_id}. Must be between 1 and 2"
+                "status": "error",
+                "message": f"Invalid elevator ID: {elevator_id}. Must be between 1 and 2",
             }
 
         print(f"API: Elevator {elevator_id} selecting floor {floor}")
@@ -351,9 +356,7 @@ class ElevatorAPI:
                 f"API: Frontend select floor: floor={floor}, elevator_id={elevator_id}"
             )
             # Use the internal handler
-            result_dict = self._handle_select_floor(
-                int(floor), int(elevator_id)
-            )
+            result_dict = self._handle_select_floor(int(floor), int(elevator_id))
             return json.dumps(result_dict)  # Still return JSON for this path
         except Exception as e:
             print(f"Error in select_floor: {e}")
@@ -433,5 +436,5 @@ class ElevatorAPI:
                 "target_floors_origin": target_floors_origin,
             }
 
-            elevator_states.append(elevator_state)        
+            elevator_states.append(elevator_state)
         return elevator_states

@@ -77,8 +77,8 @@ class ZmqClientThread(threading.Thread):
         self._stop_event = threading.Event()  # For gracefully stopping the thread
 
         # Keep the original variables for backwards compatibility
-        self._receivedMessage: Optional[str] = None
-        self._messageTimeStamp: Optional[int] = None
+        self._received_message: Optional[str] = None
+        self._message_timestamp: Optional[int] = None
 
         self.socket.connect(
             f"tcp://{serverIp}:{port}"
@@ -89,26 +89,26 @@ class ZmqClientThread(threading.Thread):
         # ZmqCoordinator will call it.
 
     @property
-    def messageTimeStamp(self) -> int:
-        if self._messageTimeStamp == None:
+    def message_timestamp(self) -> int:
+        if self._message_timestamp == None:
             return -1  # Return a default value
         else:
-            return self._messageTimeStamp
+            return self._message_timestamp
 
-    @messageTimeStamp.setter
-    def messageTimeStamp(self, value: int) -> None:
-        self._messageTimeStamp = value
+    @message_timestamp.setter
+    def message_timestamp(self, value: int) -> None:
+        self._message_timestamp = value
 
     @property
-    def receivedMessage(self) -> str:
-        if self._receivedMessage == None:
+    def received_message(self) -> str:
+        if self._received_message == None:
             return ""  # Return a default value
         else:
-            return self._receivedMessage
+            return self._received_message
 
-    @receivedMessage.setter
-    def receivedMessage(self, value: str) -> None:
-        self._receivedMessage = value
+    @received_message.setter
+    def received_message(self, value: str) -> None:
+        self._received_message = value
 
     # Get all messages in the queue
     def get_all_messages(self) -> List[Tuple[str, int]]:
@@ -152,8 +152,8 @@ class ZmqClientThread(threading.Thread):
                         self.messageQueue.append(message)
                         self.timestampQueue.append(timestamp)
                         # Update the single message properties for backward compatibility or other uses
-                        self._receivedMessage = message
-                        self._messageTimeStamp = timestamp
+                        self._received_message = message
+                        self._message_timestamp = timestamp
             except zmq.Again:
                 # No message received, sleep briefly and check stop event
                 if self._stop_event.wait(
