@@ -422,7 +422,9 @@ class ZmqCoordinator:
                 direction_floor_part = parts[0].split("_")
                 if len(parts) > 1 and len(direction_floor_part) > 1:
                     direction = direction_floor_part[1]
-                    floor = int(parts[1])
+                    floor_str = parts[1]
+                    # Convert floor -1 to 0, otherwise parse as int
+                    floor = 0 if floor_str == "-1" else int(floor_str)
                     return CallCommand(
                         floor=floor, direction=direction, original_message=message_str
                     )
@@ -433,21 +435,28 @@ class ZmqCoordinator:
                         detail=message_str,
                     )
             elif message_str.startswith("select_floor@"):
-                parts = message_str.split("@")[1].split("#")
-                if len(parts) > 1:
-                    floor = int(parts[0])
-                    elevator_id = int(parts[1])
-                    return SelectFloorCommand(
-                        floor=floor,
-                        elevator_id=elevator_id,
-                        original_message=message_str,
-                    )
-                else:
-                    return ParseError(
-                        original_message=original_msg_for_error,
-                        error_type="invalid_select_floor_format",
-                        detail=message_str,
-                    )
+                # Expected format: select_floor@FLOOR#ELEVATOR_ID
+                # Example: select_floor@-1#1 or select_floor@3#2
+                parts = message_str.split("@", 1)
+                if len(parts) == 2:
+                    floor_and_id_part = parts[1].split("#", 1)
+                    if len(floor_and_id_part) == 2:
+                        floor_str = floor_and_id_part[0]
+                        elevator_id_str = floor_and_id_part[1]
+                        # Convert floor -1 to 0, otherwise parse as int
+                        floor = 0 if floor_str == "-1" else int(floor_str)
+                        elevator_id = int(elevator_id_str)
+                        return SelectFloorCommand(
+                            floor=floor,
+                            elevator_id=elevator_id,
+                            original_message=message_str,
+                        )
+                # If parsing failed due to format, fall through to specific ParseError
+                return ParseError(
+                    original_message=original_msg_for_error,
+                    error_type="invalid_select_floor_format",
+                    detail=message_str,
+                )
             elif message_str.startswith("open_door#"):
                 elevator_id_str = message_str.split("#")[1]
                 elevator_id = int(elevator_id_str)
