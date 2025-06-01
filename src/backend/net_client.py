@@ -218,16 +218,16 @@ class ZmqCoordinator:
     queuing incoming messages, and providing methods to access them and send messages.
     """
 
-    def __init__(self, identity: str):  # Removed world_add_msg_callback
+    def __init__(self, identity: str, zmq_port: str = "27132"):  # Added zmq_port parameter
         """Initialize ZmqCoordinator, create and start ZmqClientThread."""
-        self.zmq_client = ZmqClientThread(identity=identity)
+        self.zmq_client = ZmqClientThread(identity=identity, port=zmq_port)  # Pass port to ZmqClientThread
         # self._last_checked_timestamp: int = -1 # No longer needed with direct queue polling
         self._message_queue: Deque[Tuple[str, int]] = deque()  # Internal message queue
 
         if not self.zmq_client.is_alive():
             self.zmq_client.start()
         print(
-            f"ZmqCoordinator: Initialized for identity '{identity}'. ZmqClientThread started."
+            f"ZmqCoordinator: Initialized for identity '{identity}' on port {zmq_port}. ZmqClientThread started."
         )
 
     def poll_and_queue_incoming_messages(self):

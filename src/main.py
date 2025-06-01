@@ -23,6 +23,7 @@ class ElevatorApp:
         show_debug=False,
         ws_port: int | None = None, # Modified to accept None
         http_port: int | None = None, # Modified to accept None
+        zmq_port: str = "27132", # Added zmq_port parameter
         headless=False,
     ):
         self.headless = headless
@@ -68,7 +69,7 @@ class ElevatorApp:
         signal.signal(signal.SIGINT, self._signal_handler)
         signal.signal(signal.SIGTERM, self._signal_handler)
 
-        self.backend = World()
+        self.backend = World(zmq_port=zmq_port)  # Pass zmq_port to World
         self.elevator_api = ElevatorAPI(self.backend, self.backend.zmq_coordinator)
         self.backend.set_api_and_initialize_components(self.elevator_api)
         self.bridge = WebSocketBridge(
@@ -310,6 +311,7 @@ if __name__ == "__main__":
         show_debug=args.debug,
         ws_port=args.ws_port,
         http_port=args.http_port,
+        zmq_port=args.zmq_port,  # Pass zmq_port from CLI args
         headless=args.headless,
     )
 
