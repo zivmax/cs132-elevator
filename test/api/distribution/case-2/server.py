@@ -14,7 +14,7 @@ class ZmqServerThread(threading.Thread):
         threading.Thread.__init__(self)
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.ROUTER)
-        self.binded_client = None
+        self.bound_client = None
         self._sent_timestamp: int = None
         # 新增接收队列和最后消息缓存
         self.recv_queue = queue.Queue()
@@ -99,7 +99,7 @@ class ZmqServerThread(threading.Thread):
                 (int(round(time.time() * 1000)) - self.sent_timestamp) > 800
             ):
                 self.sent_timestamp = int(round(time.time() * 1000))
-                self.__send_string(self.binded_client, self.msg_queue.get())
+                self.__send_string(self.bound_client, self.msg_queue.get())
 
     def send_string(self, address: str, msg: str = ""):
         self.msg_queue.put(msg)
