@@ -301,56 +301,13 @@ A[] not deadlock
 
 Based on comprehensive code analysis and the FTA diagram, we have identified four major risk categories that could lead to system malfunction:
 
-**1. Dispatcher Logic Failures**
-- **1.1 Inefficient Dispatch Algorithm**
-  - Frequency: Medium (algorithm complexity in `dispatcher.py`)
-  - Severity: Medium (poor user experience, long wait times)
-  - Evidence: Current implementation uses simple distance-based assignment (`assign_elevator()` method)
-- **1.2 Dispatch Deadlock or Starvation**
-  - Frequency: Low (task queue optimization exists in `_optimize_task_queue()`)
-  - Severity: High (some calls never serviced)
-- **1.3 Incorrect Task Assignment**
-  - Frequency: Low (validated through UPPAAL model checking)
-  - Severity: Medium (suboptimal performance)
-
-**2. State Synchronization Failures (Backend-Frontend)**
-- **2.1 WebSocket Communication Errors**
-  - Frequency: Medium (network-dependent)
-  - Severity: Medium (UI inconsistency, user confusion)
-  - Evidence: WebSocket bridge in `bridge.py` handles JSON parsing and API calls
-- **2.2 Inconsistent Data Models**
-  - Frequency: Low (structured approach with `models.py`)
-  - Severity: Medium (display errors)
-- **2.3 Delayed/Lost State Updates**
-  - Frequency: Medium (network latency, processing delays)
-  - Severity: Medium (stale UI information)
-
-**3. Concurrency Issues & Race Conditions**
-- **3.1 Race Conditions on Shared Resources**
-  - Frequency: Low (single-threaded design apparent in `world.py`)
-  - Severity: High (data corruption, inconsistent state)
-  - Evidence: Task queue modifications in `dispatcher.py` and `elevator.py`
-- **3.2 Deadlock Between Processes/Threads**
-  - Frequency: Very Low (minimal threading, mostly in ZMQ client)
-  - Severity: Critical (system freeze)
-- **3.3 Improper Synchronization Primitives**
-  - Frequency: Low (threading locks used in `net_client.py`)
-  - Severity: High (race conditions)
-
-**4. Invalid Input/Event Handling Failures**
-- **4.1 ZMQ Command Errors**
-  - Frequency: Medium (external client dependency)
-  - Severity: Medium (command rejection, error responses)
-  - Evidence: Robust parsing in `net_client.py` with `ParseError` handling
-- **4.2 WebSocket Message Errors**
-  - Frequency: Medium (frontend interaction)
-  - Severity: Low (error responses to frontend)
-- **4.3 Unexpected Event Sequences**
-  - Frequency: Low (state machine design in `elevator.py`)
-  - Severity: Medium (undefined behavior)
-- **4.4 Security Vulnerability Exploitation**
-  - Frequency: Very Low (local simulation environment)
-  - Severity: Medium (in production environments)
+| Risk ID | Description                                                                                                                                                                                         | Likelihood | Impact | Affected Components                                    |
+| :------ | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------- | :----- | :----------------------------------------------------- |
+| R-001   | **Dispatcher Logic Failures:** Encompasses issues like inefficient dispatch algorithms (`dispatcher.py`) causing poor user experience and long wait times; potential dispatch deadlocks or starvation due to task queue optimization problems (`_optimize_task_queue()`), leading to some calls never being serviced; and incorrect task assignments resulting in suboptimal performance. | Medium     | High   | `src/backend/dispatcher.py`                            |
+| R-002   | **GUI Desynchronization with Headless Operations:** If the elevator system is operated headlessly via ZMQ messages, the GUI may not reflect the current state, leading to inconsistencies. Maintaining two-way communication (JSON for UI, ZMQ for headless) requires careful synchronization. | Medium     | Medium | `src/backend/api.py`, `src/backend/server.py`, `src/frontend/bridge.py`, `src/backend/net_client.py` |
+| R-003   | **Application Size/Distribution:** Standalone mode currently bundles a full browser kernel (e.g., QtWebEngine), adding significant size (~100 MB+) to installers. This results in inflated download sizes, slower installs/updates, higher disk usage, and potential user friction. | High     | Medium | `src/frontend/webview.py`, `release/packaging.spec`, `.github/workflows/release.yml` |
+| R-004   | **Port Occupation:** The application may fail to start if the default WebSocket (WS) or HTTP ports are already in use by another process, potentially requiring manual intervention.                                                              | Low        | Medium | `src/backend/server.py`, `src/main.py`                 |
+| R-005   | **Inconvenient Frontend Debugging:** Debugging on the frontend can be inconvenient.                                                                                                                             | High       | Low    | `src/frontend/ui/scripts/main.js`, `src/frontend/ui/index.html`, `src/main.py` |
 
 **FTA Analysis:**
 
@@ -366,68 +323,47 @@ The detailed FTA diagram shows the hierarchical breakdown of failure modes:
 
 The following section outlines implemented and recommended mitigation strategies:
 
-**1. Dispatcher Logic Failures**
+**1. Dispatcher Logic Failures (R-001)**
 
 - **Current Mitigations:**
   - Efficient task queue optimization using SCAN-like algorithm in `_optimize_task_queue()` method
   - Distance-based elevator assignment in `assign_elevator()` using `calculate_estimated_time()`
   - Duplicate task prevention logic (checks existing queue before adding)
-- **Evidence (Model Checking):** UPPAAL query `A<> (callPlacedUp || callPlacedDown) imply ((P1.Riding == true) and (P2.Riding == true) and (P3.Riding == true))` passed ✓
-- **Evidence (Code Analysis):** Task queue management prevents duplicate entries; optimization follows directional preference
+- **Evidence:**
+  - **(Model Checking):** UPPAAL query `A<> (callPlacedUp || callPlacedDown) imply ((P1.Riding == true) and (P2.Riding == true) and (P3.Riding == true))` passed ✓
+  - **(Implementation):** Task queue management prevents duplicate entries; optimization follows directional preference
 
-
-**2. State Synchronization Failures**
-
-- **Current Mitigations:**
-  - Structured JSON communication protocol in `bridge.py`
-  - Centralized API handling through `ElevatorAPI` class
-  - Error handling for malformed WebSocket messages
-  - Consistent data models defined in `models.py` (ElevatorState, DoorState, etc.)
-- **Evidence (Implementation):** WebSocket bridge implements message validation and error responses
-- **Evidence (Testing):** Playwright-based GUI tests in `test/gui/test_setup.py` verify frontend-backend communication
-- **Recommended Enhancements:**
-  - Add message acknowledgment system for critical state updates
-  - Implement state reconciliation mechanisms for connection recovery
-
-**3. Concurrency Issues & Race Conditions**
+**2. GUI Desynchronization with Headless Operations (R-002)**
 
 - **Current Mitigations:**
-  - Threading locks in ZMQ client (`net_client.py`) protect message queues
-  - Single-threaded main update loop in `world.py` reduces race conditions
-  - Atomic state transitions in `elevator.py` (state machine approach)
-  - Separate timestamps for different state changes (`last_state_change`, `last_door_change`)
-- **Evidence (Model Checking):** UPPAAL query `A[] not deadlock` passed ✓
-- **Evidence (Code Analysis):** Lock usage in `ZmqClientThread` class for thread-safe queue operations
-- **Recommended Enhancements:**
-  - Add explicit synchronization for task queue modifications
-  - Implement timeout mechanisms for long-running operations
+  - Implemented a periodic state pusher to ensure the frontend state is consistently synchronized with the backend. This allows ZMQ operations to be reflected in the frontend.
+  - The UI updater is triggered every time the states are synced, ensuring visual consistency.
+  - Unified API handling to centralize command processing. Internal private methods provide core logic, which are then wrapped by public methods to handle both JSON (WebSocket) and ZMQ message formats, ensuring consistent behavior across both communication channels.
+- **Evidence:**
+  - **(Implementation):** `WebSocketBridge` in `c:\\Users\\USER\\Desktop\\CS132\\Projects\\cs132-elevator\\src\\frontend\\bridge.py` calls `sync_backend` periodically, which fetches states from `ElevatorAPI` and pushes them to the UI.
+  - **(Implementation):** `ElevatorAPI` in `c:\\Users\\USER\\Desktop\\CS132\\Projects\\cs132-elevator\\src\\backend\\api.py` contains methods for both UI interaction (e.g., `ui_fetch_states`) and ZMQ command parsing (`parse_and_handle_message`), demonstrating unified logic.
+  - **(Implementation):** The `main.py` update loop (`ElevatorApp.update`) processes ZMQ messages and calls `bridge.sync_backend()` to update the frontend.
 
-**4. Invalid Input/Event Handling Failures**
+**3. Application Size/Distribution (R-003)**
+- **Current Mitigations:**
+  - Replace QtWebEngine with **pywebview**, leveraging the OS-native WebView2 (Edge) on Windows
+  - Offload the browser kernel to the system runtime, reducing the app bundle by ~70%
+  - Maintain clean release requirement and use clean virtual environment to build (`.github\workflows\release.yml`)
+- **Evidence:**
+  - **(Implementation):** Packing size reduced to <= 20 MB
+
+**4. Port Occupation (R-004)**
+- **Current Mitigations:**
+  - Implement automatic port detection for WS and HTTP ports.
+  - The system will scan for available ports within a predefined range if the default ports are occupied.
+  - User notification if no available ports are found in the range.
+- **Evidence:**
+  - **(Testing):** Unit tests for port scanning and selection logic.
+
+**5. Inconvenient Frontend Debugging (R-005)**
 
 - **Current Mitigations:**
-  - Comprehensive command parsing with error objects (`ParseError`, `BaseCommand` hierarchy)
-  - Input validation in `net_client.py` with specific error types
-  - State machine validation in `elevator.py` (door operations only when not moving)
-  - Exception handling in API methods with error responses
-  - **Floor boundary validation** in `models.py` with `validate_floor()`, `validate_elevator_id()`, and `validate_direction()` functions
-  - **Explicit floor bounds checking** integrated into `ElevatorAPI` methods using system constants from UPPAAL model
-- **Evidence (Implementation):** Robust parsing distinguishes between different command types and validates parameters
-- **Evidence (Model Checking):** UPPAAL model constrains floor range: `A[] (El1.c_floor >= MIN_FLOOR && El1.c_floor <= MAX_FLOOR)`
-- **Evidence (Code Implementation):** Floor validation implemented in `models.py` with constants matching UPPAAL model (MIN_FLOOR=-1, MAX_FLOOR=3)
-
-**5. Boundary Validation (Previously Missing - Now Implemented)**
-
-- **Current Mitigations:**
-  - Floor boundary validation functions in `models.py` with system constants matching UPPAAL model
-  - Validation utility functions: `validate_floor()`, `validate_elevator_id()`, `validate_direction()`
-  - Integration with `ElevatorAPI` class methods for all user inputs
-  - Consistent error messages for boundary violations
-- **Evidence (Implementation):** Floor validation prevents invalid floor commands with proper error responses
-- **Evidence (Model Checking):** UPPAAL model defines `MIN_FLOOR = -1` and `MAX_FLOOR = 3`, now enforced in Python code
-
-**Testing Evidence:**
-
-- **Unit Tests:** *(To be implemented - placeholder for code coverage results)*
-- **Integration Tests:** Playwright-based GUI testing framework established in `test/gui/`
-- **System Tests:** Manual testing scenarios through ZMQ client interface
-- **Model Checking:** UPPAAL verification covers liveness, safety, and deadlock freedom properties
+  - Added a debug panel in the frontend UI that can be activated by passing the `--debug` command-line argument when running the application.
+- **Evidence:**
+  - **(Implementation):** Debug panel activation logic can be found in `src/frontend/ui/scripts/main.js`.
+  - **(Implementation):** Command-line argument parsing for `--debug` is handled in `src/main.py`.
