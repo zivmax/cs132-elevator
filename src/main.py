@@ -8,14 +8,15 @@ from backend.api import ElevatorAPI  # Import ElevatorAPI
 from frontend.webview import ElevatorWebview
 from frontend.bridge import WebSocketBridge  # Import WebSocketBridge
 from backend.server import ElevatorHTTPServer  # Import HTTPServer
+from backend.utility import find_available_port # Added import
 
 
 class ElevatorApp:
     def __init__(
         self,
         show_debug=False,
-        ws_port=18675,
-        http_port=19090,
+        ws_port: int | None = None, # Modified to accept None
+        http_port: int | None = None, # Modified to accept None
         headless=False,
     ):
         self.headless = headless
@@ -24,6 +25,39 @@ class ElevatorApp:
         self.frontend = None  # Initialize frontend attribute
         self.backend_thread = None  # Initialize backend_thread attribute
 
+        HOST = "127.0.0.1"
+
+        # Determine WebSocket Port
+        actual_ws_port = ws_port
+        if ws_port is None:
+            print("WebSocket port not specified, attempting to find an available port starting from 18675...")
+            found_port = find_available_port(HOST, 18675, 18775)  # Scan a range
+            if found_port:
+                actual_ws_port = found_port
+                print(f"Using available WebSocket port: {actual_ws_port}")
+            else:
+                print("Error: Could not find an available WebSocket port in the range 18675-18775.")
+                raise ConnectionError("Failed to find an available WebSocket port.")
+        else:
+            print(f"Using user-specified WebSocket port: {actual_ws_port}")
+        
+        self.ws_port = actual_ws_port
+
+        # Determine HTTP Port
+        actual_http_port = http_port
+        if http_port is None:
+            print("HTTP port not specified, attempting to find an available port starting from 19090...")
+            found_http_port = find_available_port(HOST, 19090, 19190)  # Scan a range
+            if found_http_port:
+                actual_http_port = found_http_port
+                print(f"Using available HTTP port: {actual_http_port}")
+            else:
+                print("Warning: Could not find an available HTTP port in range 19090-19190. Proceeding without HTTP server if applicable.")
+                actual_http_port = None  # Fallback to no HTTP server
+        else:
+            print(f"Using user-specified HTTP port: {actual_http_port}")
+
+        self.http_port = actual_http_port
 
         signal.signal(signal.SIGINT, self._signal_handler)
         signal.signal(signal.SIGTERM, self._signal_handler)
@@ -32,35 +66,34 @@ class ElevatorApp:
         self.elevator_api = ElevatorAPI(self.backend, self.backend.zmq_coordinator)
         self.backend.set_api_and_initialize_components(self.elevator_api)
         self.bridge = WebSocketBridge(
-            world=self.backend, api=self.elevator_api, port=ws_port
+            world=self.backend, api=self.elevator_api, port=self.ws_port # Use self.ws_port
         )
 
         self.http_server = None
-        if http_port is not None:
-            self.http_server = ElevatorHTTPServer(port=http_port)
+        if self.http_port is not None: # Use self.http_port
+            self.http_server = ElevatorHTTPServer(port=self.http_port) # Use self.http_port
             self.http_server.start()
-            # show_debug is used here for the informational print message
             print(
-                f"HTTP server running. Access frontend at http://127.0.0.1:{http_port}/?wsPort={ws_port}&showDebug={str(show_debug).lower()}"
+                f"HTTP server running. Access frontend at http://127.0.0.1:{self.http_port}/?wsPort={self.ws_port}&showDebug={str(show_debug).lower()}"
             )
 
         if headless:
-            if http_port is None:
+            if self.http_port is None: # Use self.http_port
                 print(f"Running in headless mode with WebSocket server only.")
-                print(f"WebSocket server accessible at: ws://127.0.0.1:{ws_port}")
+                print(f"WebSocket server accessible at: ws://127.0.0.1:{self.ws_port}") # Use self.ws_port
                 print(f"Connect your custom frontend to this WebSocket endpoint.")
                 print(f"API documentation: See backend/api.py for available functions.")
             else:
                 print(
                     f"Running in headless mode with both HTTP server and WebSocket server."
                 )
-                print(f"WebSocket server accessible at: ws://127.0.0.1:{ws_port}")
+                print(f"WebSocket server accessible at: ws://127.0.0.1:{self.ws_port}") # Use self.ws_port
         else:
             # Initialize frontend with pywebview
             self.frontend = ElevatorWebview(
-                ws_port=ws_port,
-                http_port=http_port,  # Pass http_port, webview will construct its own URL
-                show_debug=show_debug,  # Pass show_debug to frontend
+                ws_port=self.ws_port, # Use self.ws_port
+                http_port=self.http_port, # Use self.http_port
+                show_debug=show_debug,
             )
             # self.frontend.start() will be called in the run() method
 
@@ -77,10 +110,6 @@ class ElevatorApp:
             print("Attempting to stop webview from signal handler...")
             # This should cause webview.start() in the main thread to return
             self.frontend.stop()
-
-        # If running in headless mode or if webview.start() hasn't been called yet,
-        # setting self.running = False should be enough for the run() loop to terminate.
-        # Cleanup is called in the finally block of run().
 
     def cleanup(self):
         """Clean up all resources"""
@@ -230,13 +259,13 @@ if __name__ == "__main__":
     #     "--cdp", type=int, default=19982, help="Chromium debugging port"
     # )
     parser.add_argument(
-        "--ws-port", type=int, default=18675, help="WebSocket server port"
+        "--ws-port", type=int, default=None, help="WebSocket server port (default: find available)" # Modified default
     )
     parser.add_argument(
         "--http-port",
         type=int,
-        default=19090,
-        help="HTTP server port. If specified, an HTTP server will host the frontend.",
+        default=None, # Modified default
+        help="HTTP server port. If not specified, an attempt will be made to find an available port. (default: find available)",
     )
     parser.add_argument(
         "--headless",
@@ -247,7 +276,6 @@ if __name__ == "__main__":
 
     app = ElevatorApp(
         show_debug=args.debug,
-        # remote_debugging_port=args.cdp, # Removed
         ws_port=args.ws_port,
         http_port=args.http_port,
         headless=args.headless,
