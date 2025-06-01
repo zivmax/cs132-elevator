@@ -78,14 +78,20 @@ class ZmqServerThread(threading.Thread):
             self.clients_addr.add(address_str)
             timestamp = int(round(time.time() * 1000))
             if contents_str.endswith("is online") or ("door_closed" in contents_str):
-                print(f"(skipped message) Client:[{address_str}] message:{contents_str} Timestamp:{timestamp}\n")
+                print(
+                    f"(skipped message) Client:[{address_str}] message:{contents_str} Timestamp:{timestamp}\n"
+                )
                 continue
             self.recv_queue.put({"message": contents_str, "timestamp": timestamp})
-            print(f"Client:[{address_str}] message:{contents_str} Timestamp:{timestamp}\n")
+            print(
+                f"Client:[{address_str}] message:{contents_str} Timestamp:{timestamp}\n"
+            )
 
     def listen_queue(self):
         while True:
-            if (not self.msg_queue.empty()) and ((int(round(time.time() * 1000)) - self.sent_timestamp) > 800):
+            if (not self.msg_queue.empty()) and (
+                (int(round(time.time() * 1000)) - self.sent_timestamp) > 800
+            ):
                 self.sent_timestamp = int(round(time.time() * 1000))
                 self.__send_string(self.bound_client, self.msg_queue.get())
 
@@ -95,9 +101,7 @@ class ZmqServerThread(threading.Thread):
     def __send_string(self, address: str, msg: str = ""):
         if not self.socket.closed:
             print(f"Server:[{str(address)}] message:{str(msg)}\n")
-            self.socket.send_multipart([
-                address.encode(), msg.encode()
-            ])
+            self.socket.send_multipart([address.encode(), msg.encode()])
         else:
             print("socket is closed,can't send message...")
 

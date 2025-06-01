@@ -58,7 +58,9 @@ def testing(server: server.ZmqServerThread):
     server.send_string(server.bound_client, "reset")
     server.send_string(server.bound_client, "call_up@1")
 
-    def is_received_new_message(old_timestamp: int, old_server_message: str, msg_unprocessed: bool = False) -> bool:
+    def is_received_new_message(
+        old_timestamp: int, old_server_message: str, msg_unprocessed: bool = False
+    ) -> bool:
         if msg_unprocessed:
             return True
         else:
@@ -78,37 +80,65 @@ def testing(server: server.ZmqServerThread):
         if has_new_message:
             for passenger in passengers:
                 if passenger.state == PassengerState.IN_ELEVATOR_1_AT_OTHER_FLOOR:
-                    if client_message.endswith(f"floor_arrived@{passenger.target_floor}#{passenger.get_elevator_code()}"):
+                    if client_message.endswith(
+                        f"floor_arrived@{passenger.target_floor}#{passenger.get_elevator_code()}"
+                    ):
                         passenger.current_floor = passenger.target_floor
-                        passenger.change_state(PassengerState.IN_ELEVATOR_1_AT_TARGET_FLOOR)
+                        passenger.change_state(
+                            PassengerState.IN_ELEVATOR_1_AT_TARGET_FLOOR
+                        )
                 elif passenger.state == PassengerState.IN_ELEVATOR_1_AT_TARGET_FLOOR:
                     if client_message == f"door_opened#1":
                         print(f"Passenger {passenger.name} is Leaving the elevator")
-                        passenger.change_state(PassengerState.OUT_ELEVATOR_0_AT_TARGET_FLOOR)
+                        passenger.change_state(
+                            PassengerState.OUT_ELEVATOR_0_AT_TARGET_FLOOR
+                        )
                         passenger.finished = True
                 elif passenger.state == PassengerState.IN_ELEVATOR_2_AT_OTHER_FLOOR:
-                    if client_message.endswith(f"floor_arrived@{passenger.target_floor}#{passenger.get_elevator_code()}"):
+                    if client_message.endswith(
+                        f"floor_arrived@{passenger.target_floor}#{passenger.get_elevator_code()}"
+                    ):
                         passenger.current_floor = passenger.target_floor
-                        passenger.change_state(PassengerState.IN_ELEVATOR_2_AT_TARGET_FLOOR)
+                        passenger.change_state(
+                            PassengerState.IN_ELEVATOR_2_AT_TARGET_FLOOR
+                        )
                 elif passenger.state == PassengerState.IN_ELEVATOR_2_AT_TARGET_FLOOR:
                     if client_message == f"door_opened#2":
                         print(f"Passenger {passenger.name} is Leaving the elevator")
-                        passenger.change_state(PassengerState.OUT_ELEVATOR_0_AT_TARGET_FLOOR)
+                        passenger.change_state(
+                            PassengerState.OUT_ELEVATOR_0_AT_TARGET_FLOOR
+                        )
                         passenger.finished = True
                 elif passenger.state == PassengerState.OUT_ELEVATOR_0_AT_OTHER_FLOOR:
-                    if (client_message.startswith(passenger.matching_signal) and passenger.current_floor == passenger.start_floor):
+                    if (
+                        client_message.startswith(passenger.matching_signal)
+                        and passenger.current_floor == passenger.start_floor
+                    ):
                         if passenger.get_elevator_code() == -1:
-                            passenger.set_elevator_code(int(client_message.split("#")[-1]))
+                            passenger.set_elevator_code(
+                                int(client_message.split("#")[-1])
+                            )
                     if client_message == f"door_opened#{passenger.get_elevator_code()}":
-                        print(f"Passenger {passenger.name} is Entering the elevator {passenger.get_elevator_code()}")
+                        print(
+                            f"Passenger {passenger.name} is Entering the elevator {passenger.get_elevator_code()}"
+                        )
                         if passenger.get_elevator_code() == 1:
-                            passenger.change_state(PassengerState.IN_ELEVATOR_1_AT_OTHER_FLOOR)
+                            passenger.change_state(
+                                PassengerState.IN_ELEVATOR_1_AT_OTHER_FLOOR
+                            )
                         elif passenger.get_elevator_code() == 2:
-                            passenger.change_state(PassengerState.IN_ELEVATOR_2_AT_OTHER_FLOOR)
-                        server.send_string(server.bound_client, f"select_floor@{passenger.target_floor}#{passenger.get_elevator_code()}")
+                            passenger.change_state(
+                                PassengerState.IN_ELEVATOR_2_AT_OTHER_FLOOR
+                            )
+                        server.send_string(
+                            server.bound_client,
+                            f"select_floor@{passenger.target_floor}#{passenger.get_elevator_code()}",
+                        )
         for each_passenger in passengers:
             if each_passenger.is_finished() and not each_passenger.finished_print:
-                print(f"Passenger {each_passenger.name} has arrived at the target floor.")
+                print(
+                    f"Passenger {each_passenger.name} has arrived at the target floor."
+                )
                 each_passenger.finished_print = True
                 count += 1
         if count == len(passengers):
