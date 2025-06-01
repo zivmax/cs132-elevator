@@ -14,7 +14,6 @@ class ElevatorApp:
     def __init__(
         self,
         show_debug=False,
-        # remote_debugging_port=19982, # Removed, no longer used by pywebview
         ws_port=18675,
         http_port=19090,
         headless=False,
@@ -61,6 +60,7 @@ class ElevatorApp:
             self.frontend = ElevatorWebview(
                 ws_port=ws_port,
                 http_port=http_port,  # Pass http_port, webview will construct its own URL
+                show_debug=show_debug,  # Pass show_debug to frontend
             )
             # self.frontend.start() will be called in the run() method
 

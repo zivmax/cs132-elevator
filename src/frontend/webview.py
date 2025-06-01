@@ -9,6 +9,7 @@ class ElevatorWebview:  # Renamed from VendingWebview
         self,
         ws_port: int = 8765,  # Default from your pywebview code, main.py uses 18675
         http_port: int | None = None,
+        show_debug: bool = False,  # Added for consistency with main.py
     ) -> None:
         self.ws_port = ws_port
         self.http_port = http_port  # Store http_port
@@ -16,7 +17,7 @@ class ElevatorWebview:  # Renamed from VendingWebview
 
         if self.http_port:
             # Load from HTTP server if http_port is provided
-            self.html_url = f"http://localhost:{self.http_port}?wsPort={self.ws_port}"
+            self.html_url = f"http://localhost:{self.http_port}?wsPort={self.ws_port}&showDebug={str(show_debug).lower()}"
             print(
                 f"ElevatorWebview: Initializing with pywebview. HTTP URL: {self.html_url}"
             )
