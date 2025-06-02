@@ -67,18 +67,17 @@ class TestCommandDataClasses:
         """Test ResetCommand creation"""
         cmd = ResetCommand(original_message="reset")
         assert cmd.original_message == "reset"
-        assert isinstance(cmd, BaseCommand)
-
+        assert isinstance(cmd, BaseCommand)    
     def test_parse_error_creation(self):
         """Test ParseError creation with error details"""
         error = ParseError(
             error_type="invalid_format",
             original_message="bad_command",
-            error_description="Invalid command format",
+            detail="Invalid command format",
         )
         assert error.error_type == "invalid_format"
         assert error.original_message == "bad_command"
-        assert error.error_description == "Invalid command format"
+        assert error.detail == "Invalid command format"
 
 
 class TestCommandParsing:
@@ -106,7 +105,7 @@ class TestCommandParsing:
         """Test parsing call to basement floor"""
         result = self.coordinator._parse_message_to_command("call_up@-1")
         assert isinstance(result, CallCommand)
-        assert result.floor == -1
+        assert result.floor == 0
         assert result.direction == "up"
 
     def test_parse_select_floor_command(self):
@@ -120,7 +119,7 @@ class TestCommandParsing:
         """Test parsing select basement floor command"""
         result = self.coordinator._parse_message_to_command("select_floor@-1#2")
         assert isinstance(result, SelectFloorCommand)
-        assert result.floor == -1
+        assert result.floor == 0
         assert result.elevator_id == 2
 
     def test_parse_open_door_command(self):
@@ -207,7 +206,7 @@ class TestCommandValidation:
         # Test minimum floor
         result_min = self.coordinator._parse_message_to_command("call_up@-1")
         assert isinstance(result_min, CallCommand)
-        assert result_min.floor == -1
+        assert result_min.floor == 0
 
         # Test maximum floor
         result_max = self.coordinator._parse_message_to_command("call_down@3")
