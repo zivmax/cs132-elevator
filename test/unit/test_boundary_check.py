@@ -9,7 +9,6 @@ import pytest
 import sys
 import os
 
-# Add src directory to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
 from backend.models import (
@@ -188,9 +187,6 @@ class TestValidationIntegration:
 
     def test_manual_verification_scenario(self):
         """Test the exact scenario that was manually verified"""
-        # This test matches the manual verification performed:
-        # python -c "from src.backend.models import validate_floor; print(validate_floor(2), validate_floor(5))"
-
         # Valid floor within bounds
         result_valid = validate_floor(2)
         assert (

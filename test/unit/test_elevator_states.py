@@ -6,12 +6,10 @@ door operations, movement logic, and task queue handling.
 """
 
 import pytest
-import time
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import Mock, patch
 import sys
 import os
 
-# Add src directory to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
 from backend.elevator import Elevator
@@ -20,7 +18,6 @@ from backend.models import (
     DoorState,
     MoveDirection,
     Task,
-    MoveRequest,
 )
 
 

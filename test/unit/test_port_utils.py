@@ -4,18 +4,9 @@ from unittest.mock import patch, MagicMock
 import sys
 import os
 
-# Add the project root to sys.path to allow for `from src...` imports
-# The test file is in test/units/, so ../.. goes to the project root
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
-# Assuming find_available_port is accessible for testing.
-# If it's in src.backend.server, you might need to adjust the import path
-# For example: from src.backend.server import find_available_port
-# Or, if you've added it to a common utils module, import from there.
-# For this example, let's assume it's in a module that can be imported like this:
 from backend.utility import find_available_port
-# If it's also in src.frontend.webview, we only need to test one implementation
-# as they should be identical.
 
 def test_start_port_is_available():
     """Test that if the start_port is available, it is returned."""
@@ -25,17 +16,11 @@ def test_start_port_is_available():
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind((host, start_port))
-            # If bind succeeds, port is in use by this test, so we expect find_available_port
-            # to find the *next* one if we didn't control the mock.
-            # However, for this specific test, we want to mock `s.bind` to *not* raise OSError
-            # for the start_port.
-            pass # Port was free, now bound by us.
+            pass
     except OSError:
         # This shouldn't happen if 60000 is typically free. If it does, pick another port.
         pytest.skip(f"Port {start_port} was already in use before test setup.")
 
-    # We want to test the scenario where find_available_port *finds* start_port
-    # So, we mock socket.socket().bind() to succeed for start_port
     mock_socket_instance = MagicMock()
     mock_socket_instance.bind.return_value = None # Simulate successful bind
 
