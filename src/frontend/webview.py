@@ -2,6 +2,7 @@ import os
 import sys
 import webview
 
+
 class ElevatorWebview:  # Renamed from VendingWebview
     """Main window for the Elevator UI using pywebview to display the webpage."""
 

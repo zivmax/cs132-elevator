@@ -42,7 +42,7 @@ class TestElevatorStateEnum:
     def test_elevator_state_in_collection(self):
         """Test ElevatorState enum can be used in collections"""
         moving_states = [ElevatorState.MOVING_UP, ElevatorState.MOVING_DOWN]
-        
+
         assert ElevatorState.MOVING_UP in moving_states
         assert ElevatorState.MOVING_DOWN in moving_states
         assert ElevatorState.IDLE not in moving_states
@@ -52,7 +52,7 @@ class TestElevatorStateEnum:
         idle_str = str(ElevatorState.IDLE)
         up_str = str(ElevatorState.MOVING_UP)
         down_str = str(ElevatorState.MOVING_DOWN)
-        
+
         assert "IDLE" in idle_str
         assert "MOVING_UP" in up_str
         assert "MOVING_DOWN" in down_str
@@ -77,19 +77,24 @@ class TestDoorStateEnum:
     def test_door_state_transitions(self):
         """Test logical door state transitions"""
         # Test that all door states are distinct
-        states = [DoorState.OPEN, DoorState.CLOSED, DoorState.OPENING, DoorState.CLOSING]
+        states = [
+            DoorState.OPEN,
+            DoorState.CLOSED,
+            DoorState.OPENING,
+            DoorState.CLOSING,
+        ]
         assert len(set(states)) == 4
 
     def test_door_state_in_collection(self):
         """Test DoorState enum can be used in collections"""
         transitional_states = [DoorState.OPENING, DoorState.CLOSING]
         stable_states = [DoorState.OPEN, DoorState.CLOSED]
-        
+
         assert DoorState.OPENING in transitional_states
         assert DoorState.CLOSING in transitional_states
         assert DoorState.OPEN in stable_states
         assert DoorState.CLOSED in stable_states
-        
+
         assert DoorState.OPEN not in transitional_states
         assert DoorState.OPENING not in stable_states
 
@@ -116,7 +121,7 @@ class TestMoveDirectionEnum:
         """Test creating MoveDirection from string values"""
         up_from_string = MoveDirection("up")
         down_from_string = MoveDirection("down")
-        
+
         assert up_from_string == MoveDirection.UP
         assert down_from_string == MoveDirection.DOWN
 
@@ -124,7 +129,7 @@ class TestMoveDirectionEnum:
         """Test creating MoveDirection from invalid string raises error"""
         with pytest.raises(ValueError):
             MoveDirection("invalid")
-        
+
         with pytest.raises(ValueError):
             MoveDirection("left")
 
@@ -135,14 +140,14 @@ class TestMoveRequest:
     def test_move_request_creation_up(self):
         """Test creating MoveRequest for upward movement"""
         request = MoveRequest(1, MoveDirection.UP)
-        
+
         assert request.elevator_id == 1
         assert request.direction == MoveDirection.UP
 
     def test_move_request_creation_down(self):
         """Test creating MoveRequest for downward movement"""
         request = MoveRequest(2, MoveDirection.DOWN)
-        
+
         assert request.elevator_id == 2
         assert request.direction == MoveDirection.DOWN
 
@@ -150,29 +155,29 @@ class TestMoveRequest:
         """Test creating MoveRequest for different elevators"""
         request1 = MoveRequest(1, MoveDirection.UP)
         request2 = MoveRequest(2, MoveDirection.UP)
-        
+
         assert request1.elevator_id != request2.elevator_id
         assert request1.direction == request2.direction
 
     def test_move_request_attribute_access(self):
         """Test accessing MoveRequest attributes"""
         request = MoveRequest(1, MoveDirection.DOWN)
-        
+
         # Should be able to access attributes
         elevator_id = request.elevator_id
         direction = request.direction
-        
+
         assert elevator_id == 1
         assert direction == MoveDirection.DOWN
 
     def test_move_request_attribute_modification(self):
         """Test modifying MoveRequest attributes"""
         request = MoveRequest(1, MoveDirection.UP)
-        
+
         # Should be able to modify attributes
         request.elevator_id = 2
         request.direction = MoveDirection.DOWN
-        
+
         assert request.elevator_id == 2
         assert request.direction == MoveDirection.DOWN
 
@@ -183,7 +188,7 @@ class TestTask:
     def test_task_creation_outside_call(self):
         """Test creating Task for outside call"""
         task = Task(floor=2, origin="outside", direction="up")
-        
+
         assert task.floor == 2
         assert task.origin == "outside"
         assert task.direction == "up"
@@ -191,7 +196,7 @@ class TestTask:
     def test_task_creation_inside_call(self):
         """Test creating Task for inside call"""
         task = Task(floor=3, origin="inside")
-        
+
         assert task.floor == 3
         assert task.origin == "inside"
         assert task.direction is None  # Default value
@@ -199,7 +204,7 @@ class TestTask:
     def test_task_creation_with_all_parameters(self):
         """Test creating Task with all parameters specified"""
         task = Task(floor=1, origin="outside", direction="down")
-        
+
         assert task.floor == 1
         assert task.origin == "outside"
         assert task.direction == "down"
@@ -207,18 +212,18 @@ class TestTask:
     def test_task_creation_basement_floor(self):
         """Test creating Task for basement floor"""
         task = Task(floor=-1, origin="inside")
-        
+
         assert task.floor == -1
         assert task.origin == "inside"
 
     def test_task_immutability(self):
         """Test that Task is immutable (NamedTuple behavior)"""
         task = Task(floor=2, origin="outside", direction="up")
-        
+
         # Should not be able to modify fields
         with pytest.raises(AttributeError):
             task.floor = 3
-        
+
         with pytest.raises(AttributeError):
             task.origin = "inside"
 
@@ -227,17 +232,17 @@ class TestTask:
         task1 = Task(floor=2, origin="outside", direction="up")
         task2 = Task(floor=2, origin="outside", direction="up")
         task3 = Task(floor=3, origin="outside", direction="up")
-        
+
         assert task1 == task2
         assert task1 != task3
 
     def test_task_as_tuple(self):
         """Test Task can be used as tuple"""
         task = Task(floor=2, origin="outside", direction="up")
-        
+
         # Should be able to unpack like a tuple
         floor, origin, direction = task
-        
+
         assert floor == 2
         assert origin == "outside"
         assert direction == "up"
@@ -245,7 +250,7 @@ class TestTask:
     def test_task_indexing(self):
         """Test Task supports indexing like tuple"""
         task = Task(floor=2, origin="outside", direction="up")
-        
+
         assert task[0] == 2
         assert task[1] == "outside"
         assert task[2] == "up"
@@ -254,7 +259,7 @@ class TestTask:
         """Test Tasks with different origins"""
         outside_task = Task(floor=2, origin="outside", direction="up")
         inside_task = Task(floor=2, origin="inside")
-        
+
         assert outside_task.origin == "outside"
         assert inside_task.origin == "inside"
         assert outside_task != inside_task
@@ -264,11 +269,11 @@ class TestTask:
         up_task = Task(floor=2, origin="outside", direction="up")
         down_task = Task(floor=2, origin="outside", direction="down")
         no_direction_task = Task(floor=2, origin="outside")
-        
+
         assert up_task.direction == "up"
         assert down_task.direction == "down"
         assert no_direction_task.direction is None
-        
+
         assert up_task != down_task
         assert up_task != no_direction_task
 
@@ -310,7 +315,7 @@ class TestSystemConstants:
         # Floor range should be reasonable
         assert MAX_FLOOR - MIN_FLOOR >= 0
         assert MAX_FLOOR - MIN_FLOOR <= 10  # Sanity check
-        
+
         # Elevator count should be reasonable
         assert MAX_ELEVATOR_ID - MIN_ELEVATOR_ID >= 0
         assert MAX_ELEVATOR_ID - MIN_ELEVATOR_ID <= 5  # Sanity check
@@ -324,7 +329,7 @@ class TestModelIntegration:
         # Create task for different directions
         up_task = Task(floor=2, origin="outside", direction=MoveDirection.UP.value)
         down_task = Task(floor=1, origin="outside", direction=MoveDirection.DOWN.value)
-        
+
         assert up_task.direction == "up"
         assert down_task.direction == "down"
 
@@ -332,7 +337,7 @@ class TestModelIntegration:
         """Test MoveRequest with boundary elevator IDs"""
         request_min = MoveRequest(MIN_ELEVATOR_ID, MoveDirection.UP)
         request_max = MoveRequest(MAX_ELEVATOR_ID, MoveDirection.DOWN)
-        
+
         assert request_min.elevator_id == MIN_ELEVATOR_ID
         assert request_max.elevator_id == MAX_ELEVATOR_ID
 
@@ -340,7 +345,7 @@ class TestModelIntegration:
         """Test Task creation with boundary floor values"""
         min_floor_task = Task(floor=MIN_FLOOR, origin="outside", direction="up")
         max_floor_task = Task(floor=MAX_FLOOR, origin="outside", direction="down")
-        
+
         assert min_floor_task.floor == MIN_FLOOR
         assert max_floor_task.floor == MAX_FLOOR
 
@@ -348,27 +353,38 @@ class TestModelIntegration:
         """Test realistic task scenarios"""
         # Basement call going up
         basement_call = Task(floor=-1, origin="outside", direction="up")
-        
+
         # Top floor call going down
         top_call = Task(floor=3, origin="outside", direction="down")
-        
+
         # Inside floor selection
         inside_selection = Task(floor=2, origin="inside")
-        
+
         assert basement_call.floor == -1 and basement_call.direction == "up"
         assert top_call.floor == 3 and top_call.direction == "down"
-        assert inside_selection.origin == "inside" and inside_selection.direction is None
+        assert (
+            inside_selection.origin == "inside" and inside_selection.direction is None
+        )
 
     def test_model_combinations(self):
         """Test various combinations of model elements"""
         # Test all elevator states with move directions
         for state in ElevatorState:
-            assert state in [ElevatorState.IDLE, ElevatorState.MOVING_UP, ElevatorState.MOVING_DOWN]
-        
+            assert state in [
+                ElevatorState.IDLE,
+                ElevatorState.MOVING_UP,
+                ElevatorState.MOVING_DOWN,
+            ]
+
         # Test all door states
         for door_state in DoorState:
-            assert door_state in [DoorState.OPEN, DoorState.CLOSED, DoorState.OPENING, DoorState.CLOSING]
-        
+            assert door_state in [
+                DoorState.OPEN,
+                DoorState.CLOSED,
+                DoorState.OPENING,
+                DoorState.CLOSING,
+            ]
+
         # Test move directions
         for direction in MoveDirection:
             assert direction in [MoveDirection.UP, MoveDirection.DOWN]

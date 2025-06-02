@@ -1,7 +1,9 @@
 import socket
 
 
-def find_available_port(host: str, start_port: int, end_port: int = 65535) -> int | None:
+def find_available_port(
+    host: str, start_port: int, end_port: int = 65535
+) -> int | None:
     """Scans for an available TCP port in a given range."""
     for port in range(start_port, end_port + 1):
         try:

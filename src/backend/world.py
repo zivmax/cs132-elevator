@@ -13,7 +13,9 @@ class World:
     def __init__(self, zmq_port: str = "19982") -> None:  # Added zmq_port parameter
         # Create ZmqCoordinator, which owns ZmqClientThread and the incoming message queue.
         # ZmqCoordinator handles ZMQ client prints.
-        self.zmq_coordinator: ZmqCoordinator = ZmqCoordinator(identity="Team17", zmq_port=zmq_port)
+        self.zmq_coordinator: ZmqCoordinator = ZmqCoordinator(
+            identity="Team17", zmq_port=zmq_port
+        )
 
         # API, Elevators, and Dispatcher will be initialized via set_api_and_initialize_components
         self.api: Optional["ElevatorAPI"] = None
@@ -22,7 +24,9 @@ class World:
         self.dispatcher: Optional[Dispatcher] = None
 
         # Message queue and its management methods (add_msg, get_next_msg, has_msg) are now in ZmqCoordinator.
-        print(f"World: Initialized with ZMQ port {zmq_port}. API and components to be set later.")
+        print(
+            f"World: Initialized with ZMQ port {zmq_port}. API and components to be set later."
+        )
 
     def set_api_and_initialize_components(self, api: "ElevatorAPI") -> None:
         """Sets the ElevatorAPI instance and initializes components that depend on it."""

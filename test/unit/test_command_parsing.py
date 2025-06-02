@@ -41,7 +41,9 @@ class TestCommandDataClasses:
 
     def test_select_floor_command_creation(self):
         """Test SelectFloorCommand creation with valid data"""
-        cmd = SelectFloorCommand(floor=3, elevator_id=1, original_message="select_floor@3#1")
+        cmd = SelectFloorCommand(
+            floor=3, elevator_id=1, original_message="select_floor@3#1"
+        )
         assert cmd.floor == 3
         assert cmd.elevator_id == 1
         assert cmd.original_message == "select_floor@3#1"
@@ -72,7 +74,7 @@ class TestCommandDataClasses:
         error = ParseError(
             error_type="invalid_format",
             original_message="bad_command",
-            error_description="Invalid command format"
+            error_description="Invalid command format",
         )
         assert error.error_type == "invalid_format"
         assert error.original_message == "bad_command"
@@ -166,13 +168,17 @@ class TestCommandParsingErrors:
 
     def test_parse_invalid_select_floor_format(self):
         """Test parsing invalid select floor format"""
-        result = self.coordinator._parse_message_to_command("select_floor@2")  # Missing elevator ID
+        result = self.coordinator._parse_message_to_command(
+            "select_floor@2"
+        )  # Missing elevator ID
         assert isinstance(result, ParseError)
         assert result.error_type == "invalid_select_floor_format"
 
     def test_parse_invalid_door_format(self):
         """Test parsing invalid door command format"""
-        result = self.coordinator._parse_message_to_command("open_door")  # Missing elevator ID
+        result = self.coordinator._parse_message_to_command(
+            "open_door"
+        )  # Missing elevator ID
         assert isinstance(result, ParseError)
         assert result.error_type == "unknown_message_format"
 
@@ -203,7 +209,7 @@ class TestCommandValidation:
         assert isinstance(result_min, CallCommand)
         assert result_min.floor == -1
 
-        # Test maximum floor  
+        # Test maximum floor
         result_max = self.coordinator._parse_message_to_command("call_down@3")
         assert isinstance(result_max, CallCommand)
         assert result_max.floor == 3
@@ -224,7 +230,7 @@ class TestCommandValidation:
         """Test parsing different call directions"""
         up_result = self.coordinator._parse_message_to_command("call_up@2")
         down_result = self.coordinator._parse_message_to_command("call_down@2")
-        
+
         assert isinstance(up_result, CallCommand)
         assert up_result.direction == "up"
         assert isinstance(down_result, CallCommand)
@@ -237,14 +243,14 @@ class TestCommandValidation:
             "select_floor@2#1",
             "open_door#1",
             "close_door#2",
-            "reset"
+            "reset",
         ]
-        
+
         results = [self.coordinator._parse_message_to_command(cmd) for cmd in commands]
-        
+
         # All should parse successfully
         assert all(not isinstance(result, ParseError) for result in results)
-        
+
         # Check types
         assert isinstance(results[0], CallCommand)
         assert isinstance(results[1], SelectFloorCommand)
@@ -259,11 +265,13 @@ class TestCommandValidation:
             "invalid_command",
             "call_up",
             "select_floor@1",
-            "open_door"
+            "open_door",
         ]
-        
-        results = [self.coordinator._parse_message_to_command(cmd) for cmd in error_commands]
-        
+
+        results = [
+            self.coordinator._parse_message_to_command(cmd) for cmd in error_commands
+        ]
+
         # All should return ParseError
         assert all(isinstance(result, ParseError) for result in results)
 

@@ -30,7 +30,7 @@ class TestElevatorInitialization:
         mock_api = Mock()
         
         elevator = Elevator(1, mock_world, mock_api)
-        
+
         assert elevator.id == 1
         assert elevator.current_floor == 1
         assert elevator.previous_floor == 1
@@ -46,10 +46,10 @@ class TestElevatorInitialization:
         """Test elevators can be created with different IDs"""
         mock_world = Mock()
         mock_api = Mock()
-        
+
         elevator1 = Elevator(1, mock_world, mock_api)
         elevator2 = Elevator(2, mock_world, mock_api)
-        
+
         assert elevator1.id == 1
         assert elevator2.id == 2
 
@@ -95,18 +95,18 @@ class TestElevatorMovementState:
 
     def test_set_moving_state_up(self):
         """Test setting moving state to up"""
-        with patch('time.time', return_value=100.0):
+        with patch("time.time", return_value=100.0):
             self.elevator.set_moving_state(MoveDirection.UP.value)
-            
+
         assert self.elevator.state == ElevatorState.MOVING_UP
         assert self.elevator.moving_since == 100.0
         assert self.elevator.last_state_change == 100.0
 
     def test_set_moving_state_down(self):
         """Test setting moving state to down"""
-        with patch('time.time', return_value=200.0):
+        with patch("time.time", return_value=200.0):
             self.elevator.set_moving_state(MoveDirection.DOWN.value)
-            
+
         assert self.elevator.state == ElevatorState.MOVING_DOWN
         assert self.elevator.moving_since == 200.0
         assert self.elevator.last_state_change == 200.0
@@ -130,10 +130,10 @@ class TestElevatorDoorOperations:
         """Test opening door when it's closed"""
         self.elevator.door_state = DoorState.CLOSED
         self.elevator.state = ElevatorState.IDLE
-        
-        with patch('time.time', return_value=100.0):
+
+        with patch("time.time", return_value=100.0):
             self.elevator.open_door()
-            
+
         assert self.elevator.door_state == DoorState.OPENING
         assert self.elevator.last_door_change == 100.0
 
@@ -141,9 +141,9 @@ class TestElevatorDoorOperations:
         """Test opening door when it's already open (should not change)"""
         self.elevator.door_state = DoorState.OPEN
         original_time = self.elevator.last_door_change
-        
+
         self.elevator.open_door()
-        
+
         assert self.elevator.door_state == DoorState.OPEN
         assert self.elevator.last_door_change == original_time
 
@@ -152,9 +152,9 @@ class TestElevatorDoorOperations:
         self.elevator.door_state = DoorState.CLOSED
         self.elevator.state = ElevatorState.MOVING_UP
         original_time = self.elevator.last_door_change
-        
+
         self.elevator.open_door()
-        
+
         assert self.elevator.door_state == DoorState.CLOSED
         assert self.elevator.last_door_change == original_time
 
@@ -162,10 +162,10 @@ class TestElevatorDoorOperations:
         """Test closing door when it's open"""
         self.elevator.door_state = DoorState.OPEN
         self.elevator.state = ElevatorState.IDLE
-        
-        with patch('time.time', return_value=150.0):
+
+        with patch("time.time", return_value=150.0):
             self.elevator.close_door()
-            
+
         assert self.elevator.door_state == DoorState.CLOSING
         assert self.elevator.last_door_change == 150.0
 
@@ -173,9 +173,9 @@ class TestElevatorDoorOperations:
         """Test closing door when it's already closed (should not change)"""
         self.elevator.door_state = DoorState.CLOSED
         original_time = self.elevator.last_door_change
-        
+
         self.elevator.close_door()
-        
+
         assert self.elevator.door_state == DoorState.CLOSED
         assert self.elevator.last_door_change == original_time
 
@@ -184,9 +184,9 @@ class TestElevatorDoorOperations:
         self.elevator.door_state = DoorState.OPEN
         self.elevator.state = ElevatorState.MOVING_DOWN
         original_time = self.elevator.last_door_change
-        
+
         self.elevator.close_door()
-        
+
         assert self.elevator.door_state == DoorState.OPEN
         assert self.elevator.last_door_change == original_time
 
@@ -203,10 +203,10 @@ class TestElevatorFloorManagement:
     def test_set_floor_updates_current_and_previous(self):
         """Test that set_floor correctly updates current and previous floors"""
         self.elevator.current_floor = 1
-        
-        with patch('time.time', return_value=100.0):
+
+        with patch("time.time", return_value=100.0):
             self.elevator.set_floor(3)
-            
+
         assert self.elevator.current_floor == 3
         assert self.elevator.previous_floor == 1
         assert self.elevator.floor_changed is True
@@ -217,9 +217,9 @@ class TestElevatorFloorManagement:
         self.elevator.current_floor = 2
         self.elevator.previous_floor = 1
         original_moving_since = self.elevator.moving_since
-        
+
         self.elevator.set_floor(2)
-        
+
         assert self.elevator.current_floor == 2
         assert self.elevator.previous_floor == 1
         assert self.elevator.floor_changed is False
@@ -246,9 +246,9 @@ class TestElevatorDirectionDetermination:
         self.elevator.current_floor = 1
         self.elevator.task_queue = [
             Task(floor=2, origin="outside"),
-            Task(floor=3, origin="inside")
+            Task(floor=3, origin="inside"),
         ]
-        
+
         self.elevator._determine_direction()
         assert self.elevator.direction == MoveDirection.UP
 
@@ -257,9 +257,9 @@ class TestElevatorDirectionDetermination:
         self.elevator.current_floor = 3
         self.elevator.task_queue = [
             Task(floor=1, origin="outside"),
-            Task(floor=0, origin="inside")
+            Task(floor=0, origin="inside"),
         ]
-        
+
         self.elevator._determine_direction()
         assert self.elevator.direction == MoveDirection.DOWN
 
@@ -268,9 +268,9 @@ class TestElevatorDirectionDetermination:
         self.elevator.current_floor = 2
         self.elevator.task_queue = [
             Task(floor=3, origin="outside"),  # 1 floor above
-            Task(floor=0, origin="inside")    # 2 floors below
+            Task(floor=0, origin="inside"),  # 2 floors below
         ]
-        
+
         self.elevator._determine_direction()
         assert self.elevator.direction == MoveDirection.UP
 
@@ -279,9 +279,9 @@ class TestElevatorDirectionDetermination:
         self.elevator.current_floor = 2
         self.elevator.task_queue = [
             Task(floor=3, origin="outside", direction="up"),  # 1 floor above
-            Task(floor=1, origin="inside")    # 1 floor below
+            Task(floor=1, origin="inside"),  # 1 floor below
         ]
-        
+
         self.elevator._determine_direction()
         # Should choose UP as it's first in tie-breaking
         assert self.elevator.direction == MoveDirection.UP
@@ -292,9 +292,9 @@ class TestElevatorDirectionDetermination:
         self.elevator.direction = MoveDirection.UP
         self.elevator.task_queue = [
             Task(floor=3, origin="outside"),
-            Task(floor=1, origin="inside")
+            Task(floor=1, origin="inside"),
         ]
-        
+
         self.elevator._determine_direction()
         assert self.elevator.direction == MoveDirection.UP
 
@@ -304,9 +304,9 @@ class TestElevatorDirectionDetermination:
         self.elevator.direction = MoveDirection.DOWN
         self.elevator.task_queue = [
             Task(floor=1, origin="outside"),
-            Task(floor=3, origin="inside")
+            Task(floor=3, origin="inside"),
         ]
-        
+
         self.elevator._determine_direction()
         assert self.elevator.direction == MoveDirection.DOWN
 
@@ -327,13 +327,13 @@ class TestElevatorMovementRequests:
         self.elevator.current_floor = 1
         self.elevator.task_queue = [Task(floor=3, origin="outside")]
         self.elevator.door_state = DoorState.CLOSED
-        
+
         self.elevator.request_movement_if_needed()
-        
+
         # Should determine direction and send move request
         assert self.elevator.direction == MoveDirection.UP
         self.mock_engine.request_movement.assert_called_once()
-        
+
         # Verify the move request contains correct data
         call_args = self.mock_engine.request_movement.call_args[0][0]
         assert call_args.elevator_id == 1
@@ -342,9 +342,9 @@ class TestElevatorMovementRequests:
     def test_request_movement_no_tasks(self):
         """Test requesting movement when there are no tasks"""
         self.elevator.task_queue = []
-        
+
         self.elevator.request_movement_if_needed()
-        
+
         assert self.elevator.state == ElevatorState.IDLE
         self.mock_engine.request_movement.assert_not_called()
 
@@ -353,9 +353,9 @@ class TestElevatorMovementRequests:
         self.elevator.current_floor = 1
         self.elevator.task_queue = [Task(floor=3, origin="outside")]
         self.elevator.door_state = DoorState.OPEN
-        
+
         self.elevator.request_movement_if_needed()
-        
+
         # Should not send move request when doors are open
         self.mock_engine.request_movement.assert_not_called()
 
@@ -373,7 +373,7 @@ class TestElevatorEstimatedTime:
         """Test estimated time when already at target floor with door open"""
         self.elevator.current_floor = 2
         self.elevator.door_state = DoorState.OPEN
-        
+
         estimated_time = self.elevator.calculate_estimated_time(2, MoveDirection.UP)
         assert estimated_time == 0.0
 
@@ -381,7 +381,7 @@ class TestElevatorEstimatedTime:
         """Test estimated time when already at target floor with door opening"""
         self.elevator.current_floor = 2
         self.elevator.door_state = DoorState.OPENING
-        
+
         estimated_time = self.elevator.calculate_estimated_time(2, MoveDirection.UP)
         assert estimated_time == 0.0
 
@@ -391,7 +391,7 @@ class TestElevatorEstimatedTime:
         self.elevator.state = ElevatorState.IDLE
         self.elevator.door_state = DoorState.CLOSED
         self.elevator.floor_travel_time = 2.0
-        
+
         estimated_time = self.elevator.calculate_estimated_time(3, MoveDirection.UP)
         expected_time = abs(3 - 1) * 2.0  # 2 floors * 2 seconds = 4 seconds
         assert estimated_time == expected_time
@@ -402,9 +402,11 @@ class TestElevatorEstimatedTime:
         self.elevator.state = ElevatorState.IDLE
         self.elevator.door_state = DoorState.OPEN
         self.elevator.floor_travel_time = 2.0
-        
+
         estimated_time = self.elevator.calculate_estimated_time(2, MoveDirection.UP)
-        expected_time = 1.0 + abs(2 - 1) * 2.0  # 1 sec door close + 1 floor * 2 sec = 3 seconds
+        expected_time = (
+            1.0 + abs(2 - 1) * 2.0
+        )  # 1 sec door close + 1 floor * 2 sec = 3 seconds
         assert estimated_time == expected_time
 
 
