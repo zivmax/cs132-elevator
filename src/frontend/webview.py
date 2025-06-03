@@ -5,37 +5,20 @@ import webview
 
 class ElevatorWebview:  # Renamed from VendingWebview
     """Main window for the Elevator UI using pywebview to display the webpage."""
-
+    
     def __init__(
         self,
+        http_port: int,  # Now required - no longer optional
         ws_port: int = 8765,  # Default from your pywebview code, main.py uses 18675
-        http_port: int | None = None,
         show_debug: bool = False,  # Added for consistency with main.py
     ) -> None:
         self.ws_port = ws_port
-        self.http_port = http_port  # Store http_port
+        self.http_port = http_port
         self.window = None
 
-        if self.http_port:
-            # Load from HTTP server if http_port is provided
-            self.html_url = f"http://localhost:{self.http_port}?wsPort={self.ws_port}&showDebug={str(show_debug).lower()}"
-            print(
-                f"ElevatorWebview: Initializing with pywebview. HTTP URL: {self.html_url}"
-            )
-        else:
-            # Fallback to file URL if http_port is not available (though less ideal)
-            html_file_path = os.path.abspath(
-                os.path.join(os.path.dirname(__file__), "ui", "index.html")
-            )
-            if not os.path.exists(html_file_path):
-                print(
-                    f"Error: HTML file not found at {html_file_path}", file=sys.stderr
-                )
-                sys.exit(1)
-            self.html_url = f"file://{html_file_path}?wsPort={self.ws_port}"
-            print(
-                f"ElevatorWebview: Initializing with pywebview. File URL: {self.html_url}"
-            )
+        # Always use HTTP server - http_port is guaranteed to be provided
+        self.html_url = f"http://localhost:{self.http_port}?wsPort={self.ws_port}&showDebug={str(show_debug).lower()}"
+        print(f"ElevatorWebview: Initializing with pywebview. HTTP URL: {self.html_url}")
 
     def start(self) -> None:
         """Create and show the pywebview window."""
