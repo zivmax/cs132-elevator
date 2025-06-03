@@ -28,7 +28,7 @@ class TestElevatorInitialization:
         """Test that elevator initializes with correct default values"""
         mock_world = Mock()
         mock_api = Mock()
-        
+
         elevator = Elevator(1, mock_world, mock_api)
 
         assert elevator.id == 1

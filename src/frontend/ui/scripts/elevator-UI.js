@@ -14,17 +14,17 @@ export function updateElevatorUI(data) {
         elevatorAnimations[elevatorId] = { visualTargetFloor: null };
     }
     let animState = elevatorAnimations[elevatorId];
-    document.getElementById(`real-elevator-${elevatorId}-floor`).textContent = actualCurrentFloor === 0 ? "-1" : actualCurrentFloor;
+    document.getElementById(`real-elevator-${elevatorId}-floor`).textContent = actualCurrentFloor;
     const upArrow = document.getElementById(`elevator-${elevatorId}-up-arrow`);
     const downArrow = document.getElementById(`elevator-${elevatorId}-down-arrow`);
     upArrow.classList.remove('active');
     downArrow.classList.remove('active');
     if (state === 'MOVING_UP') upArrow.classList.add('active');
     else if (state === 'MOVING_DOWN') downArrow.classList.add('active');
-    document.getElementById(`elevator-${elevatorId}-floor`).textContent = actualCurrentFloor === 0 ? "-1" : actualCurrentFloor;
+    document.getElementById(`elevator-${elevatorId}-floor`).textContent = actualCurrentFloor;
     document.getElementById(`elevator-${elevatorId}-status`).textContent = state;
     document.getElementById(`elevator-${elevatorId}-door`).textContent = doorState;
-    document.getElementById(`elevator-${elevatorId}-targets`).textContent = targetFloors.map(f => f === 0 ? "-1" : f).join(', ');
+    document.getElementById(`elevator-${elevatorId}-targets`).textContent = targetFloors.join(', ');
     elevatorElement.classList.remove('doors-open', 'doors-closed', 'doors-opening', 'doors-closing');
     if (doorState === 'OPEN') elevatorElement.classList.add('doors-open');
     else if (doorState === 'CLOSED') elevatorElement.classList.add('doors-closed');
@@ -63,10 +63,9 @@ export function updateElevatorUI(data) {
     }
     const controlPanel = document.getElementById(`panel-${elevatorId}`);
     if (controlPanel) {
-        const buttons = controlPanel.querySelectorAll('.floor-buttons button');
-        buttons.forEach(button => {
+        const buttons = controlPanel.querySelectorAll('.floor-buttons button');        buttons.forEach(button => {
             let buttonFloorText = button.textContent;
-            let buttonFloor = buttonFloorText === "-1" ? 0 : parseInt(buttonFloorText);
+            let buttonFloor = parseInt(buttonFloorText);
             if (targetFloors.includes(buttonFloor) && targetFloorsOrigin[buttonFloor] === "inside") {
                 button.classList.add('active');
             } else {

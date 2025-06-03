@@ -427,8 +427,7 @@ class ZmqCoordinator:
                 if len(parts) > 1 and len(direction_floor_part) > 1:
                     direction = direction_floor_part[1]
                     floor_str = parts[1]
-                    # Convert floor -1 to 0, otherwise parse as int
-                    floor = 0 if floor_str == "-1" else int(floor_str)
+                    floor = int(floor_str)
                     return CallCommand(
                         floor=floor, direction=direction, original_message=message_str
                     )
@@ -447,8 +446,8 @@ class ZmqCoordinator:
                     if len(floor_and_id_part) == 2:
                         floor_str = floor_and_id_part[0]
                         elevator_id_str = floor_and_id_part[1]
-                        # Convert floor -1 to 0, otherwise parse as int
-                        floor = 0 if floor_str == "-1" else int(floor_str)
+                        # Parse floor directly as int, including -1
+                        floor = int(floor_str)
                         elevator_id = int(elevator_id_str)
                         return SelectFloorCommand(
                             floor=floor,
