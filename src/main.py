@@ -4,10 +4,10 @@ import argparse
 import threading
 
 from backend.world import World
-from backend.api import ElevatorAPI  # Import ElevatorAPI
+from backend.api import ElevatorAPI
 from frontend.webview import ElevatorWebview
-from frontend.bridge import WebSocketBridge  # Import WebSocketBridge
-from backend.server import ElevatorHTTPServer  # Import HTTPServer
+from frontend.bridge import WebSocketBridge
+from backend.server import ElevatorHTTPServer
 
 class ElevatorApp:
     def __init__(
