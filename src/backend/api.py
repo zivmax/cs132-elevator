@@ -164,7 +164,7 @@ class ElevatorAPI:
                 "message": f"Invalid floor: {floor}. Must be between {MIN_FLOOR} and {MAX_FLOOR}",
             }
 
-        print(f"API: Calling elevator to floor {floor}, direction {direction}")
+        print(f"API: Calling elevator at floor {floor}, direction {direction}")
         # Assuming assign_elevator doesn't return a value indicating immediate success/failure of the call itself,
         # but rather queues the request. So, we assume success at this stage if no exceptions.
         try:
