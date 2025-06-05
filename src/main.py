@@ -9,6 +9,7 @@ from frontend.webview import ElevatorWebview
 from frontend.bridge import WebSocketBridge
 from backend.server import ElevatorHTTPServer
 
+
 class ElevatorApp:
     def __init__(
         self,
@@ -27,7 +28,7 @@ class ElevatorApp:
         # Store initial port parameters for allocation
         self._initial_ws_port = ws_port
         self._initial_http_port = http_port
-        
+
         # Allocate all required ports
         self._allocate_ports()
 
@@ -45,9 +46,7 @@ class ElevatorApp:
 
         self.http_server = None
         if self.http_port is not None:
-            self.http_server = ElevatorHTTPServer(
-                port=self.http_port
-            )
+            self.http_server = ElevatorHTTPServer(port=self.http_port)
             self.http_server.start()
             print(
                 f"HTTP server running. Access frontend at http://127.0.0.1:{self.http_port}/?wsPort={self.ws_port}&showDebug={str(show_debug).lower()}"
@@ -56,18 +55,14 @@ class ElevatorApp:
         if headless:
             if self.http_port is None:
                 print(f"Running in headless mode with WebSocket server only.")
-                print(
-                    f"WebSocket server accessible at: ws://127.0.0.1:{self.ws_port}"
-                )
+                print(f"WebSocket server accessible at: ws://127.0.0.1:{self.ws_port}")
                 print(f"Connect your custom frontend to this WebSocket endpoint.")
                 print(f"API documentation: See backend/api.py for available functions.")
             else:
                 print(
                     f"Running in headless mode with both HTTP server and WebSocket server."
                 )
-                print(
-                    f"WebSocket server accessible at: ws://127.0.0.1:{self.ws_port}"
-                )
+                print(f"WebSocket server accessible at: ws://127.0.0.1:{self.ws_port}")
         else:
             # For GUI mode, HTTP server is compulsory and http_port is guaranteed to be set
             assert self.http_port is not None, "HTTP port should be set for GUI mode"
@@ -230,9 +225,9 @@ class ElevatorApp:
     def _allocate_ports(self) -> None:
         """Centralized port allocation for all services."""
         from backend.utility import find_available_port
-        
+
         HOST = "127.0.0.1"
-        
+
         # Allocate WebSocket port if not specified
         if self._initial_ws_port is None:
             print(
@@ -240,14 +235,16 @@ class ElevatorApp:
             )
             found_ws_port = find_available_port(HOST, 18675, 18775)
             if found_ws_port is None:
-                print("ElevatorApp: Error - Could not find an available WebSocket port in range 18675-18775.")
+                print(
+                    "ElevatorApp: Error - Could not find an available WebSocket port in range 18675-18775."
+                )
                 raise ConnectionError("Failed to find an available WebSocket port.")
             self.ws_port = found_ws_port
             print(f"ElevatorApp: Auto-selected WebSocket port {self.ws_port}")
         else:
             self.ws_port = self._initial_ws_port
             print(f"Using user-specified WebSocket port: {self.ws_port}")
-        
+
         # Allocate HTTP port based on mode
         if not self.headless:  # GUI mode always needs HTTP server
             if self._initial_http_port is None:
@@ -256,10 +253,16 @@ class ElevatorApp:
                 )
                 found_http_port = find_available_port(HOST, 19090, 19190)
                 if found_http_port is None:
-                    print("ElevatorApp: Error - Could not find an available HTTP port for GUI mode.")
-                    raise ConnectionError("Failed to find an available HTTP port for GUI mode.")
+                    print(
+                        "ElevatorApp: Error - Could not find an available HTTP port for GUI mode."
+                    )
+                    raise ConnectionError(
+                        "Failed to find an available HTTP port for GUI mode."
+                    )
                 self.http_port = found_http_port
-                print(f"ElevatorApp: Auto-selected HTTP port {self.http_port} for GUI mode")
+                print(
+                    f"ElevatorApp: Auto-selected HTTP port {self.http_port} for GUI mode"
+                )
             else:
                 self.http_port = self._initial_http_port
                 print(f"Using user-specified HTTP port: {self.http_port}")
@@ -268,11 +271,15 @@ class ElevatorApp:
                 if self._initial_http_port == 0:  # 0 means find available port
                     found_http_port = find_available_port(HOST, 19090, 19190)
                     if found_http_port is None:
-                        print("ElevatorApp: Warning - Could not find an available HTTP port for headless mode.")
+                        print(
+                            "ElevatorApp: Warning - Could not find an available HTTP port for headless mode."
+                        )
                         self.http_port = None  # Disable HTTP server
                     else:
                         self.http_port = found_http_port
-                        print(f"ElevatorApp: Auto-selected HTTP port {self.http_port} for headless mode")
+                        print(
+                            f"ElevatorApp: Auto-selected HTTP port {self.http_port} for headless mode"
+                        )
                 else:
                     self.http_port = self._initial_http_port
                     print(f"Using user-specified HTTP port: {self.http_port}")
@@ -319,6 +326,7 @@ if __name__ == "__main__":
     # Conditionally allocate console for headless/debug mode if packaged as windowed app
     if args.headless or args.debug or args.console:
         from backend.utility import allocate_console_if_needed
+
         allocate_console_if_needed()
 
     app = ElevatorApp(

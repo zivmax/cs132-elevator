@@ -86,7 +86,8 @@ class TestCommandParsing:
 
     def setup_method(self):
         """Set up test fixtures"""
-        self.coordinator = ZmqCoordinator("test_identity", 19999)    
+        self.coordinator = ZmqCoordinator("test_identity", 19999)
+
     def test_parse_call_up_command(self):
         """Test parsing call up command"""
         result = self.coordinator._parse_message_to_command("call_up@2")
@@ -113,7 +114,8 @@ class TestCommandParsing:
         result = self.coordinator._parse_message_to_command("select_floor@3#1")
         assert isinstance(result, SelectFloorCommand)
         assert result.floor == 3
-        assert result.elevator_id == 1    
+        assert result.elevator_id == 1
+
     def test_parse_select_basement_floor(self):
         """Test parsing select basement floor command"""
         result = self.coordinator._parse_message_to_command("select_floor@-1#2")

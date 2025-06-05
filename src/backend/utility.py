@@ -41,7 +41,6 @@ def allocate_console_if_needed() -> None:
     # Handling for those cases is more complex and platform-specific.
 
 
-
 def find_available_port(
     host: str, start_port: int, end_port: int = 65535
 ) -> int | None:

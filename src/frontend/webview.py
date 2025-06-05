@@ -5,7 +5,7 @@ import webview
 
 class ElevatorWebview:  # Renamed from VendingWebview
     """Main window for the Elevator UI using pywebview to display the webpage."""
-    
+
     def __init__(
         self,
         http_port: int,  # Now required - no longer optional
@@ -18,7 +18,9 @@ class ElevatorWebview:  # Renamed from VendingWebview
 
         # Always use HTTP server - http_port is guaranteed to be provided
         self.html_url = f"http://localhost:{self.http_port}?wsPort={self.ws_port}&showDebug={str(show_debug).lower()}"
-        print(f"ElevatorWebview: Initializing with pywebview. HTTP URL: {self.html_url}")
+        print(
+            f"ElevatorWebview: Initializing with pywebview. HTTP URL: {self.html_url}"
+        )
 
     def start(self) -> None:
         """Create and show the pywebview window."""
