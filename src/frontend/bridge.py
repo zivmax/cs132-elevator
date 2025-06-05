@@ -6,7 +6,7 @@ from backend.server import WebSocketServer  # WebSocketServer is still in server
 from backend.models import MoveDirection
 
 if TYPE_CHECKING:
-    from backend.world import World
+    from backend.simulator import Simulator
 
 
 class WebSocketBridge:
@@ -14,7 +14,7 @@ class WebSocketBridge:
 
     def __init__(
         self,
-        world: "World",
+        world: "Simulator",
         api: ElevatorAPI,  # Added api parameter
         host: str = "127.0.0.1",
         port: int = 18675,

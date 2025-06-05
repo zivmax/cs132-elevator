@@ -8,6 +8,51 @@ MIN_ELEVATOR_ID = 1
 MAX_ELEVATOR_ID = 2
 
 
+class CallState(Enum):
+    """State of a pending call"""
+
+    PENDING = "pending"  # Call is waiting to be assigned
+    ASSIGNED = "assigned"  # Call has been assigned to an elevator
+    COMPLETED = "completed"  # Call has been completed
+
+
+class Call:
+    """Represents an outside call request with state tracking"""
+
+    def __init__(
+        self, call_id: str, floor: int, direction: Optional["MoveDirection"] = None
+    ):
+        self.call_id = call_id
+        self.floor = floor
+        self.direction = direction
+        self.state = CallState.PENDING
+        self.assigned_elevator: Optional[int] = None
+
+    def assign_to_elevator(self, elevator_idx: int) -> None:
+        """Assign this call to a specific elevator"""
+        self.state = CallState.ASSIGNED
+        self.assigned_elevator = elevator_idx
+
+    def complete(self) -> None:
+        """Mark this call as completed"""
+        self.state = CallState.COMPLETED
+
+    def is_pending(self) -> bool:
+        """Check if this call is still pending assignment"""
+        return self.state == CallState.PENDING
+
+    def is_assigned(self) -> bool:
+        """Check if this call has been assigned to an elevator"""
+        return self.state == CallState.ASSIGNED
+
+    def is_completed(self) -> bool:
+        """Check if this call has been completed"""
+        return self.state == CallState.COMPLETED
+
+    def __repr__(self) -> str:
+        return f"Call(id={self.call_id}, floor={self.floor}, direction={self.direction}, state={self.state.value})"
+
+
 # Elevator States (only movement states)
 class ElevatorState(Enum):
     IDLE = auto()

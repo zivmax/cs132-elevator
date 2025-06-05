@@ -5,15 +5,15 @@ from .models import ElevatorState, DoorState, MoveDirection, Task
 from .models import MoveRequest
 
 if TYPE_CHECKING:
-    from .world import World
+    from .simulator import Simulator
     from .api import ElevatorAPI  # Added API import
 
 
 class Elevator:
     # Added api parameter to __init__
-    def __init__(self, elevator_id: int, world: "World", api: "ElevatorAPI") -> None:
+    def __init__(self, elevator_id: int, world: "Simulator", api: "ElevatorAPI") -> None:
         self.id: int = elevator_id
-        self.world: "World" = world
+        self.world: "Simulator" = world
         self.api: "ElevatorAPI" = api  # Store API instance
         self.current_floor: int = 1  # Initial floor is 1
         self.previous_floor: int = 1  # Track previous floor for change detection
@@ -30,7 +30,9 @@ class Elevator:
         self.door_timeout: float = 3.0  # seconds before automatically closing doors
         self.floor_travel_time: float = 2.0  # seconds to travel between floors
         self.door_operation_time: float = 1.0  # seconds to open or close doors
-        self.floor_arrival_delay: float = 0.5  # reduced delay after arrival before door opening
+        self.floor_arrival_delay: float = (
+            0.5  # reduced delay after arrival before door opening
+        )
         self.moving_since: Optional[float] = None  # Timestamp when movement started
         self.floor_changed: bool = False  # Flag to detect floor changes
         self.floor_arrival_announced: bool = (

@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from .api import ElevatorAPI  # Keep for type hinting
 
 
-class World:
+class Simulator:
     def __init__(self, zmq_port: str = "19982") -> None:  # Added zmq_port parameter
         # Create ZmqCoordinator, which owns ZmqClientThread and the incoming message queue.
         # ZmqCoordinator handles ZMQ client prints.
@@ -52,3 +52,6 @@ class World:
         self.engine.update()
         for elevator in self.elevators:
             elevator.update()
+        # After updating elevators, retry pending calls if needed
+        if self.dispatcher:
+            self.dispatcher.update()

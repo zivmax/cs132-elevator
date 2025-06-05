@@ -4,12 +4,12 @@ from typing import Dict, TYPE_CHECKING
 from .models import MoveRequest
 
 if TYPE_CHECKING:
-    from .world import World
+    from .simulator import Simulator
 
 
 class Engine:
-    def __init__(self, world: "World") -> None:
-        self.world: "World" = world
+    def __init__(self, world: "Simulator") -> None:
+        self.world: "Simulator" = world
         self.movement_requests: Dict[int, str] = {}  # elevator_id -> direction
 
     def request_movement(self, request: MoveRequest) -> None:

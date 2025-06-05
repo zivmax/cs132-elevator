@@ -3,7 +3,7 @@ import signal
 import argparse
 import threading
 
-from backend.world import World
+from backend.simulator import Simulator
 from backend.api import ElevatorAPI
 from frontend.webview import ElevatorWebview
 from frontend.bridge import WebSocketBridge
@@ -35,7 +35,7 @@ class ElevatorApp:
         signal.signal(signal.SIGINT, self._signal_handler)
         signal.signal(signal.SIGTERM, self._signal_handler)
 
-        self.backend = World(zmq_port=zmq_port)
+        self.backend = Simulator(zmq_port=zmq_port)
         self.elevator_api = ElevatorAPI(self.backend, self.backend.zmq_coordinator)
         self.backend.set_api_and_initialize_components(self.elevator_api)
         self.bridge = WebSocketBridge(

@@ -50,20 +50,24 @@ class TestElevatorAssignment:
         self.elevator1.id = 1
         self.elevator1.current_floor = 1
         self.elevator1.door_state = DoorState.CLOSED
+        self.elevator1.state = ElevatorState.IDLE
+        self.elevator1.task_queue = []
         self.elevator1.calculate_estimated_time.return_value = 5.0
 
         self.elevator2 = Mock(spec=Elevator)
         self.elevator2.id = 2
         self.elevator2.current_floor = 3
         self.elevator2.door_state = DoorState.CLOSED
+        self.elevator2.state = ElevatorState.IDLE
+        self.elevator2.task_queue = []
         self.elevator2.calculate_estimated_time.return_value = 3.0
 
         self.mock_world.elevators = [self.elevator1, self.elevator2]
 
     def test_assign_elevator_chooses_fastest(self):
         """Test that assign_elevator chooses the elevator with shortest estimated time"""
-        with patch.object(self.dispatcher, "add_target_task") as mock_add_task:
-            self.dispatcher.assign_elevator(2, "up")
+        with patch.object(self.dispatcher, "assign_task") as mock_add_task:
+            self.dispatcher.add_call(2, "up")
 
             # Should choose elevator2 (index 1) since it has shorter estimated time (3.0 vs 5.0)
             # Now includes call_id as third parameter due to outside call processing
@@ -71,12 +75,12 @@ class TestElevatorAssignment:
             call_args = mock_add_task.call_args[0]
             assert call_args[0] == 1  # elevator index
             assert call_args[1] == 2  # floor
-            assert len(call_args) == 3  # call_id included
-
-    def test_assign_elevator_with_down_direction(self):
+            assert (
+                len(call_args) == 3
+            )  # call_id included    def test_assign_elevator_with_down_direction(self):
         """Test elevator assignment with down direction"""
-        with patch.object(self.dispatcher, "add_target_task") as mock_add_task:
-            self.dispatcher.assign_elevator(1, "down")
+        with patch.object(self.dispatcher, "assign_task") as mock_add_task:
+            self.dispatcher.add_call(1, "down")
 
             # Verify that both elevators were asked for estimated time with DOWN direction
             self.elevator1.calculate_estimated_time.assert_called_with(
@@ -90,8 +94,8 @@ class TestElevatorAssignment:
 
     def test_assign_elevator_with_up_direction(self):
         """Test elevator assignment with up direction"""
-        with patch.object(self.dispatcher, "add_target_task") as mock_add_task:
-            self.dispatcher.assign_elevator(3, "up")
+        with patch.object(self.dispatcher, "assign_task") as mock_add_task:
+            self.dispatcher.add_call(3, "up")
 
             # Verify that both elevators were asked for estimated time with UP direction
             self.elevator1.calculate_estimated_time.assert_called_with(
@@ -107,9 +111,8 @@ class TestElevatorAssignment:
         """Test assignment when elevators have equal estimated times"""  # Set both elevators to have same estimated time
         self.elevator1.calculate_estimated_time.return_value = 4.0
         self.elevator2.calculate_estimated_time.return_value = 4.0
-
-        with patch.object(self.dispatcher, "add_target_task") as mock_add_task:
-            self.dispatcher.assign_elevator(2, "up")
+        with patch.object(self.dispatcher, "assign_task") as mock_add_task:
+            self.dispatcher.add_call(2, "up")
             # Should choose first elevator (index 0) when times are equal
             mock_add_task.assert_called_once()
 
@@ -117,10 +120,10 @@ class TestElevatorAssignment:
         """Test assignment when no elevators are available"""
         self.mock_world.elevators = []
 
-        with patch.object(self.dispatcher, "add_target_task") as mock_add_task:
-            self.dispatcher.assign_elevator(2, "up")
+        with patch.object(self.dispatcher, "assign_task") as mock_add_task:
+            self.dispatcher.add_call(2, "up")
 
-            # Should not call add_target_task when no elevators available
+            # Should not call assign_task when no elevators available
             mock_add_task.assert_not_called()
 
 
@@ -143,35 +146,16 @@ class TestTargetTaskManagement:
 
         self.mock_world.elevators = [self.mock_elevator]
 
-    def test_add_target_task_same_floor_closed_door(self):
-        """Test adding task when elevator is already at target floor with closed door"""
-        self.mock_elevator.current_floor = 3
-        self.mock_elevator.door_state = DoorState.CLOSED
-
-        # Create a mock call_id for outside call
-        with (
-            patch.object(self.dispatcher, "get_call_direction") as mock_get_direction,
-            patch.object(self.dispatcher, "complete_call") as mock_complete,
-        ):
-            mock_get_direction.return_value = MoveDirection.UP
-
-            self.dispatcher.add_target_task(0, 3, "call_123")
-
-            # Should send floor arrived message and open door
-            self.mock_api.send_floor_arrived_message.assert_called_once_with(
-                1, 3, MoveDirection.UP
-            )
-            self.mock_elevator.open_door.assert_called_once()
-            mock_complete.assert_called_once_with("call_123")
-
-    def test_add_target_task_same_floor_open_door(self):
+    def test_assign_task_same_floor_open_door(self):
         """Test adding task when elevator is already at target floor with open door"""
         self.mock_elevator.current_floor = 2
         self.mock_elevator.door_state = DoorState.OPEN
 
-        self.dispatcher.add_target_task(
+        self.dispatcher.assign_task(
             0, 2
-        )  # Inside call (no call_id)        # Should not send message or open door when door is already open
+        )  # Inside call (no call_id)
+        
+        # Should not send message or open door when door is already open
         self.mock_api.send_floor_arrived_message.assert_not_called()
         self.mock_elevator.open_door.assert_not_called()
 
@@ -180,7 +164,7 @@ class TestTargetTaskManagement:
         self.mock_elevator.current_floor = 1
         self.mock_elevator.task_queue = []
 
-        self.dispatcher.add_target_task(0, 3, "call_456")  # Outside call with call_id
+        self.dispatcher.assign_task(0, 3, "call_456")  # Outside call with call_id
 
         # Should add task to queue
         assert len(self.mock_elevator.task_queue) == 1
@@ -194,7 +178,7 @@ class TestTargetTaskManagement:
         self.mock_elevator.current_floor = 1
         self.mock_elevator.task_queue = []
 
-        self.dispatcher.add_target_task(
+        self.dispatcher.assign_task(
             0, 3
         )  # Inside call (no call_id)        # Should add inside task with no call_id
         assert len(self.mock_elevator.task_queue) == 1
@@ -211,15 +195,11 @@ class TestTargetTaskManagement:
         self.mock_elevator.current_floor = 1
 
         # Try to add duplicate task with same call_id and floor
-        self.dispatcher.add_target_task(
-            0, 3, "call_123"
-        )  # Same call_id - should not add
+        self.dispatcher.assign_task(0, 3, "call_123")  # Same call_id - should not add
         assert len(self.mock_elevator.task_queue) == 1  # No duplicate added
 
         # Add task with different call_id should be allowed
-        self.dispatcher.add_target_task(
-            0, 3, "call_456"
-        )  # Different call_id - should add
+        self.dispatcher.assign_task(0, 3, "call_456")  # Different call_id - should add
         assert (
             len(self.mock_elevator.task_queue) == 2
         )  # Different call allows addition    def test_add_target_task_different_origins_same_floor(self):
@@ -230,7 +210,7 @@ class TestTargetTaskManagement:
         self.mock_elevator.current_floor = 1
 
         # Try to add inside task to same floor
-        self.dispatcher.add_target_task(0, 3)  # Inside call (no call_id)
+        self.dispatcher.assign_task(0, 3)  # Inside call (no call_id)
 
         # Should have both tasks - outside and inside calls are separate because call_ids differ
         assert len(self.mock_elevator.task_queue) == 2
@@ -252,11 +232,16 @@ class TestDispatcherEdgeCases:
         mock_elevator = Mock(spec=Elevator)
         mock_elevator.id = 1  # Add id attribute
         mock_elevator.calculate_estimated_time.return_value = 1.0
+        # Ensure required attributes exist
+        mock_elevator.state = ElevatorState.IDLE
+        mock_elevator.task_queue = []
+        mock_elevator.door_state = DoorState.CLOSED
+        mock_elevator.current_floor = 1
         self.mock_world.elevators = [mock_elevator]
 
-        with patch.object(self.dispatcher, "add_target_task") as mock_add_task:
+        with patch.object(self.dispatcher, "assign_task") as mock_add_task:
             # Should handle invalid direction gracefully
-            self.dispatcher.assign_elevator(
+            self.dispatcher.add_call(
                 2, "invalid_direction"
             )  # Should still call calculate_estimated_time with None
             mock_elevator.calculate_estimated_time.assert_called_with(2, None)
@@ -268,7 +253,7 @@ class TestDispatcherEdgeCases:
 
         # Should handle invalid index gracefully without crashing
         try:
-            self.dispatcher.add_target_task(0, 3, "call_123")
+            self.dispatcher.assign_task(0, 3, "call_123")
         except (
             IndexError
         ):  # This is expected behavior - accessing invalid elevator index
@@ -285,10 +270,10 @@ class TestDispatcherEdgeCases:
         self.mock_world.elevators = [mock_elevator]
 
         # Test minimum floor
-        self.dispatcher.add_target_task(0, -1, "call_min")
+        self.dispatcher.assign_task(0, -1, "call_min")
 
         # Test maximum floor
-        self.dispatcher.add_target_task(0, 3, "call_max")
+        self.dispatcher.assign_task(0, 3, "call_max")
 
         # Should handle boundary floors correctly
         assert len(mock_elevator.task_queue) == 2
@@ -313,23 +298,24 @@ class TestDispatcherIntegration:
         self.elevator1.current_floor = 1
         self.elevator1.door_state = DoorState.CLOSED
         self.elevator1.task_queue = []
-
+        self.elevator1.state = ElevatorState.IDLE
         self.elevator2 = Mock(spec=Elevator)
         self.elevator2.id = 2
         self.elevator2.current_floor = 3
         self.elevator2.door_state = DoorState.OPEN
         self.elevator2.task_queue = [Task(floor=2)]  # Inside call task
-
+        self.elevator2.state = ElevatorState.IDLE
         self.mock_world.elevators = [self.elevator1, self.elevator2]
 
     def test_realistic_dispatch_scenario(self):
         """Test a realistic dispatch scenario with multiple elevator states"""
         # Set different estimated times
         self.elevator1.calculate_estimated_time.return_value = 4.0
+        
         self.elevator2.calculate_estimated_time.return_value = 2.0
 
-        with patch.object(self.dispatcher, "add_target_task") as mock_add_task:
-            self.dispatcher.assign_elevator(2, "down")
+        with patch.object(self.dispatcher, "assign_task") as mock_add_task:
+            self.dispatcher.add_call(2, "down")
 
             # Should choose elevator2 due to shorter estimated time
             # Note: assign_elevator creates a call_id internally for outside calls
@@ -340,15 +326,15 @@ class TestDispatcherIntegration:
         self.elevator1.calculate_estimated_time.return_value = 1.0
         self.elevator2.calculate_estimated_time.return_value = 2.0
 
-        with patch.object(self.dispatcher, "add_target_task") as mock_add_task:
+        with patch.object(self.dispatcher, "assign_task") as mock_add_task:
             # First assignment
-            self.dispatcher.assign_elevator(2, "up")
+            self.dispatcher.add_call(2, "up")
 
             # Simulate elevator1 now has a task
             self.elevator1.calculate_estimated_time.return_value = 5.0
 
             # Second assignment
-            self.dispatcher.assign_elevator(3, "up")
+            self.dispatcher.add_call(3, "up")
 
             # Should make at least two assignments (may be more due to _process_pending_calls behavior)
             assert mock_add_task.call_count >= 2

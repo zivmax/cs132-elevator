@@ -24,19 +24,19 @@ from .net_client import (
 
 # ZMQ client now provided by World; no direct instantiation needed
 if TYPE_CHECKING:
-    from backend.world import World
+    from backend.simulator import Simulator
 
 
 class ElevatorAPI:
     """API for interacting with the elevator backend"""
 
-    def __init__(self, world: Optional["World"], zmq_coordinator: "ZmqCoordinator"):
+    def __init__(self, world: Optional["Simulator"], zmq_coordinator: "ZmqCoordinator"):
         self.world = world
         self.zmq_coordinator = zmq_coordinator  # Changed from zmq_manager
         print("ElevatorAPI: Initialized with ZmqCoordinator.")
 
     def set_world(
-        self, world: "World"
+        self, world: "Simulator"
     ) -> None:  # This method might still be useful if world is set later
         """Update the world reference"""
         self.world = world
@@ -168,7 +168,7 @@ class ElevatorAPI:
         # Assuming assign_elevator doesn't return a value indicating immediate success/failure of the call itself,
         # but rather queues the request. So, we assume success at this stage if no exceptions.
         try:
-            self.world.dispatcher.assign_elevator(floor, direction)
+            self.world.dispatcher.add_call(floor, direction)
             return {
                 "status": "success",
                 "action": "call_elevator",
@@ -197,7 +197,7 @@ class ElevatorAPI:
         try:
             # Dispatcher's add_target_task expects 0-based elevator_idx
             # For inside calls, call_id should be None
-            self.world.dispatcher.add_target_task(elevator_id - 1, floor, None)
+            self.world.dispatcher.assign_task(elevator_id - 1, floor, None)
             return {
                 "status": "success",
                 "action": "select_floor",
