@@ -34,10 +34,26 @@ class MoveRequest:
         self.direction = direction  # "up" or "down"
 
 
-class Task(NamedTuple):
-    floor: int
-    origin: str  # 'inside' or 'outside'
-    direction: Optional[str] = None  # 'up', 'down', or None for inside
+class Task:
+    """Represents a task for the elevator to service a floor.
+
+    Attributes:
+        floor: The target floor number.
+        call_id: Optional[str]. If present, links to an outside call in the dispatcher.
+                If None, this is an inside call (from elevator panel).
+    """
+
+    def __init__(self, floor: int, call_id: Optional[str] = None) -> None:
+        self.floor = floor
+        self.call_id = call_id
+
+    def __repr__(self) -> str:
+        return f"Task(floor={self.floor}, call_id={self.call_id})"
+
+    @property
+    def is_outside_call(self) -> bool:
+        """Returns True if this task is from an outside call."""
+        return self.call_id is not None
 
 
 # Validation utility functions

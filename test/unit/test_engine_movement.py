@@ -213,7 +213,7 @@ class TestMovementUpdates:
         self.mock_elevator.get_movement_direction.return_value = 1
         self.mock_elevator.current_floor = 2
         # Next floor (3) is the target
-        self.mock_elevator.task_queue = [Task(floor=3, origin="outside")]
+        self.mock_elevator.task_queue = [Task(floor=3, call_id="call_1")]
 
         self.engine.update()
 
@@ -230,11 +230,10 @@ class TestMovementUpdates:
         self.mock_elevator.is_moving.return_value = True
         self.mock_elevator.moving_since = time.time() - 2.5
         self.mock_elevator.get_movement_direction.return_value = 1
-        self.mock_elevator.current_floor = 1
-        # Multiple target floors
+        self.mock_elevator.current_floor = 1  # Multiple target floors
         self.mock_elevator.task_queue = [
-            Task(floor=2, origin="outside"),
-            Task(floor=3, origin="inside"),
+            Task(floor=2, call_id="call_1"),
+            Task(floor=3),
         ]
 
         self.engine.update()
@@ -353,7 +352,7 @@ class TestEngineIntegration:
         mock_elevator.id = 1
         mock_elevator.current_floor = 1
         mock_elevator.floor_travel_time = 2.0
-        mock_elevator.task_queue = [Task(floor=3, origin="outside")]
+        mock_elevator.task_queue = [Task(floor=3, call_id="call_1")]
         self.mock_world.elevators = [mock_elevator]
 
         # Initial movement request

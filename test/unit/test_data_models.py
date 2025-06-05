@@ -183,99 +183,86 @@ class TestMoveRequest:
 
 
 class TestTask:
-    """Test cases for Task NamedTuple"""
+    """Test cases for Task class"""
 
     def test_task_creation_outside_call(self):
         """Test creating Task for outside call"""
-        task = Task(floor=2, origin="outside", direction="up")
+        task = Task(floor=2, call_id="test_call_id_up")
 
         assert task.floor == 2
-        assert task.origin == "outside"
-        assert task.direction == "up"
+        assert task.call_id == "test_call_id_up"
+        assert task.is_outside_call is True
 
     def test_task_creation_inside_call(self):
         """Test creating Task for inside call"""
-        task = Task(floor=3, origin="inside")
+        task = Task(floor=3)
 
         assert task.floor == 3
-        assert task.origin == "inside"
-        assert task.direction is None  # Default value
+        assert task.call_id is None
+        assert task.is_outside_call is False
 
     def test_task_creation_with_all_parameters(self):
         """Test creating Task with all parameters specified"""
-        task = Task(floor=1, origin="outside", direction="down")
+        task = Task(floor=1, call_id="test_call_id_down")
 
         assert task.floor == 1
-        assert task.origin == "outside"
-        assert task.direction == "down"
+        assert task.call_id == "test_call_id_down"
+        assert task.is_outside_call is True
 
     def test_task_creation_basement_floor(self):
         """Test creating Task for basement floor"""
-        task = Task(floor=-1, origin="inside")
+        task = Task(floor=-1)
 
         assert task.floor == -1
-        assert task.origin == "inside"
+        assert task.call_id is None
+        assert task.is_outside_call is False
 
-    def test_task_immutability(self):
-        """Test that Task is immutable (NamedTuple behavior)"""
-        task = Task(floor=2, origin="outside", direction="up")
+    def test_task_attribute_modification(self):
+        """Test that Task attributes can be modified"""
+        task = Task(floor=2, call_id="test_call_id")
 
-        # Should not be able to modify fields
-        with pytest.raises(AttributeError):
-            task.floor = 3
+        # Should be able to modify fields (Task is not a NamedTuple anymore)
+        task.floor = 3
+        task.call_id = "new_call_id"
 
-        with pytest.raises(AttributeError):
-            task.origin = "inside"
+        assert task.floor == 3
+        assert task.call_id == "new_call_id"
 
     def test_task_equality(self):
-        """Test Task equality comparison"""
-        task1 = Task(floor=2, origin="outside", direction="up")
-        task2 = Task(floor=2, origin="outside", direction="up")
-        task3 = Task(floor=3, origin="outside", direction="up")
+        """Test Task string representation"""
+        task1 = Task(floor=2, call_id="test_call_id")
+        task2 = Task(floor=2, call_id="test_call_id")
 
-        assert task1 == task2
-        assert task1 != task3
+        # Tasks are different objects but have same attributes
+        assert task1.floor == task2.floor
+        assert task1.call_id == task2.call_id
 
-    def test_task_as_tuple(self):
-        """Test Task can be used as tuple"""
-        task = Task(floor=2, origin="outside", direction="up")
+    def test_task_string_representation(self):
+        """Test Task string representation"""
+        task = Task(floor=2, call_id="test_call_id")
+        repr_str = repr(task)
 
-        # Should be able to unpack like a tuple
-        floor, origin, direction = task
+        assert "Task" in repr_str
+        assert "floor=2" in repr_str
+        assert "call_id=test_call_id" in repr_str
 
-        assert floor == 2
-        assert origin == "outside"
-        assert direction == "up"
+    def test_task_different_call_ids(self):
+        """Test Tasks with different call IDs"""
+        task1 = Task(floor=2, call_id="call_1")
+        task2 = Task(floor=2, call_id="call_2")
+        task3 = Task(floor=2)  # No call_id
 
-    def test_task_indexing(self):
-        """Test Task supports indexing like tuple"""
-        task = Task(floor=2, origin="outside", direction="up")
+        assert task1.is_outside_call is True
+        assert task2.is_outside_call is True
+        assert task3.is_outside_call is False
 
-        assert task[0] == 2
-        assert task[1] == "outside"
-        assert task[2] == "up"
+    def test_task_is_outside_call_property(self):
+        """Test the is_outside_call property"""
+        outside_task = Task(floor=2, call_id="test_call_id")
+        inside_task = Task(floor=2)
 
-    def test_task_different_origins(self):
-        """Test Tasks with different origins"""
-        outside_task = Task(floor=2, origin="outside", direction="up")
-        inside_task = Task(floor=2, origin="inside")
-
-        assert outside_task.origin == "outside"
-        assert inside_task.origin == "inside"
-        assert outside_task != inside_task
-
-    def test_task_different_directions(self):
-        """Test Tasks with different directions"""
-        up_task = Task(floor=2, origin="outside", direction="up")
-        down_task = Task(floor=2, origin="outside", direction="down")
-        no_direction_task = Task(floor=2, origin="outside")
-
-        assert up_task.direction == "up"
-        assert down_task.direction == "down"
-        assert no_direction_task.direction is None
-
-        assert up_task != down_task
-        assert up_task != no_direction_task
+        assert outside_task.is_outside_call is True
+        assert inside_task.is_outside_call is False
 
 
 class TestSystemConstants:
@@ -324,14 +311,16 @@ class TestSystemConstants:
 class TestModelIntegration:
     """Integration test cases for model interactions"""
 
-    def test_task_with_enums(self):
-        """Test Task creation with enum values where applicable"""
-        # Create task for different directions
-        up_task = Task(floor=2, origin="outside", direction=MoveDirection.UP.value)
-        down_task = Task(floor=1, origin="outside", direction=MoveDirection.DOWN.value)
+    def test_task_with_call_ids(self):
+        """Test Task creation with different call IDs"""
+        # Create task for outside calls
+        up_task = Task(floor=2, call_id="call_up_123")
+        down_task = Task(floor=1, call_id="call_down_456")
 
-        assert up_task.direction == "up"
-        assert down_task.direction == "down"
+        assert up_task.call_id == "call_up_123"
+        assert down_task.call_id == "call_down_456"
+        assert up_task.is_outside_call is True
+        assert down_task.is_outside_call is True
 
     def test_move_request_with_boundary_values(self):
         """Test MoveRequest with boundary elevator IDs"""
@@ -343,27 +332,30 @@ class TestModelIntegration:
 
     def test_task_with_boundary_floors(self):
         """Test Task creation with boundary floor values"""
-        min_floor_task = Task(floor=MIN_FLOOR, origin="outside", direction="up")
-        max_floor_task = Task(floor=MAX_FLOOR, origin="outside", direction="down")
+        min_floor_task = Task(floor=MIN_FLOOR, call_id="basement_call")
+        max_floor_task = Task(floor=MAX_FLOOR, call_id="top_call")
 
         assert min_floor_task.floor == MIN_FLOOR
         assert max_floor_task.floor == MAX_FLOOR
+        assert min_floor_task.is_outside_call is True
+        assert max_floor_task.is_outside_call is True
 
     def test_realistic_task_scenarios(self):
         """Test realistic task scenarios"""
-        # Basement call going up
-        basement_call = Task(floor=-1, origin="outside", direction="up")
+        # Basement call (outside call)
+        basement_call = Task(floor=-1, call_id="basement_up_call")
 
-        # Top floor call going down
-        top_call = Task(floor=3, origin="outside", direction="down")
+        # Top floor call (outside call)
+        top_call = Task(floor=3, call_id="top_down_call")
 
-        # Inside floor selection
-        inside_selection = Task(floor=2, origin="inside")
+        # Inside floor selection (no call_id)
+        inside_selection = Task(floor=2)
 
-        assert basement_call.floor == -1 and basement_call.direction == "up"
-        assert top_call.floor == 3 and top_call.direction == "down"
+        assert basement_call.floor == -1 and basement_call.is_outside_call is True
+        assert top_call.floor == 3 and top_call.is_outside_call is True
         assert (
-            inside_selection.origin == "inside" and inside_selection.direction is None
+            inside_selection.is_outside_call is False
+            and inside_selection.call_id is None
         )
 
     def test_model_combinations(self):

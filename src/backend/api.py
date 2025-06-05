@@ -1,6 +1,8 @@
 import json
 from typing import TYPE_CHECKING, Dict, Any, Optional, List, Union  # Added Union
 
+from backend.models import MoveDirection
+
 from .models import (
     validate_floor,
     validate_elevator_id,
@@ -184,8 +186,7 @@ class ElevatorAPI:
             return {
                 "status": "error",
                 "message": f"Invalid floor: {floor}. Must be between {MIN_FLOOR} and {MAX_FLOOR}",
-            }
-        # Validate elevator ID
+            }  # Validate elevator ID
         if not validate_elevator_id(elevator_id):
             return {
                 "status": "error",
@@ -195,7 +196,8 @@ class ElevatorAPI:
         print(f"API: Elevator {elevator_id} selecting floor {floor}")
         try:
             # Dispatcher's add_target_task expects 0-based elevator_idx
-            self.world.dispatcher.add_target_task(elevator_id - 1, floor, "inside")
+            # For inside calls, call_id should be None
+            self.world.dispatcher.add_target_task(elevator_id - 1, floor, None)
             return {
                 "status": "success",
                 "action": "select_floor",
@@ -292,12 +294,16 @@ class ElevatorAPI:
             )
 
     def send_floor_arrived_message(
-        self, elevator_id: int, floor: int, direction_str: str
+        self, elevator_id: int, floor: int, direction: Optional[MoveDirection]
     ) -> None:
         """Sends a floor arrival message in the format: {direction_prefix}floor_arrived@{floor_number}#{elevator_id}
         e.g., up_floor_arrived@1#1, floor_arrived@2#2
         """
-        prefix = f"{direction_str}_" if direction_str else ""
+        prefix = ""
+        if direction == MoveDirection.UP:
+            prefix = "up_"
+        elif direction == MoveDirection.DOWN:
+            prefix = "down_"
 
         message = f"{prefix}floor_arrived@{floor}#{elevator_id}"
         self._send_message_to_client(message)
@@ -419,7 +425,8 @@ class ElevatorAPI:
             # Compose targetFloors and targetFloorsOrigin for frontend compatibility
             target_floors = [task.floor for task in elevator.task_queue]
             target_floors_origin = {
-                task.floor: task.origin for task in elevator.task_queue
+                task.floor: "outside" if task.is_outside_call else "inside"
+                for task in elevator.task_queue
             }
 
             elevator_state = {

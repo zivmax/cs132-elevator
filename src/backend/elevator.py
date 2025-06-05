@@ -71,12 +71,26 @@ class Elevator:
 
                     # Announce floor arrival with correct prefix
                     task = self.task_queue[0]
-                    if task.origin == "outside" and task.direction:
-                        direction_str = f"{task.direction}_"
-                    else:
-                        direction_str = ""
+                    direction_to_send = None
+
+                    if task.call_id:
+                        # For outside calls, get direction from dispatcher
+                        direction_to_send = self.world.dispatcher.get_call_direction(
+                            task.call_id
+                        )
+                        # Mark call as completed
+                        self.world.dispatcher.complete_call(task.call_id)
+                    elif (
+                        len(self.task_queue) > 1
+                    ):  # For inside calls, determine from next stop
+                        next_task_floor = self.task_queue[1].floor
+                        if next_task_floor > self.current_floor:
+                            direction_to_send = MoveDirection.UP
+                        elif next_task_floor < self.current_floor:
+                            direction_to_send = MoveDirection.DOWN
+
                     self.api.send_floor_arrived_message(
-                        self.id, self.current_floor, direction_str.rstrip("_")
+                        self.id, self.current_floor, direction_to_send
                     )
                     self.last_state_change = current_time
                 else:

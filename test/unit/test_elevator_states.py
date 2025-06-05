@@ -245,8 +245,8 @@ class TestElevatorDirectionDetermination:
         """Test direction determination when all tasks are above current floor"""
         self.elevator.current_floor = 1
         self.elevator.task_queue = [
-            Task(floor=2, origin="outside"),
-            Task(floor=3, origin="inside"),
+            Task(floor=2, call_id="call_1"),  # Outside call
+            Task(floor=3),  # Inside call
         ]
 
         self.elevator._determine_direction()
@@ -256,8 +256,8 @@ class TestElevatorDirectionDetermination:
         """Test direction determination when all tasks are below current floor"""
         self.elevator.current_floor = 3
         self.elevator.task_queue = [
-            Task(floor=1, origin="outside"),
-            Task(floor=0, origin="inside"),
+            Task(floor=1, call_id="call_1"),
+            Task(floor=0),
         ]
 
         self.elevator._determine_direction()
@@ -267,8 +267,8 @@ class TestElevatorDirectionDetermination:
         """Test direction determination chooses closest when mixed floors"""
         self.elevator.current_floor = 2
         self.elevator.task_queue = [
-            Task(floor=3, origin="outside"),  # 1 floor above
-            Task(floor=0, origin="inside"),  # 2 floors below
+            Task(floor=3, call_id="call_1"),  # 1 floor above
+            Task(floor=0),  # 2 floors below
         ]
 
         self.elevator._determine_direction()
@@ -278,8 +278,8 @@ class TestElevatorDirectionDetermination:
         """Test direction determination chooses closest when mixed floors"""
         self.elevator.current_floor = 2
         self.elevator.task_queue = [
-            Task(floor=3, origin="outside", direction="up"),  # 1 floor above
-            Task(floor=1, origin="inside"),  # 1 floor below
+            Task(floor=3, call_id="call_3"),  # 1 floor above
+            Task(floor=1),  # 1 floor below
         ]
 
         self.elevator._determine_direction()
@@ -291,8 +291,8 @@ class TestElevatorDirectionDetermination:
         self.elevator.current_floor = 2
         self.elevator.direction = MoveDirection.UP
         self.elevator.task_queue = [
-            Task(floor=3, origin="outside"),
-            Task(floor=1, origin="inside"),
+            Task(floor=3, call_id="call_1"),
+            Task(floor=1),
         ]
 
         self.elevator._determine_direction()
@@ -303,8 +303,8 @@ class TestElevatorDirectionDetermination:
         self.elevator.current_floor = 2
         self.elevator.direction = MoveDirection.DOWN
         self.elevator.task_queue = [
-            Task(floor=1, origin="outside"),
-            Task(floor=3, origin="inside"),
+            Task(floor=1, call_id="call_1"),
+            Task(floor=3),
         ]
 
         self.elevator._determine_direction()
@@ -325,7 +325,7 @@ class TestElevatorMovementRequests:
     def test_request_movement_with_tasks(self):
         """Test requesting movement when there are tasks in queue"""
         self.elevator.current_floor = 1
-        self.elevator.task_queue = [Task(floor=3, origin="outside")]
+        self.elevator.task_queue = [Task(floor=3, call_id="call_1")]
         self.elevator.door_state = DoorState.CLOSED
 
         self.elevator.request_movement_if_needed()
@@ -351,7 +351,7 @@ class TestElevatorMovementRequests:
     def test_request_movement_doors_open(self):
         """Test that movement is not requested when doors are open"""
         self.elevator.current_floor = 1
-        self.elevator.task_queue = [Task(floor=3, origin="outside")]
+        self.elevator.task_queue = [Task(floor=3, call_id="call_1")]
         self.elevator.door_state = DoorState.OPEN
 
         self.elevator.request_movement_if_needed()
