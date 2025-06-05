@@ -1,25 +1,25 @@
-乘客需求  
-1. 乘客 A 计划自 1 楼前往 3 楼。  
-2. 乘客 B 计划自 2 楼前往 3 楼。  
-3. 乘客 C 计划自 2 楼前往 −1 楼。  
+Passenger Requirements  
+1. Passenger A plans to go from Floor 1 to Floor 3.  
+2. Passenger B plans to go from Floor 2 to Floor 3.  
+3. Passenger C plans to go from Floor 2 to Floor -1.  
 
-初始情况  
-1. 乘客 A 于 1 楼按下上行呼梯按钮。  
-2. 乘客 B 于 2 楼按下下行呼梯按钮。  
-3. 乘客 C 于 2 楼按下下行呼梯按钮。  
+Initial Situation  
+1. Passenger A presses the up call button on Floor 1.  
+2. Passenger B presses the down call button on Floor 2.  
+3. Passenger C presses the down call button on Floor 2.  
 
-最佳调度策略  
-1. 电梯 1 于 1 楼接载乘客 A。  
-2. 电梯 1 上行至 2 楼接载乘客 B。  
-3. 电梯 1 继续上行至 3 楼，乘客 A 与乘客 B 同时离梯，抵达目标楼层。  
-4. 电梯 2 于 2 楼接载乘客 C。  
-5. 电梯 2 下行至 −1 楼，乘客 C 离梯，抵达目标楼层。  
-6. 所有乘客均已抵达目标楼层，调度结束。  
+Optimal Dispatch Strategy  
+1. Elevator 1 picks up Passenger A at Floor 1.  
+2. Elevator 1 goes up to Floor 2 to pick up Passenger B.  
+3. Elevator 1 continues up to Floor 3, where both Passenger A and Passenger B exit and reach their destinations.  
+4. Elevator 2 picks up Passenger C at Floor 2.  
+5. Elevator 2 goes down to Floor -1, where Passenger C exits and reaches their destination.  
+6. All passengers have reached their destinations, and the dispatch is complete.  
 
-另一种调度策略  
-1. 电梯 1 于 1 楼接载乘客 A。  
-2. 电梯 2 前往 2 楼接载乘客 B。  
-3. 电梯 1 与电梯 2 同时上行至 3 楼，乘客 A 与乘客 B 离梯，抵达目标楼层。  
-4. 电梯 1 返回 2 楼接载乘客 C。  
-5. 电梯 1 下行至 −1 楼，乘客 C 离梯，抵达目标楼层。  
-6. 所有乘客均已抵达目标楼层，调度结束。
+Alternative Dispatch Strategy  
+1. Elevator 1 picks up Passenger A at Floor 1.  
+2. Elevator 2 goes to Floor 2 to pick up Passenger B.  
+3. Elevator 1 and Elevator 2 both go up to Floor 3, where Passenger A and Passenger B exit and reach their destinations.  
+4. Elevator 1 returns to Floor 2 to pick up Passenger C.  
+5. Elevator 1 goes down to Floor -1, where Passenger C exits and reaches their destination.  
+6. All passengers have reached their destinations, and the dispatch is complete.

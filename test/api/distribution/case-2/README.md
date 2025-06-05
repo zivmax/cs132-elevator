@@ -1,18 +1,18 @@
-乘客需求  
-1. 乘客 A 计划自 -1 楼前往 3 楼。  
-2. 乘客 B 计划自 3 楼前往 1 楼。  
+Passenger Requirements  
+1. Passenger A plans to go from floor -1 to floor 3.  
+2. Passenger B plans to go from floor 3 to floor 1.  
 
-最佳调度策略  
-1. 乘客 A 于 -1 楼按下上行呼梯按钮。  
-2. 乘客 B 于 3 楼按下下行呼梯按钮。  
-3. 此时电梯 1 应抵达 -1 楼并开启轿厢门。  
-4. 乘客 A 进入电梯 1。  
-5. 乘客 A 在电梯内按下 3 楼按钮。  
-6. 此时电梯 2 应抵达 3 楼并开启轿厢门。  
-7. 乘客 B 进入电梯 2。  
-8. 乘客 B 在电梯内按下 1 楼按钮。  
-9. 此时电梯 1 应抵达 3 楼并开启轿厢门。  
-10. 乘客 A 离开电梯 1，抵达目标楼层。  
-11. 此时电梯 2 应抵达 1 楼并开启轿厢门。  
-12. 乘客 B 离开电梯 2，抵达目标楼层。  
-13. 所有乘客均已抵达目标楼层，流程结束。
+Optimal Dispatch Strategy  
+1. Passenger A presses the up call button on floor -1.  
+2. Passenger B presses the down call button on floor 3.  
+3. At this point, Elevator 1 should arrive at floor -1 and open its doors.  
+4. Passenger A enters Elevator 1.  
+5. Passenger A presses the button for floor 3 inside the elevator.  
+6. At this point, Elevator 2 should arrive at floor 3 and open its doors.  
+7. Passenger B enters Elevator 2.  
+8. Passenger B presses the button for floor 1 inside the elevator.  
+9. At this point, Elevator 1 should arrive at floor 3 and open its doors.  
+10. Passenger A exits Elevator 1 and reaches the destination floor.  
+11. At this point, Elevator 2 should arrive at floor 1 and open its doors.  
+12. Passenger B exits Elevator 2 and reaches the destination floor.  
+13. All passengers have reached their destination floors, and the process ends.
