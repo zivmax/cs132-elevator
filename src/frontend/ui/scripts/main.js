@@ -8,14 +8,14 @@ window.selectFloor = selectFloor;
 window.openDoor = openDoor;
 window.closeDoor = closeDoor;
 
-window.onload = function() {
+window.onload = function () {
     const urlParams = new URLSearchParams(window.location.search);
     const wsPort = urlParams.get('wsPort') || '18765';
     const showDebug = urlParams.get('showDebug') === 'true';
 
     const style = document.createElement('style');
     document.head.appendChild(style);
-    const updateDebugPanelVisibility = function() {
+    const updateDebugPanelVisibility = function () {
         // Use the showDebug value from URL parameters
         style.textContent = '.debug-section { display: ' + (showDebug ? 'block' : 'none') + ' !important; }';
     };
@@ -34,14 +34,14 @@ window.onload = function() {
     });
 
     backend.init(`ws://127.0.0.1:${wsPort}`);
-    backend.elevatorUpdated.connect(function(message) {
+    backend.elevatorUpdated.connect(function (message) {
         const data = message;
         if (data.target_floors_origin) {
             data.targetFloorsOrigin = data.target_floors_origin;
         }
         updateElevatorUI(data);
     });
-    backend.floorCalled.connect(function(message) {
+    backend.floorCalled.connect(function (message) {
         const data = message;
         import('./ui-helpers.js').then(({ highlightFloorButton }) => {
             highlightFloorButton(data.floor, data.direction);

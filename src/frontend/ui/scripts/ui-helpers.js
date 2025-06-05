@@ -15,7 +15,7 @@ export function highlightFloorButton(floor, direction) {
 export function highlightElevatorButton(floor, elevatorId) {
     const panel = document.getElementById(`panel-${elevatorId}`);
     if (panel) {
-        const buttons = panel.querySelectorAll('.floor-buttons button');        buttons.forEach(button => {
+        const buttons = panel.querySelectorAll('.floor-buttons button'); buttons.forEach(button => {
             if ((button.textContent === "-1" ? -1 : parseInt(button.textContent)) === floor) {
                 button.classList.add('active');
             }

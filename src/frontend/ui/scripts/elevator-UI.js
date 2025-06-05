@@ -1,6 +1,21 @@
 // Elevator UI logic and DOM manipulation
 import { floorHeights, SINGLE_FLOOR_TRAVEL_TIME_SECONDS, elevatorAnimations } from './constants.js';
 
+// Function to calculate actual travel distance accounting for missing floor 0
+function calculateTravelDistance(fromFloor, toFloor) {
+    // Convert floors to positions in the sequence [-1, 1, 2, 3]
+    const floorSequence = [-1, 1, 2, 3];
+    const fromIndex = floorSequence.indexOf(fromFloor);
+    const toIndex = floorSequence.indexOf(toFloor);
+
+    if (fromIndex === -1 || toIndex === -1) {
+        // Fallback to simple distance if floor not found
+        return Math.abs(toFloor - fromFloor);
+    }
+
+    return Math.abs(toIndex - fromIndex);
+}
+
 export function updateElevatorUI(data) {
     const elevatorId = data.id;
     const actualCurrentFloor = data.floor;
@@ -35,7 +50,7 @@ export function updateElevatorUI(data) {
             const nextStopFloor = targetFloors[0];
             if (animState.visualTargetFloor !== nextStopFloor) {
                 animState.visualTargetFloor = nextStopFloor;
-                const travelDistance = Math.abs(nextStopFloor - actualCurrentFloor);
+                const travelDistance = calculateTravelDistance(actualCurrentFloor, nextStopFloor);
                 if (travelDistance > 0) {
                     const animationDuration = travelDistance * SINGLE_FLOOR_TRAVEL_TIME_SECONDS;
                     elevatorElement.style.transition = `bottom ${animationDuration}s ease-in-out`;
@@ -63,7 +78,7 @@ export function updateElevatorUI(data) {
     }
     const controlPanel = document.getElementById(`panel-${elevatorId}`);
     if (controlPanel) {
-        const buttons = controlPanel.querySelectorAll('.floor-buttons button');        buttons.forEach(button => {
+        const buttons = controlPanel.querySelectorAll('.floor-buttons button'); buttons.forEach(button => {
             let buttonFloorText = button.textContent;
             let buttonFloor = parseInt(buttonFloorText);
             if (targetFloors.includes(buttonFloor) && targetFloorsOrigin[buttonFloor] === "inside") {

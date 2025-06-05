@@ -29,12 +29,15 @@ class Engine:
                 elevator.is_moving()
                 and elevator.id in self.movement_requests
                 and elevator.moving_since is not None
-            ):
-                # Check if enough time has passed to reach next floor
+            ):  # Check if enough time has passed to reach next floor
                 if current_time - elevator.moving_since >= elevator.floor_travel_time:
                     # Determine the next floor based on direction
                     direction = elevator.get_movement_direction()
                     next_floor = elevator.current_floor + direction
+
+                    # Skip floor 0 since it doesn't exist in the system
+                    if next_floor == 0:
+                        next_floor = next_floor + direction
 
                     # Update elevator's floor
                     elevator.set_floor(next_floor)
