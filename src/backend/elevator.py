@@ -30,7 +30,7 @@ class Elevator:
         self.door_timeout: float = 3.0  # seconds before automatically closing doors
         self.floor_travel_time: float = 2.0  # seconds to travel between floors
         self.door_operation_time: float = 1.0  # seconds to open or close doors
-        self.floor_arrival_delay: float = 2.0  # delay after arrival before door opening
+        self.floor_arrival_delay: float = 0.5  # reduced delay after arrival before door opening
         self.moving_since: Optional[float] = None  # Timestamp when movement started
         self.floor_changed: bool = False  # Flag to detect floor changes
         self.floor_arrival_announced: bool = (
