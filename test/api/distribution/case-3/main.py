@@ -91,7 +91,6 @@ def testing(server: server.ZmqServerThread):
         has_new_message = is_received_new_message(timestamp, client_message)
         # 广播消息给所有乘客处理
         if has_new_message:
-            print(client_message)
             for passenger in passengers:
                 # 处理IN_ELEVATOR_1_AT_OTHER_FLOOR状态
                 if passenger.state == PassengerState.IN_ELEVATOR_1_AT_OTHER_FLOOR:

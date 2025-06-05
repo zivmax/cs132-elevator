@@ -80,7 +80,6 @@ def testing(server: server.ZmqServerThread):
     while True:
         has_new_message = is_received_new_message(timestamp, client_message)
         if has_new_message:
-            print(client_message)
             for passenger in passengers:
                 if passenger.state == PassengerState.IN_ELEVATOR_1_AT_OTHER_FLOOR:
                     if client_message.endswith(
