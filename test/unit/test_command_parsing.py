@@ -11,7 +11,7 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
-from backend.net_client import (
+from backend.api.zmq import (
     BaseCommand,
     CallCommand,
     SelectFloorCommand,

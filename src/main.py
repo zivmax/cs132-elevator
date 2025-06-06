@@ -4,10 +4,10 @@ import argparse
 import threading
 
 from backend.simulator import Simulator
-from backend.api import ElevatorAPI
+from backend.api.core import ElevatorAPI
 from frontend.webview import ElevatorWebview
 from frontend.bridge import WebSocketBridge
-from backend.server import ElevatorHTTPServer
+from backend.api.server import ElevatorHTTPServer
 
 
 class ElevatorApp:

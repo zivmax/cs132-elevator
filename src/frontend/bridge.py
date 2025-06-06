@@ -1,8 +1,8 @@
 import json
 from typing import TYPE_CHECKING, Optional
 
-from backend.api import ElevatorAPI
-from backend.server import WebSocketServer  # WebSocketServer is still in server.py
+from backend.api.core import ElevatorAPI
+from backend.api.server import WebSocketServer  # WebSocketServer is still in server.py
 from backend.models import MoveDirection
 
 if TYPE_CHECKING:

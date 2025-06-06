@@ -3,10 +3,10 @@ from typing import List, TYPE_CHECKING, Optional  # Added Optional
 from .elevator import Elevator
 from .engine import Engine
 from .dispatcher import Dispatcher
-from .net_client import ZmqCoordinator  # Import ZmqCoordinator
+from .api.zmq import ZmqCoordinator  # Import ZmqCoordinator
 
 if TYPE_CHECKING:
-    from .api import ElevatorAPI  # Keep for type hinting
+    from .api.core import ElevatorAPI  # Keep for type hinting
 
 
 class Simulator:

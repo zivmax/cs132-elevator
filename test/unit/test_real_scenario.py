@@ -12,7 +12,7 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'src', 'backend'))
 
 from backend.simulator import Simulator
-from backend.api import ElevatorAPI
+from backend.api.core import ElevatorAPI
 from backend.models import MoveDirection
 
 

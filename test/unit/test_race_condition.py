@@ -16,7 +16,7 @@ from backend.dispatcher import Dispatcher
 from backend.models import MoveDirection, Call, CallState
 from backend.simulator import Simulator
 from backend.elevator import Elevator
-from backend.api import ElevatorAPI
+from backend.api.core import ElevatorAPI
 
 class TestRaceConditionFix:
     """Test cases to verify the race condition fix prevents duplicate assignments."""

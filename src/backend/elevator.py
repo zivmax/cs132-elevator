@@ -6,7 +6,7 @@ from .models import MoveRequest
 
 if TYPE_CHECKING:
     from .simulator import Simulator
-    from .api import ElevatorAPI  # Added API import
+    from .api.core import ElevatorAPI  # Added API import
 
 
 class Elevator:
