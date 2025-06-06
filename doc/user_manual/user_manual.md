@@ -36,12 +36,11 @@ This documentation shows how to set up the recommended environment configuration
 
 The elevator system provides a visual interface to interact with and monitor the elevators.
 
-*(Placeholder for a general screenshot of the UI with labeled components. This could be `main_ui_labeled.png`)*
-<!-- 
+
 <div align=center>
-<img src="./imgs/GUIs/main_ui_labeled.png" width="600"/>
+<img src="./imgs/GUIs/interface.png" width="600"/>
 </div>
--->
+
 
 #### Main Display
 The main display shows the elevator shafts and the current position of each elevator car. You can see the elevators moving between floors in real-time.
