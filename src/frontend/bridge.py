@@ -1,21 +1,33 @@
 import json
-from typing import TYPE_CHECKING, Optional  # Add Optional
+from typing import TYPE_CHECKING, Optional
 
 from backend.api import ElevatorAPI
-from backend.server import WebSocketServer
-from backend.models import MoveDirection  # Add MoveDirection import
+from backend.server import WebSocketServer  # WebSocketServer is still in server.py
+from backend.models import MoveDirection
 
 if TYPE_CHECKING:
-    from backend.world import World
+    from backend.simulator import Simulator
 
 
 class WebSocketBridge:
     """Bridge class for communication between Python backend and JavaScript frontend using WebSocket"""
 
-    def __init__(self, world: "World" = None, host: str = '127.0.0.1', port: int = 8765):
-        self.api = ElevatorAPI(world)
-        # Pass the message handler directly to the WebSocketServer constructor
-        self.server = WebSocketServer(host=host, port=port, message_handler=self._handle_message)
+    def __init__(
+        self,
+        world: "Simulator",
+        api: ElevatorAPI,  # Added api parameter
+        host: str = "127.0.0.1",
+        port: int = 18675,
+    ):
+        # World object should provide access to its ZmqCoordinator instance
+        if not world or not hasattr(world, "zmq_coordinator"):
+            raise ValueError(
+                "World object with a ZmqCoordinator instance is required for WebSocketBridge."
+            )
+        self.api = api  # Use the passed-in ElevatorAPI instance
+        self.server = WebSocketServer(
+            host=host, port=port, message_handler=self._handle_message
+        )
 
         # Start the WebSocket server
         self.server.start()
@@ -27,22 +39,26 @@ class WebSocketBridge:
             func_name = data.get("function")
             params = data.get("params", {})
             if not func_name:
-                return json.dumps({"status": "error", "message": "Missing 'function' in request"})
+                return json.dumps(
+                    {"status": "error", "message": "Missing 'function' in request"}
+                )
 
             # Get the function from ElevatorAPI by its string name
             func = getattr(self.api, func_name, None)
 
             if not func or not callable(func):
-                return json.dumps({"status": "error", "message": f"No such API function: {func_name}"})
-            
+                return json.dumps(
+                    {"status": "error", "message": f"No such API function: {func_name}"}
+                )
+
             # Call the function with params
             # The API functions are expected to handle the params dictionary directly
-            result = func(params) 
-            
+            result = func(params)
+
             # Ensure the result is a JSON string before returning
             if not isinstance(result, str):
-                 # If api returned a dict, dump it to json string
-                return json.dumps(result) 
+                # If api returned a dict, dump it to json string
+                return json.dumps(result)
             return result
         except Exception as e:
             return json.dumps({"status": "error", "message": str(e)})
@@ -62,16 +78,16 @@ class WebSocketBridge:
         if isinstance(direction, MoveDirection):
             direction_value = direction.value
         elif direction is None:
-            direction_value = None  # Or an empty string, depending on frontend expectation
+            direction_value = None
 
         data = {
             "id": elevator_id,
             "floor": floor,
             "state": state,
             "doorState": door_state,
-            "direction": direction_value,  # Use the converted value
+            "direction": direction_value,
             "targetFloors": target_floors,
-            "target_floors_origin": target_floors_origin or {},
+            "targetFloorsOrigin": target_floors_origin or {},
         }
         if self.server.is_running:
             self.server.send_elevator_states(data)
@@ -79,7 +95,7 @@ class WebSocketBridge:
     def sync_backend(self):
         """Update the UI based on backend state"""
         # Get elevator states from the API
-        elevator_states = self.api.fetch_elevator_states()
+        elevator_states = self.api.ui_fetch_states()
 
         # Update the UI for each elevator
         for elevator_state in elevator_states:

@@ -140,7 +140,7 @@ h1 {
 
 .elevator-door {
     position: absolute;
-    width: 50%;
+    width: 50.3%; /* Slightly wider to ensure overlap and fix crevice */
     height: 100%;
     background-color: #7f8c8d;
     transition: transform 1s ease-in-out;
@@ -152,7 +152,7 @@ h1 {
 }
 
 .right-door {
-    right: 0;
+    left: 50%;    /* Ensures the right door starts at the midpoint */
     transform-origin: right;
 }
 
@@ -165,11 +165,11 @@ h1 {
 }
 
 .doors-open .left-door {
-    transform: translateX(-101%);
+    transform: translateX(-101%); /* Ensure door moves completely out of view */
 }
 
 .doors-open .right-door {
-    transform: translateX(101%);
+    transform: translateX(101%);  /* Ensure door moves completely out of view */
 }
 
 .doors-opening .left-door {
@@ -190,21 +190,21 @@ h1 {
 
 @keyframes doorOpenLeft {
     from { transform: translateX(0); }
-    to { transform: translateX(-100%); }
+    to { transform: translateX(-101%); } /* Ensure door moves completely out of view */
 }
 
 @keyframes doorOpenRight {
     from { transform: translateX(0); }
-    to { transform: translateX(100%); }
+    to { transform: translateX(101%); } /* Ensure door moves completely out of view */
 }
 
 @keyframes doorCloseLeft {
-    from { transform: translateX(-100%); }
+    from { transform: translateX(-101%); }
     to { transform: translateX(0); }
 }
 
 @keyframes doorCloseRight {
-    from { transform: translateX(100%); }
+    from { transform: translateX(101%); }
     to { transform: translateX(0); }
 }
 

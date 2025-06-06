@@ -1,0 +1,12 @@
+[project]
+name = "cs132-elevator"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "pytest-playwright>=0.7.0",
+    "pywebview>=5.4",
+    "pyzmq>=26.4.0",
+    "websockets>=15.0.1",
+]

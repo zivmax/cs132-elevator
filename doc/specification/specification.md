@@ -362,7 +362,7 @@ The `WebSocketServer` class provides the actual WebSocket server implementation 
 
 The `ZmqClientThread` class handles ZeroMQ communication with an external test server. It runs in a separate thread to continuously listen for messages.
 
-- **`__init__(self, serverIp: str = "127.0.0.1", port: str = "27132", identity: str = "GroupX")`**
+- **`__init__(self, serverIp: str = "127.0.0.1", port: str = "19982", identity: str = "GroupX")`**
   - **Functional Description:** Initializes the ZMQ client.
   - `serverIp`, `port`: Address of the ZMQ server.
   - `identity`: Client identity string for the ZMQ DEALER socket.
