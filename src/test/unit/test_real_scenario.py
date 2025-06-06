@@ -9,7 +9,9 @@ import time
 import pytest
 
 # Add the src/backend directory to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'src', 'backend'))
+sys.path.insert(
+    0, os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, "src", "backend")
+)
 
 from backend.simulator import Simulator
 from backend.api.core import ElevatorAPI
@@ -37,9 +39,14 @@ def test_real_scenario():
     api.ui_call_elevator({"floor": 2, "direction": "down"})
 
     # Verify the DOWN call is still pending (deferred)
-    down_calls = [call for call in simulator.dispatcher.pending_calls.values()
-                  if call.direction == MoveDirection.DOWN and call.floor == 2]
-    assert len(down_calls) == 1, "DOWN call at floor 2 should be deferred but was assigned"
+    down_calls = [
+        call
+        for call in simulator.dispatcher.pending_calls.values()
+        if call.direction == MoveDirection.DOWN and call.floor == 2
+    ]
+    assert (
+        len(down_calls) == 1
+    ), "DOWN call at floor 2 should be deferred but was assigned"
 
     # Clean up ZMQ threads
     simulator.zmq_coordinator.stop()

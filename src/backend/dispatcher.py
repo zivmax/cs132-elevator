@@ -16,7 +16,7 @@ class Dispatcher:
         self.api: "ElevatorAPI" = api  # Store API instance
         self.pending_calls: Dict[str, Call] = {}  # {call_id: Call}
 
-    def add_call(self, floor: int, direction: str) -> None:        
+    def add_call(self, floor: int, direction: str) -> None:
         try:
             move_direction = MoveDirection[direction.upper()]
             call_id = self.add_outside_call(floor, move_direction)
@@ -24,7 +24,8 @@ class Dispatcher:
         except KeyError:
             # Invalid direction, handle gracefully
             call_id = self.add_outside_call(floor, None)
-            self._process_pending_calls()    
+            self._process_pending_calls()
+
     def _process_pending_calls(self) -> None:
         for call_id, call in list(self.pending_calls.items()):
             # Skip calls that are already assigned or completed
@@ -38,11 +39,13 @@ class Dispatcher:
 
             # Check if any elevator can serve this call without direction conflict
             suitable_elevators = []
-            
+
             for elevator in self.world.elevators:
                 # Check if this elevator can serve the call without conflicting with its direction
                 if self._can_elevator_serve_call(elevator, floor, direction):
-                    est_time: float = elevator.calculate_estimated_time(floor, direction)
+                    est_time: float = elevator.calculate_estimated_time(
+                        floor, direction
+                    )
                     suitable_elevators.append((elevator, est_time))
 
             # If we have suitable elevators, pick the one with minimum time
@@ -173,7 +176,9 @@ class Dispatcher:
         """Process all pending calls and assign them to the most suitable elevators."""
         self._process_pending_calls()
 
-    def _get_elevator_committed_direction(self, elevator: "Elevator") -> Optional[MoveDirection]:
+    def _get_elevator_committed_direction(
+        self, elevator: "Elevator"
+    ) -> Optional[MoveDirection]:
         """
         Determine the direction the elevator is committed to based on its current state and task queue.
         """
@@ -186,16 +191,19 @@ class Dispatcher:
             return MoveDirection.UP
         elif elevator.state == ElevatorState.MOVING_DOWN:
             return MoveDirection.DOWN
-            
+
         # Priority 3: If idle/doors open, and servicing an outside call at the current floor
-        if elevator.task_queue and elevator.current_floor == elevator.task_queue[0].floor:
+        if (
+            elevator.task_queue
+            and elevator.current_floor == elevator.task_queue[0].floor
+        ):
             first_task = elevator.task_queue[0]
             if first_task.call_id:
                 # Check the original call object from pending_calls
                 call_obj = self.pending_calls.get(first_task.call_id)
                 if call_obj and call_obj.direction:
                     return call_obj.direction
-                
+
         # Priority 4: Fallback to next task in queue if not covered above
         if elevator.task_queue:
             # Consider the first task first.
@@ -204,23 +212,29 @@ class Dispatcher:
                 return MoveDirection.UP
             elif first_task_floor < elevator.current_floor:
                 return MoveDirection.DOWN
-            else: # first_task_floor == elevator.current_floor
+            else:  # first_task_floor == elevator.current_floor
                 if len(elevator.task_queue) > 1:
                     second_task_floor = elevator.task_queue[1].floor
                     if second_task_floor > elevator.current_floor:
                         return MoveDirection.UP
                     elif second_task_floor < elevator.current_floor:
                         return MoveDirection.DOWN
-                        
+
         return None
 
-    def _can_elevator_serve_call(self, elevator: "Elevator", floor: int, direction: Optional[MoveDirection]) -> bool:
+    def _can_elevator_serve_call(
+        self, elevator: "Elevator", floor: int, direction: Optional[MoveDirection]
+    ) -> bool:
         """
         Determine if an elevator can take an outside call only when it's fully idle (no tasks, doors closed, not moving), otherwise defer.
         """
         # For outside calls, only assign to completely idle and ready elevators
         if direction is not None:
-            if elevator.state != ElevatorState.IDLE or elevator.door_state != DoorState.CLOSED or elevator.task_queue:
+            if (
+                elevator.state != ElevatorState.IDLE
+                or elevator.door_state != DoorState.CLOSED
+                or elevator.task_queue
+            ):
                 return False
             return True
 

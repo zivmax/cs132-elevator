@@ -7,11 +7,6 @@ This module tests utility functions including:
 - Error handling for port operations
 """
 
-import sys
-import os
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
-
 import pytest
 import socket
 from unittest.mock import patch, MagicMock

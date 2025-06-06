@@ -11,7 +11,9 @@ if TYPE_CHECKING:
 
 class Elevator:
     # Added api parameter to __init__
-    def __init__(self, elevator_id: int, world: "Simulator", api: "ElevatorAPI") -> None:
+    def __init__(
+        self, elevator_id: int, world: "Simulator", api: "ElevatorAPI"
+    ) -> None:
         self.id: int = elevator_id
         self.world: "Simulator" = world
         self.api: "ElevatorAPI" = api  # Store API instance

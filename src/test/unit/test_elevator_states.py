@@ -7,10 +7,7 @@ door operations, movement logic, and task queue handling.
 
 import pytest
 from unittest.mock import Mock, patch
-import sys
-import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
 from backend.elevator import Elevator
 from backend.models import (

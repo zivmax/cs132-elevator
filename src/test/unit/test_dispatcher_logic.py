@@ -7,10 +7,7 @@ task management, and optimization strategies.
 
 import pytest
 from unittest.mock import Mock, patch
-import sys
-import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
 from backend.dispatcher import Dispatcher
 from backend.elevator import Elevator
@@ -151,10 +148,8 @@ class TestTargetTaskManagement:
         self.mock_elevator.current_floor = 2
         self.mock_elevator.door_state = DoorState.OPEN
 
-        self.dispatcher.assign_task(
-            0, 2
-        )  # Inside call (no call_id)
-        
+        self.dispatcher.assign_task(0, 2)  # Inside call (no call_id)
+
         # Should not send message or open door when door is already open
         self.mock_api.send_floor_arrived_message.assert_not_called()
         self.mock_elevator.open_door.assert_not_called()
@@ -311,7 +306,7 @@ class TestDispatcherIntegration:
         """Test a realistic dispatch scenario with multiple elevator states"""
         # Set different estimated times
         self.elevator1.calculate_estimated_time.return_value = 4.0
-        
+
         self.elevator2.calculate_estimated_time.return_value = 2.0
 
         with patch.object(self.dispatcher, "assign_task") as mock_add_task:
