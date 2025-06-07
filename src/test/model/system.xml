@@ -4,435 +4,545 @@
 	<declaration>
 // Constants
 const int NUM_ELEVATORS = 2;
-const int NUM_PASSENGERS = 2; 
-const int MIN_FLOOR = -1;
+const int NUM_PASSENGERS = 2;
+const int MIN_FLOOR = 0;
 const int MAX_FLOOR = 9; 
 
 const int STATE_IDLE = 0;
 const int STATE_MOVING_UP = 1;
 const int STATE_MOVING_DOWN = 2;
 
-const int DOORS_CLOSED = 0;
-const int DOORS_OPEN = 1;
-const int DOORS_OPENING = 2;
-const int DOORS_CLOSING = 3;
+const int DOOR_CLOSED = 0;
+const int DOOR_OPENED = 1;
+const int DOOR_OPENING = 2;
+const int DOOR_CLOSING = 3;
 
 const int TIME_DOOR_OPERATE = 1; // seconds
 const int TIME_FLOOR_TRAVEL = 2; // seconds per floor
 const int TIME_DOOR_OPEN_TIMEOUT = 3; // seconds to auto-close
 
-// Types
-typedef int[MIN_FLOOR, MAX_FLOOR] floor_t;
+// NEW: Call Management Constants and Types
+const int MAX_CALLS = 4; // Max number of concurrent calls system can handle
+const int CALL_STATE_IDLE = 0;    // Call slot is free or call is completed
+const int CALL_STATE_PENDING = 1; // Call is waiting for an elevator
+const int CALL_STATE_ASSIGNED = 2;// Call has been assigned to an elevator
+const int NO_CALL_IDX = -1;     // Special call_idx for internal elevator requests
+const int NO_CALLER_ID = 0;     // Special call_idx for internal elevator requests
+const int NO_TARGET_FLOOR = MIN_FLOOR - 1;     // Special 
+
+const int DIR_DOWN= 0; 
+const int DIR_UP= 1; 
+
+bool initialized = false;
+
+// Types defined before use in structs
+typedef int[MIN_FLOOR-1, MAX_FLOOR] floor_t;
 typedef int[0, NUM_ELEVATORS-1] elevator_id_t;
 typedef int[0, NUM_PASSENGERS-1] passenger_id_t;
 typedef int[0,1] direction_t; // 0 for DOWN, 1 for UP
 
+// Channels for communication
+chan make_call[passenger_id_t][floor_t][direction_t];
+chan elv_doors_opened[elevator_id_t][floor_t];
+chan press_elv_button[passenger_id_t][elevator_id_t][floor_t];
+chan assign_task[elevator_id_t][floor_t][int[0, MAX_CALLS-1]];
+chan notify_call_completed[int[0, MAX_CALLS-1]];
+
+typedef struct {
+	passenger_id_t struct_caller_pid; // Renamed
+	floor_t struct_call_floor;       // Renamed
+	direction_t struct_direction;    // Renamed
+	int struct_state;                // Renamed // Uses CALL_STATE_* constants
+} call_info_t;
+
 // Global state variables
-floor_t elevator_current_floor[elevator_id_t]; 
-int elevator_state[elevator_id_t]; 
-int door_state[elevator_id_t];   
 bool passenger_arrived[NUM_PASSENGERS];
-floor_t elevator_target_q[elevator_id_t][int[0, NUM_PASSENGERS]]; // Simplified queue: stores target floors
-int elevator_q_len[elevator_id_t]; // Current length of queue
 
-// Channels
-// Passenger actions
-chan make_call[passenger_id_t][floor_t][direction_t]; // pid, floor, direction
-chan press_elv_button[passenger_id_t][elevator_id_t][floor_t]; // pid, eid, target_floor
 
-// Dispatcher actions
-chan assign_task[elevator_id_t][floor_t]; // eid, floor_to_go
+call_info_t system_calls[int[0, MAX_CALLS-1]];
 
-// Elevator/Engine communication
-chan request_engine_move[elevator_id_t][direction_t]; // eid, direction
-chan engine_reached_floor[elevator_id_t][floor_t]; // eid, new_floor
-
-// Elevator door signals (for passengers)
-chan elv_doors_opened[elevator_id_t][floor_t]; // eid, floor
-chan elv_doors_closed[elevator_id_t][floor_t]; // eid, floor
-
-// Passenger boarding/alighting
-chan try_board[passenger_id_t][elevator_id_t]; // pid, eid
-chan try_alight[passenger_id_t][elevator_id_t]; // pid, eid
-
-// Initialization function (called by templates if needed, or assume global init)
-void init_elevator_queues() {
-	for (i : elevator_id_t) {
-		elevator_q_len[i] = 0;
+void init_system_calls() { // Initializes only system-wide call structures
+	// Initialize system calls array
+	for (i_call_init : int[0, MAX_CALLS-1]) { 
+		system_calls[i_call_init].struct_state = CALL_STATE_IDLE;
+		system_calls[i_call_init].struct_caller_pid = NO_CALLER_ID;
+		system_calls[i_call_init].struct_call_floor = NO_TARGET_FLOOR;
+		system_calls[i_call_init].struct_direction = DIR_DOWN;
 	}
 }
+
+int add_new_call(passenger_id_t pid_param, floor_t floor_param, direction_t dir_param) {
+	// Ensure loop variables are function-local if not using for-each style declaration
+	int i_call; 
+	for (i_call = 0; i_call &lt; MAX_CALLS; i_call++) { // Changed to C-style for loop for clarity on 'i'
+		if (system_calls[i_call].struct_state == CALL_STATE_IDLE) {
+			system_calls[i_call].struct_caller_pid = pid_param;
+			system_calls[i_call].struct_call_floor = floor_param;
+			system_calls[i_call].struct_direction = dir_param;
+			system_calls[i_call].struct_state = CALL_STATE_PENDING;
+			return i_call;
+		}
+	}
+	return -1; 
+}
 	</declaration>
+	<template>
+		<name>Elevator</name>
+		<parameter>const elevator_id_t eid</parameter>
+		<declaration>clock clk_d;
+clock t_travel;
+direction_t move_dir; // Current/intended movement direction for this elevator instance
+bool needs_to_move = false; // Flag set by process_next_target for this elevator instance
+
+floor_t current_floor; // This elevator's current floor
+int door_state;        // This elevator's door state (DOORS_CLOSED, DOOR_OPENED, etc.)
+int q_len;             // Number of tasks in this elevator's queue
+floor_t target_q[int[0, NUM_PASSENGERS]]; // Queue of target floors for this elevator
+int target_call_idx_q[int[0, NUM_PASSENGERS]]; // Corresponding call_idx for each target floor
+
+// Helper function to determine if the next floor (after one step, considering skip-0) is the target.
+// Uses local current_floor of this elevator instance.
+bool is_next_floor_target(floor_t local_current_f_param, direction_t dir_param, floor_t target_f_param) {
+    int d_val = (dir_param == 1 ? 1 : -1);
+    floor_t floor_after_one_step = local_current_f_param + d_val;
+    if (floor_after_one_step == 0 &amp;&amp; target_f_param != 0 &amp;&amp; MIN_FLOOR &lt; 0 &amp;&amp; MAX_FLOOR &gt; 0) {
+        floor_after_one_step += d_val;
+    }
+    return floor_after_one_step == target_f_param;
+}
+
+// Add a task (floor, call_idx) to this elevator's local queue.
+void add_to_queue(floor_t f_param, int call_idx_param) {
+    bool already_exists_in_queue_flag = false;
+    bool current_task_matches_request_flag = false;
+    int k_q_loop;
+
+    if (q_len &lt; NUM_PASSENGERS) { // Check against capacity (NUM_PASSENGERS)
+        k_q_loop = 0;
+        while(k_q_loop &lt; q_len &amp;&amp; !already_exists_in_queue_flag) {
+            if (target_q[k_q_loop] == f_param) {
+                if (call_idx_param != NO_CALL_IDX) {
+                    if (target_call_idx_q[k_q_loop] == call_idx_param) {
+                        already_exists_in_queue_flag = true;
+                    }
+                } else {
+                    if (target_call_idx_q[k_q_loop] == NO_CALL_IDX) {
+                        already_exists_in_queue_flag = true;
+                    }
+                }
+            }
+            k_q_loop++;
+        }
+
+        // Check if the request matches the current active target (target_q[0])
+        if (q_len &gt; 0 &amp;&amp; target_q[0] == f_param) {
+             if (call_idx_param != NO_CALL_IDX &amp;&amp; target_call_idx_q[0] == call_idx_param) {
+                 current_task_matches_request_flag = true;
+             } else if (call_idx_param == NO_CALL_IDX &amp;&amp; target_call_idx_q[0] == NO_CALL_IDX) {
+                 // New request is internal, current active target is internal, and floors match
+                 current_task_matches_request_flag = true;
+             }
+        }
+
+        if (!already_exists_in_queue_flag &amp;&amp; !current_task_matches_request_flag) {
+            target_q[q_len] = f_param;
+            target_call_idx_q[q_len] = call_idx_param;
+            q_len++;
+        }
+    }
+}
+
+// Process the next target from this elevator's local queue.
+void process_next_target() {
+    int k_shift_loop;
+    needs_to_move = false; // Default: not moving
+
+    if (q_len &gt; 0) {
+        floor_t head_target_floor = target_q[0];
+        // int head_target_call_idx = target_call_idx_q[0]; // Current call_idx at head
+
+        if (current_floor == head_target_floor) {
+            // Current floor is the target. Service it (e.g., open doors). Dequeue the task.
+            for (k_shift_loop = 0; k_shift_loop &lt; q_len - 1; k_shift_loop++) {
+                target_q[k_shift_loop] = target_q[k_shift_loop+1];
+                target_call_idx_q[k_shift_loop] = target_call_idx_q[k_shift_loop+1];
+            }
+            q_len--;
+
+            // Clear the slot that became empty at the new end of the queue.
+            // target_q[q_len] is the correct slot to clear (either target_q[0] if q_len became 0,
+            // or the slot after the new last element).
+            // The original check 'q_len &lt; NUM_PASSENGERS' is to ensure q_len is a valid index if NUM_PASSENGERS is array size.
+            if (q_len &lt; NUM_PASSENGERS) { 
+                 target_q[q_len] = NO_TARGET_FLOOR;
+                 target_call_idx_q[q_len] = NO_CALL_IDX;
+            }
+            needs_to_move = false; // Will not move; will service current floor.
+        } else {
+            // Current floor is not the head_target_floor, so we need to move towards it.
+            needs_to_move = true;
+            if (head_target_floor &gt; current_floor) {
+                move_dir = DIR_UP;
+            } else { // head_target_floor &lt; current_floor
+                move_dir = DIR_DOWN;
+            }
+        }
+    } else {
+        // q_len is 0, no targets.
+        needs_to_move = false;
+        // move_dir could be left as is, or set to a neutral/idle direction if one exists.
+        // target_q[0] should be NO_TARGET_FLOOR due to initialization or previous clearing.
+    }
+}
+
+
+
+// Door Operations (uses local door_state for this elevator instance)
+void handle_door_opening() { 
+    door_state = DOOR_OPENING;
+    clk_d = 0;
+    if (q_len &gt; 0) {
+        int k_shift_loop;
+        for (k_shift_loop = 0; k_shift_loop &lt; q_len - 1; k_shift_loop++) {
+            target_q[k_shift_loop] = target_q[k_shift_loop+1];
+            target_call_idx_q[k_shift_loop] = target_call_idx_q[k_shift_loop+1];
+        }
+        q_len--;
+
+        // Clear the slot that became empty at the new end of the queue.
+        if (q_len &lt; NUM_PASSENGERS) { 
+             target_q[q_len] = NO_TARGET_FLOOR;
+             target_call_idx_q[q_len] = NO_CALL_IDX;
+        }
+    }
+}
+
+void handle_door_opened() { 
+    door_state = DOOR_OPENED;
+    clk_d = 0;
+}
+
+void handle_door_closing() { 
+    door_state = DOOR_CLOSING;
+    clk_d = 0;
+}
+
+void handle_door_closed() { 
+    door_state = DOOR_CLOSED;
+    clk_d = 0;
+    // current_task_call_idx = NO_CALL_IDX; // REMOVED - active task is managed by queue
+}
+
+// Movement Operations (uses local current_floor for this elevator instance)
+void advance_current_floor_one_step() {
+    int direction_val = (move_dir == DIR_UP ? 1 : -1);
+    current_floor += direction_val;
+    // Skip-zero logic: if current_floor becomes 0, but target_q[0] (the destination) is not 0.
+    // This check assumes that if needs_to_move is true, q_len &gt; 0 and target_q[0] is the valid destination.
+    if (current_floor == 0 &amp;&amp; (q_len &gt; 0 &amp;&amp; target_q[0] != 0 &amp;&amp; target_q[0] != NO_TARGET_FLOOR) &amp;&amp; MIN_FLOOR &lt; 0 &amp;&amp; MAX_FLOOR &gt; 0) {
+        current_floor += direction_val;
+    }
+    t_travel = 0; 
+}
+
+void prepare_for_movement() { 
+    t_travel = 0;                
+}
+
+void arrived_at_target_floor() { 
+    advance_current_floor_one_step(); 
+}
+
+void handle_moving() { 
+    advance_current_floor_one_step(); 
+}
+
+// Initialization function for local elevator state
+void init_local_elevator_state() {
+    current_floor = 1; // Default start floor
+    door_state = DOOR_CLOSED;
+    q_len = 0;
+    // Assuming NUM_PASSENGERS is the capacity, so indices are 0 to NUM_PASSENGERS-1
+    // The original code had two loops here; this consolidates to one correct loop.
+
+    for (i_init_q : int[0, NUM_PASSENGERS]) { 
+        target_q[i_init_q] = NO_TARGET_FLOOR;
+        target_call_idx_q[i_init_q] = NO_CALL_IDX;
+    }
+}</declaration>
+		<location id="id0" x="-1861" y="144">
+			<name x="-1931" y="114">InitElevator</name>
+			<committed/>
+		</location>
+		<location id="id1" x="-1598" y="230">
+			<name x="-1649" y="204">Idle</name>
+		</location>
+		<location id="id2" x="-1598" y="-76">
+			<name x="-1666" y="-68">Moving</name>
+			<label kind="invariant" x="-1581" y="-102">t_travel &lt;= TIME_FLOOR_TRAVEL &amp;&amp; door_state == DOOR_CLOSED</label>
+		</location>
+		<location id="id3" x="-654" y="229">
+			<name x="-637" y="195">D_Opening</name>
+			<label kind="invariant" x="-637" y="238">clk_d &lt;= TIME_DOOR_OPERATE</label>
+		</location>
+		<location id="id4" x="-654" y="629">
+			<name x="-646" y="603">D_Open</name>
+			<label kind="invariant" x="-747" y="646">clk_d &lt;= TIME_DOOR_OPEN_TIMEOUT</label>
+		</location>
+		<location id="id5" x="-1598" y="629">
+			<name x="-1700" y="620">D_Closing</name>
+			<label kind="invariant" x="-1794" y="637">clk_d &lt;= TIME_DOOR_OPERATE</label>
+		</location>
+		<location id="id6" x="-654" y="442">
+			<name x="-799" y="433">Call_Completing</name>
+			<committed/>
+		</location>
+		<init ref="id0"/>
+		<transition id="id7">
+			<source ref="id6"/>
+			<target ref="id4"/>
+			<nail x="-731" y="535"/>
+		</transition>
+		<transition id="id8">
+			<source ref="id0"/>
+			<target ref="id1"/>
+			<label kind="assignment" x="-1836" y="127">init_local_elevator_state()</label>
+		</transition>
+		<transition id="id9">
+			<source ref="id6"/>
+			<target ref="id4"/>
+			<label kind="guard" x="-561" y="501">target_call_idx_q[0] != NO_CALL_IDX</label>
+			<label kind="synchronisation" x="-561" y="518">notify_call_completed[target_call_idx_q[0]]!</label>
+			<nail x="-578" y="535"/>
+		</transition>
+		<transition id="id10">
+			<source ref="id1"/>
+			<target ref="id1"/>
+			<label kind="assignment" x="-2193" y="484">process_next_target()</label>
+			<nail x="-2117" y="484"/>
+		</transition>
+		<transition id="id11">
+			<source ref="id4"/>
+			<target ref="id4"/>
+			<label kind="select" x="-348" y="595">p_id_sel : passenger_id_t, f_param : floor_t</label>
+			<label kind="synchronisation" x="-348" y="621">press_elv_button[p_id_sel][eid][f_param]?</label>
+			<label kind="assignment" x="-348" y="646">add_to_queue(f_param, NO_CALL_IDX), clk_d=0</label>
+			<nail x="-365" y="629"/>
+		</transition>
+		<transition id="id12">
+			<source ref="id3"/>
+			<target ref="id6"/>
+			<label kind="guard" x="-646" y="323">clk_d &gt;= TIME_DOOR_OPERATE</label>
+			<label kind="synchronisation" x="-646" y="340">elv_doors_opened[eid][current_floor]!</label>
+			<label kind="assignment" x="-646" y="357">handle_door_opened()</label>
+		</transition>
+		<transition id="id13">
+			<source ref="id1"/>
+			<target ref="id1"/>
+			<label kind="select" x="-2057" y="646">f_param : floor_t, c_idx_param : int[0, MAX_CALLS-1]</label>
+			<label kind="synchronisation" x="-2057" y="663">assign_task[eid][f_param][c_idx_param]?</label>
+			<label kind="assignment" x="-2057" y="688">add_to_queue(f_param, c_idx_param)</label>
+			<nail x="-1930" y="629"/>
+		</transition>
+		<transition id="id14">
+			<source ref="id1"/>
+			<target ref="id1"/>
+			<label kind="select" x="-2244" y="238">p_id_sel : passenger_id_t, f_param : floor_t</label>
+			<label kind="synchronisation" x="-2244" y="255">press_elv_button[p_id_sel][eid][f_param]?</label>
+			<label kind="assignment" x="-2244" y="272">add_to_queue(f_param, NO_CALL_IDX)</label>
+			<nail x="-1904" y="230"/>
+		</transition>
+		<transition id="id15">
+			<source ref="id1"/>
+			<target ref="id3"/>
+			<label kind="guard" x="-1504" y="204">target_q[0] != NO_TARGET_FLOOR &amp;&amp; current_floor == target_q[0]</label>
+			<label kind="assignment" x="-1504" y="187">handle_door_opening()</label>
+		</transition>
+		<transition id="id16">
+			<source ref="id1"/>
+			<target ref="id2"/>
+			<label kind="guard" x="-1360" y="68">needs_to_move</label>
+			<label kind="assignment" x="-1360" y="51">prepare_for_movement(), needs_to_move = false</label>
+			<nail x="-1368" y="76"/>
+		</transition>
+		<transition id="id17">
+			<source ref="id4"/>
+			<target ref="id5"/>
+			<label kind="guard" x="-1419" y="613">clk_d &gt;= TIME_DOOR_OPEN_TIMEOUT</label>
+			<label kind="assignment" x="-1462" y="630">handle_door_closing()</label>
+		</transition>
+		<transition id="id18">
+			<source ref="id5"/>
+			<target ref="id1"/>
+			<label kind="guard" x="-1691" y="399">clk_d &gt;= TIME_DOOR_OPERATE</label>
+			<label kind="assignment" x="-1691" y="424">handle_door_closed()</label>
+		</transition>
+		<transition id="id19">
+			<source ref="id2"/>
+			<target ref="id1"/>
+			<label kind="guard" x="-2329" y="25">t_travel &gt;= TIME_FLOOR_TRAVEL &amp;&amp; is_next_floor_target(current_floor, move_dir, target_q[0])</label>
+			<label kind="assignment" x="-2329" y="42">arrived_at_target_floor()</label>
+		</transition>
+		<transition id="id20">
+			<source ref="id2"/>
+			<target ref="id2"/>
+			<label kind="guard" x="-1972" y="-340">t_travel &gt;= TIME_FLOOR_TRAVEL &amp;&amp; !is_next_floor_target(current_floor, move_dir, target_q[0])</label>
+			<label kind="assignment" x="-1972" y="-323">handle_moving()</label>
+			<nail x="-1598" y="-297"/>
+		</transition>
+	</template>
 	<template>
 		<name>Passenger</name>
 		<parameter>const passenger_id_t pid, const floor_t p_start_floor, const floor_t p_dest_floor</parameter>
 		<declaration>
 clock x;
 elevator_id_t boarded_elevator_id;
-bool call_made = false;
 		</declaration>
-		<location id="id0" x="0" y="0">
+		<location id="id21" x="0" y="0">
 			<name x="-34" y="8">AtStart</name>
 		</location>
-		<location id="id1" x="153" y="119">
+		<location id="id22" x="153" y="119">
 			<name x="136" y="136">Waiting</name>
 		</location>
-		<location id="id2" x="553" y="119">
-			<name x="527" y="127">Boarding</name>
+		<location id="id23" x="578" y="119">
+			<name x="552" y="127">Boarding</name>
 			<committed/>
 		</location>
-		<location id="id3" x="714" y="119">
-			<name x="740" y="136">InElevator</name>
+		<location id="id24" x="1164" y="119">
+			<name x="1190" y="136">InElevator</name>
 		</location>
-		<location id="id4" x="996" y="120">
-			<name x="986" y="110">Alighting</name>
+		<location id="id25" x="1649" y="119">
+			<name x="1674" y="116">Alighting</name>
 			<committed/>
 		</location>
-		<location id="id5" x="997" y="0">
-			<name x="987" y="-10">Arrived</name>
+		<location id="id26" x="1649" y="0">
+			<name x="1664" y="-19">Arrived</name>
 		</location>
-		<init ref="id0"/>
-		<transition id="id6">
-			<source ref="id0"/>
-			<target ref="id5"/>
-			<label kind="guard" x="0" y="-50">p_start_floor == p_dest_floor</label>
-			<label kind="assignment" x="0" y="-30">passenger_arrived[pid] = true</label>
-		</transition>
-		<transition id="id7">
-			<source ref="id0"/>
-			<target ref="id1"/>
-			<label kind="guard" x="0" y="30">p_start_floor != p_dest_floor &amp;&amp; !call_made</label>
-			<label kind="synchronisation" x="0" y="50">make_call[pid][p_start_floor][p_dest_floor &gt; p_start_floor ? 1 : 0]!</label>
-			<label kind="assignment" x="0" y="70">call_made = true</label>
-		</transition>
-		<transition id="id8">
-			<source ref="id1"/>
-			<target ref="id2"/>
-			<label kind="select" x="195" y="153">eid : elevator_id_t</label>
-			<label kind="synchronisation" x="195" y="119">elv_doors_opened[eid][p_start_floor]?</label>
-			<label kind="assignment" x="195" y="136">boarded_elevator_id = eid, x=0</label>
-		</transition>
-		<transition id="id9">
-			<source ref="id2"/>
-			<target ref="id3"/>
-			<label kind="synchronisation" x="595" y="119">try_board[pid][boarded_elevator_id]!</label>
-			<label kind="assignment" x="595" y="139">x=0</label>
-		</transition>
-		<transition id="id10">
-			<source ref="id3"/>
-			<target ref="id3"/>
-			<label kind="guard" x="714" y="184">x &lt; 1</label>
-			<label kind="synchronisation" x="714" y="204">press_elv_button[pid][boarded_elevator_id][p_dest_floor]!</label>
-			<nail x="718" y="178"/>
-			<nail x="748" y="178"/>
-		</transition>
-		<transition id="id11">
-			<source ref="id3"/>
-			<target ref="id4"/>
-			<label kind="synchronisation" x="739" y="85">elv_doors_opened[boarded_elevator_id][p_dest_floor]?</label>
-			<label kind="assignment" x="739" y="105">x=0</label>
-		</transition>
-		<transition id="id12">
-			<source ref="id4"/>
-			<target ref="id5"/>
-			<label kind="synchronisation" x="969" y="34">try_alight[pid][boarded_elevator_id]!</label>
-			<label kind="assignment" x="969" y="17">passenger_arrived[pid] = true</label>
-		</transition>
-	</template>
-	<template>
-		<name>Engine</name>
-		<parameter>const elevator_id_t eid</parameter>
-		<declaration>
-clock t_travel;
-direction_t current_direction; // Changed from bool
-bool active = false;
-		</declaration>
-		<location id="id13" x="-110" y="0">
-			<name x="-136" y="17">Idle</name>
-		</location>
-		<location id="id14" x="544" y="0">
-			<name x="560" y="-15">Moving</name>
-			<label kind="invariant" x="561" y="0">t_travel &lt;= TIME_FLOOR_TRAVEL</label>
-		</location>
-		<init ref="id13"/>
-		<transition id="id15">
-			<source ref="id13"/>
-			<target ref="id14"/>
-			<label kind="select" x="-8" y="-62">d_param : direction_t</label>
-			<label kind="synchronisation" x="-8" y="-42">request_engine_move[eid][d_param]?</label>
-			<label kind="assignment" x="-8" y="-22">current_direction = d_param, t_travel = 0, active = true</label>
-		</transition>
-		<transition id="id16">
-			<source ref="id14"/>
-			<target ref="id13"/>
-			<label kind="guard" x="127" y="252">t_travel &gt;= TIME_FLOOR_TRAVEL &amp;&amp; active</label>
-			<label kind="synchronisation" x="127" y="272">engine_reached_floor[eid][elevator_current_floor[eid] + (current_direction == 1 ? 1 : -1)]!</label>
-			<label kind="assignment" x="127" y="289">active=false</label>
-			<nail x="223" y="251"/>
-		</transition>
-	</template>
-	<template>
-		<name>Elevator</name>
-		<parameter>const elevator_id_t eid</parameter>
-		<declaration>
-clock clk_d; // door clock
-floor_t current_target_floor;
-bool has_request = false;
-direction_t move_dir; // Changed from bool
-
-// Simplified queue management
-void add_to_queue(floor_t f) {
-    if (elevator_q_len[eid] &lt; NUM_PASSENGERS + 1) {
-        bool already_exists = false;
-        for (i : int[0, NUM_PASSENGERS]) {
-            if (i &lt; elevator_q_len[eid]) {
-                if (elevator_target_q[eid][i] == f) {
-                    already_exists = true;
-                }
-            }
-        }
-        if (!already_exists) {
-            elevator_target_q[eid][elevator_q_len[eid]] = f;
-            elevator_q_len[eid]++;
-        }
-    }
-}
-
-void process_next_target() {
-    if (elevator_q_len[eid] &gt; 0) {
-        if (!has_request) { // Only pick a new target if not already handling one
-            current_target_floor = elevator_target_q[eid][0];
-            has_request = true;
-
-            // Pop item from queue by shifting elements.
-            // If elevator_q_len[eid] is 1, no shift is needed (outer if elevator_q_len[eid] &gt; 1 handles this).
-            // If elevator_q_len[eid] &gt; 1, shift elements.
-            if (elevator_q_len[eid] &gt; 1) { // Loop only if there are at least two elements to perform a shift
-                // Iterate with a static upper bound (NUM_PASSENGERS)
-                // and use a conditional check against the dynamic elevator_q_len[eid].
-                // j_iter represents the source index of the element to be shifted.
-                for (j_iter : int[1, NUM_PASSENGERS]) { 
-                    // Only perform the shift if j_iter is a valid index within the current queue length.
-                    // The elements to shift are from index 1 to elevator_q_len[eid] - 1.
-                    if (j_iter &lt;= elevator_q_len[eid] - 1) {
-                        elevator_target_q[eid][j_iter-1] = elevator_target_q[eid][j_iter];
-                    }
-                }
-            }
-            // elevator_target_q[eid][elevator_q_len[eid]-1] = 0; // Optional: Clear last if needed (after decrementing q_len)
-            elevator_q_len[eid]--; // Decrement length after taking the first element
-
-            // Determine move_dir
-            if (current_target_floor &gt; elevator_current_floor[eid]) {
-                move_dir = 1; // UP
-            } else if (current_target_floor &lt; elevator_current_floor[eid]) {
-                move_dir = 0; // DOWN
-            }
-            // If current_target_floor == elevator_current_floor[eid], move_dir is not set here;
-            // has_request is true, so Idle_DClosed -&gt; D_Opening transition should handle it.
-        }
-        // If has_request was already true, do nothing more here; continue with current request.
-        // The new item (if any) was added to queue by add_to_queue() and will be picked up
-        // when process_next_target() is called after the current request is serviced.
-    } else { // Queue is empty
-        has_request = false; // No more requests
-    }
-}
-		</declaration>
-		<location id="id17" x="0" y="0">
-			<name x="-50" y="-10">Idle_DClosed</name>
-			<label kind="invariant" x="-50" y="10">door_state[eid] == DOORS_CLOSED &amp;&amp; elevator_state[eid] == STATE_IDLE</label>
-		</location>
-		<location id="id18" x="-892" y="-8">
-			<name x="-954" y="-9">Moving</name>
-		</location>
-		<location id="id19" x="492" y="-491">
-			<name x="442" y="-501">D_Opening</name>
-			<label kind="invariant" x="442" y="-481">clk_d &lt;= TIME_DOOR_OPERATE</label>
-		</location>
-		<location id="id20" x="935" y="416">
-			<name x="961" y="391">D_Open</name>
-			<label kind="invariant" x="915" y="426">clk_d &lt;= TIME_DOOR_OPEN_TIMEOUT</label>
-		</location>
-		<location id="id21" x="-93" y="442">
-			<name x="-118" y="465">D_Closing</name>
-			<label kind="invariant" x="-143" y="452">clk_d &lt;= TIME_DOOR_OPERATE</label>
-		</location>
-		<init ref="id17"/>
-		<transition id="id22">
-			<source ref="id17"/>
-			<target ref="id17"/>
-			<label kind="select" x="-239" y="-210">f_param : floor_t</label>
-			<label kind="synchronisation" x="-239" y="-190">assign_task[eid][f_param]?</label>
-			<label kind="assignment" x="-239" y="-170">add_to_queue(f_param), process_next_target()</label>
-			<nail x="-119" y="-170"/>
-			<nail x="-59" y="-170"/>
-		</transition>
-		<transition id="id23">
-			<source ref="id17"/>
-			<target ref="id17"/>
-			<label kind="select" x="-535" y="153">p_id_sel : passenger_id_t, f_param : floor_t</label>
-			<label kind="synchronisation" x="-535" y="173">press_elv_button[p_id_sel][eid][f_param]?</label>
-			<label kind="assignment" x="-535" y="193">add_to_queue(f_param), process_next_target()</label>
-			<nail x="-415" y="93"/>
-			<nail x="-357" y="127"/>
-		</transition>
-		<transition id="id24">
-			<source ref="id17"/>
-			<target ref="id19"/>
-			<label kind="guard" x="-42" y="-280">has_request &amp;&amp; elevator_current_floor[eid] == current_target_floor</label>
-			<label kind="assignment" x="-42" y="-297">door_state[eid] = DOORS_OPENING, clk_d = 0, has_request=false /*serviced*/</label>
-		</transition>
-		<transition id="id25">
-			<source ref="id17"/>
-			<target ref="id18"/>
-			<label kind="guard" x="-1054" y="62">has_request &amp;&amp; elevator_current_floor[eid] != current_target_floor</label>
-			<label kind="synchronisation" x="-1054" y="82">request_engine_move[eid][move_dir]!</label>
-			<label kind="assignment" x="-1054" y="102">elevator_state[eid] = (move_dir == 1 ? STATE_MOVING_UP : STATE_MOVING_DOWN)</label>
-			<nail x="-484" y="68"/>
-		</transition>
-		<transition id="id26">
-			<source ref="id18"/>
-			<target ref="id17"/>
-			<label kind="select" x="-816" y="-130">f_param : floor_t</label>
-			<label kind="guard" x="-816" y="-90">f_param == current_target_floor</label>
-			<label kind="synchronisation" x="-816" y="-110">engine_reached_floor[eid][f_param]?</label>
-			<label kind="assignment" x="-816" y="-70">elevator_current_floor[eid] = f_param, elevator_state[eid] = STATE_IDLE</label>
-		</transition>
+		<init ref="id21"/>
 		<transition id="id27">
-			<source ref="id18"/>
-			<target ref="id18"/>
-			<label kind="select" x="-1224" y="-142">f_param : floor_t</label>
-			<label kind="guard" x="-1224" y="-102">f_param != current_target_floor</label>
-			<label kind="synchronisation" x="-1224" y="-62">request_engine_move[eid][move_dir]!</label>
-			<label kind="assignment" x="-1224" y="-82">elevator_current_floor[eid] = f_param</label>
-			<nail x="-922" y="-38"/>
-			<nail x="-862" y="-38"/>
+			<source ref="id21"/>
+			<target ref="id26"/>
+			<label kind="guard" x="671" y="-51">p_start_floor == p_dest_floor</label>
+			<label kind="assignment" x="671" y="-31">passenger_arrived[pid] = true</label>
 		</transition>
 		<transition id="id28">
-			<source ref="id19"/>
-			<target ref="id20"/>
-			<label kind="guard" x="782" y="82">clk_d &gt;= TIME_DOOR_OPERATE</label>
-			<label kind="synchronisation" x="782" y="122">elv_doors_opened[eid][elevator_current_floor[eid]]!</label>
-			<label kind="assignment" x="782" y="102">door_state[eid] = DOORS_OPEN, clk_d = 0</label>
+			<source ref="id21"/>
+			<target ref="id22"/>
+			<label kind="guard" x="0" y="30">p_start_floor != p_dest_floor &amp;&amp; initialized</label>
+			<label kind="synchronisation" x="0" y="50">make_call[pid][p_start_floor][p_dest_floor &gt; p_start_floor ? DIR_UP : DIR_DOWN]!</label>
 		</transition>
 		<transition id="id29">
-			<source ref="id20"/>
-			<target ref="id21"/>
-			<label kind="guard" x="340" y="396">clk_d &gt;= TIME_DOOR_OPEN_TIMEOUT</label>
-			<label kind="assignment" x="340" y="416">door_state[eid] = DOORS_CLOSING, clk_d = 0</label>
+			<source ref="id22"/>
+			<target ref="id23"/>
+			<label kind="select" x="195" y="153">eid_sel : elevator_id_t</label>
+			<label kind="synchronisation" x="195" y="119">elv_doors_opened[eid_sel][p_start_floor]?</label>
+			<label kind="assignment" x="195" y="136">boarded_elevator_id = eid_sel</label>
 		</transition>
 		<transition id="id30">
-			<source ref="id20"/>
-			<target ref="id20"/>
-			<label kind="select" x="715" y="478">p_id_board : passenger_id_t</label>
-			<label kind="synchronisation" x="715" y="498">try_board[p_id_board][eid]?</label>
-			<label kind="assignment" x="715" y="518">clk_d = 0</label>
-			<nail x="765" y="478"/>
-			<nail x="765" y="518"/>
+			<source ref="id23"/>
+			<target ref="id24"/>
+			<label kind="synchronisation" x="629" y="119">press_elv_button[pid][boarded_elevator_id][p_dest_floor]!</label>
 		</transition>
 		<transition id="id31">
-			<source ref="id20"/>
-			<target ref="id20"/>
-			<label kind="select" x="1080" y="478">p_id_alight : passenger_id_t</label>
-			<label kind="synchronisation" x="1080" y="498">try_alight[p_id_alight][eid]?</label>
-			<label kind="assignment" x="1080" y="518">clk_d = 0</label>
-			<nail x="1130" y="478"/>
-			<nail x="1130" y="518"/>
+			<source ref="id24"/>
+			<target ref="id25"/>
+			<label kind="synchronisation" x="1224" y="93">elv_doors_opened[boarded_elevator_id][p_dest_floor]?</label>
 		</transition>
 		<transition id="id32">
-			<source ref="id21"/>
-			<target ref="id17"/>
-			<label kind="guard" x="-340" y="269">clk_d &gt;= TIME_DOOR_OPERATE</label>
-			<label kind="synchronisation" x="-340" y="289">elv_doors_closed[eid][elevator_current_floor[eid]]!</label>
-			<label kind="assignment" x="-340" y="309">door_state[eid] = DOORS_CLOSED, clk_d = 0, has_request = false, process_next_target() /* Service complete, now check queue */</label>
+			<source ref="id25"/>
+			<target ref="id26"/>
+			<label kind="assignment" x="1649" y="42">passenger_arrived[pid] = true</label>
 		</transition>
 	</template>
 	<template>
 		<name>Dispatcher</name>
 		<declaration>
-floor_t pending_call_floor;
-direction_t pending_call_direction; // Uses new direction_t (int[0,1])
-passenger_id_t pending_caller_pid;
-bool has_pending_call = false;
+int selected_call_idx = -1; 
+int new_call_idx_holder; 
 		</declaration>
 		<location id="id33" x="-102" y="0">
 			<name x="-112" y="-30">Idle</name>
 		</location>
-		<location id="id34" x="476" y="17">
-			<name x="466" y="-13">Assigning</name>
+		<location id="id34" x="850" y="0">
+			<name x="840" y="-30">Assigning</name>
 			<committed/>
 		</location>
 		<init ref="id33"/>
 		<transition id="id35">
 			<source ref="id33"/>
-			<target ref="id34"/>
-			<label kind="select" x="187" y="-286">pid_sel : passenger_id_t, f_sel : floor_t, d_sel : direction_t</label>
-			<label kind="guard" x="187" y="-306">!has_pending_call</label>
-			<label kind="synchronisation" x="187" y="-266">make_call[pid_sel][f_sel][d_sel]?</label>
-			<label kind="assignment" x="187" y="-246">pending_caller_pid = pid_sel, pending_call_floor = f_sel, pending_call_direction = d_sel, has_pending_call = true</label>
-			<nail x="153" y="-236"/>
+			<target ref="id33"/>
+			<label kind="select" x="-467" y="-224">pid_s : passenger_id_t, f_s : floor_t, d_s : direction_t</label>
+			<label kind="synchronisation" x="-467" y="-204">make_call[pid_s][f_s][d_s]?</label>
+			<label kind="assignment" x="-467" y="-184">new_call_idx_holder = add_new_call(pid_s, f_s, d_s)</label>
+			<nail x="-250" y="-150"/>
 		</transition>
 		<transition id="id36">
+			<source ref="id33"/>
+			<target ref="id34"/>
+			<label kind="select" x="178" y="-122">iter_s : int[0, MAX_CALLS-1]</label>
+			<label kind="guard" x="178" y="-102">system_calls[iter_s].struct_state == CALL_STATE_PENDING</label>
+			<label kind="assignment" x="178" y="-144">selected_call_idx = iter_s</label>
+			<nail x="355" y="-73"/>
+		</transition>
+		<transition id="id37">
 			<source ref="id34"/>
 			<target ref="id33"/>
-			<label kind="select" x="195" y="252">eid_sel : elevator_id_t</label>
-			<label kind="guard" x="195" y="232">has_pending_call</label>
-			<label kind="synchronisation" x="195" y="272">assign_task[eid_sel][pending_call_floor]!</label>
-			<label kind="assignment" x="195" y="289">has_pending_call = false</label>
-			<nail x="161" y="297"/>
+			<label kind="select" x="76" y="62">eid_s : elevator_id_t</label>
+			<label kind="guard" x="76" y="82">selected_call_idx != -1</label>
+			<label kind="synchronisation" x="76" y="102">assign_task[eid_s][system_calls[selected_call_idx].struct_call_floor][selected_call_idx]!</label>
+			<label kind="assignment" x="76" y="122">system_calls[selected_call_idx].struct_state = CALL_STATE_ASSIGNED, selected_call_idx = -1</label>
+			<nail x="356" y="80"/>
+		</transition>
+		<transition id="id38">
+			<source ref="id33"/>
+			<target ref="id33"/>
+			<label kind="select" x="-442" y="184">comp_call_idx_s : int[0, MAX_CALLS-1]</label>
+			<label kind="guard" x="-442" y="224">system_calls[comp_call_idx_s].struct_state == CALL_STATE_ASSIGNED</label>
+			<label kind="synchronisation" x="-442" y="204">notify_call_completed[comp_call_idx_s]?</label>
+			<label kind="assignment" x="-442" y="244">system_calls[comp_call_idx_s].struct_state = CALL_STATE_IDLE</label>
+			<nail x="-238" y="170"/>
+		</transition>
+	</template>
+	<template>
+		<name>Initializer</name>
+		<declaration>// Intentionally empty for this simple initializer
+		</declaration>
+		<location id="id39" x="0" y="0">
+			<name x="-50" y="-10">Init</name>
+		</location>
+		<location id="id40" x="442" y="0">
+			<name x="432" y="-30">Done</name>
+		</location>
+		<init ref="id39"/>
+		<transition id="id41">
+			<source ref="id39"/>
+			<target ref="id40"/>
+			<label kind="assignment" x="25" y="-34">init_system_calls(), initialized = true</label>
 		</transition>
 	</template>
 	<system>
-// Initialize global arrays (UPPAAL does this implicitly for basic types to 0/false)
-// elevator_current_floor = {1, 1}; // Example: Both start at floor 1
-// passenger_arrived = {false, false};
-// init_elevator_queues(); // Call if complex init needed in declaration, not standard UPPAAL
-
-// Instantiate one of each component
+// Process instantiations
 E0 = Elevator(0);
 E1 = Elevator(1);
-Eng0 = Engine(0); // Engine for Elevator 0
-Eng1 = Engine(1); // Engine for Elevator 1
 D = Dispatcher();
-// MODIFIED: Instantiate Passengers with pid, start_floor, dest_floor
-P1 = Passenger(0, 3, 8); // Passenger 0: floor 3 to 8
-P2 = Passenger(1, 9, -1); // Passenger 1: floor 9 to -1
+P0 = Passenger(0, 1, 5); 
+P1 = Passenger(1, 3, 0); 
+InitProc = Initializer();
 
-// Add components to the system
-system E0, E1, Eng0, Eng1, D, P1, P2;
+// System line: lists all processes to be part of the system simulation.
+system E0, E1, D, P0, P1, InitProc;
 	</system>
 	<queries>
 		<option key="--diagnostic" value="2"/>
 		<query>
-			<formula>A[] not (elevator_state[0] != STATE_IDLE and door_state[0] == DOORS_OPEN) and not (elevator_state[1] != STATE_IDLE and door_state[1] == DOORS_OPEN)</formula>
-			<comment>Safety: An elevator never moves with its doors open.</comment>
-			<result outcome="success" type="quality" timestamp="2025-06-06 17:35:58 +0800">
-			</result>
-		</query>
-		<query>
-			<formula>A[] forall(i : elevator_id_t) not (elevator_state[i] != STATE_IDLE and door_state[i] == DOORS_OPEN)</formula>
-			<comment>Safety: Doors are not open while the elevator is moving.</comment>
-			<result outcome="success" type="quality" timestamp="2025-06-06 17:36:00 +0800">
-			</result>
-		</query>
-		<query>
-			<formula>E&lt;&gt; passenger_arrived[0] and passenger_arrived[1]</formula>
-			<comment>Liveness: It is possible for all passengers to reach their destinations.</comment>
-			<result outcome="failure" type="quality" timestamp="2025-06-06 17:36:59 +0800">
-			</result>
-		</query>
-		<query>
-			<formula>A&lt;&gt; passenger_arrived[0]</formula>
-			<comment>Liveness: Passenger 1 eventually reaches their destination.</comment>
-			<result outcome="failure" type="quality" timestamp="2025-06-06 17:36:02 +0800">
+			<formula>E&lt;&gt; passenger_arrived[0] &amp;&amp; passenger_arrived[1]</formula>
+			<comment/>
+			<result outcome="failure" type="quality" timestamp="2025-06-07 13:38:35 +0800">
 			</result>
 		</query>
 		<query>
 			<formula>A[] not deadlock</formula>
-			<comment>Check for deadlocks in the system.</comment>
-			<result outcome="failure" type="quality" timestamp="2025-06-07 02:08:33 +0800">
-				<option key="--diagnostic" value="2"/>
-			</result>
+			<comment/>
 		</query>
 	</queries>
 </nta>
