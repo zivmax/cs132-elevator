@@ -135,7 +135,7 @@ class ElevatorHTTPServer(threading.Thread):
         if directory is None:
             # Assuming server.py is in src/backend, navigate to src/frontend/ui
             current_dir = os.path.dirname(os.path.abspath(__file__))
-            self.directory = os.path.join(current_dir, "..", "frontend", "ui")
+            self.directory = os.path.join(current_dir, "..", "..", "frontend", "ui")
         else:
             self.directory = directory
         self.httpd = None
