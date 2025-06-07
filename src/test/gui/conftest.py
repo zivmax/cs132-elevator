@@ -18,10 +18,10 @@ from requests.exceptions import ConnectionError
 
 # Configuration
 APP_HOST = "127.0.0.1"
-APP_HTTP_PORT = 9876  # Using a different port for testing to avoid conflicts
-APP_WS_PORT = 9875  # Using a different port for testing
+APP_HTTP_PORT = 19876  # Using a different port for testing to avoid conflicts
+APP_WS_PORT = 19875  # Using a different port for testing
 APP_URL = f"http://{APP_HOST}:{APP_HTTP_PORT}/?wsPort={APP_WS_PORT}&showDebug=false"
-MAIN_SCRIPT_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "src", "main.py")
+MAIN_SCRIPT_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "main.py")
 
 
 @pytest.fixture(scope="session")
