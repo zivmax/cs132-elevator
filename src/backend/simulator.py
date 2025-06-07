@@ -1,7 +1,6 @@
 import time
 from typing import List, TYPE_CHECKING, Optional  # Added Optional
 from .elevator import Elevator
-from .engine import Engine
 from .dispatcher import Dispatcher
 from .api.zmq import ZmqCoordinator  # Import ZmqCoordinator
 
@@ -19,7 +18,6 @@ class Simulator:
 
         # API, Elevators, and Dispatcher will be initialized via set_api_and_initialize_components
         self.api: Optional["ElevatorAPI"] = None
-        self.engine: Engine = Engine(self)  # Engine might not need API directly at init
         self.elevators: List[Elevator] = []
         self.dispatcher: Optional[Dispatcher] = None
 
@@ -49,7 +47,6 @@ class Simulator:
         # The loop for processing messages from ZmqCoordinator's queue is in main.py.
 
         # Update simulation components.
-        self.engine.update()
         for elevator in self.elevators:
             elevator.update()
         # After updating elevators, retry pending calls if needed

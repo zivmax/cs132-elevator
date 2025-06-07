@@ -50,7 +50,7 @@ class Elevator:
     def update(self) -> None:
         current_time: float = time.time()
 
-        # Check if floor has changed (set by Engine)
+        # Check if floor has changed (previously set by Engine, now internal)
         if self.floor_changed:
             self.floor_changed = False
             self.arrival_time = current_time
@@ -60,18 +60,30 @@ class Elevator:
 
         # First, check if elevator is moving
         if self.is_moving():
-            # While moving, only handle floor announcements
+            # Handle movement logic previously in Engine
+            if self.moving_since is not None and current_time - self.moving_since >= self.floor_travel_time:
+                current_direction_value = self.get_movement_direction()
+                next_floor = self.current_floor + current_direction_value
+                if next_floor == 0: # Skip floor 0
+                    next_floor += current_direction_value
+                self.set_floor(next_floor) # This will set floor_changed = True
+
+                # Check if we've reached the target floor for the current movement leg
+                # This part is crucial: if a task is completed, we might stop or continue
+                # For simplicity, we assume movement continues until floor_changed is processed
+                # and then the logic below handles stopping at a target.
+
+            # While moving, also handle floor announcements (original logic)
             if (
-                self.arrival_time
+                self.arrival_time # This is set when floor_changed is true
                 and not self.floor_arrival_announced
-                and current_time - self.arrival_time >= 0.5
+                and current_time - self.arrival_time >= 0.5 # Original delay for announcement
             ):
                 self.floor_arrival_announced = True
 
-                # Check if we've reached a target floor
+                # Check if we've reached a target floor in the task_queue
                 if self.task_queue and self.current_floor == self.task_queue[0].floor:
-                    # Stop at this floor
-                    self.state = ElevatorState.IDLE
+                    self.state = ElevatorState.IDLE # Stop at this floor
 
                     # Announce floor arrival with correct prefix
                     task = self.task_queue[0]
@@ -96,11 +108,15 @@ class Elevator:
                     self.api.send_floor_arrived_message(
                         self.id, self.current_floor, direction_to_send
                     )
-                    self.last_state_change = current_time
+                    self.last_state_change = current_time # State changed to IDLE
                 else:
-                    # Continue movement if we have more floors to visit
-                    self.request_movement_if_needed()
-            return  # Skip other processing while moving
+                    # If not at a target floor but movement interval passed,
+                    # and we are still in a moving state (e.g. MOVING_UP but current_floor != target)
+                    # we need to ensure we continue or re-evaluate.
+                    # The request_movement_if_needed() will be called if IDLE and tasks remain.
+                    # If still MOVING_UP/DOWN, the next iteration of update() will handle floor travel.
+                    pass # Movement continues or will be re-evaluated by request_movement_if_needed
+            return  # Skip other processing while moving or just after floor change
 
         # Check if delay is time up before proceeding with door operations
         if (
@@ -163,37 +179,43 @@ class Elevator:
             self.request_movement_if_needed()
 
     def request_movement_if_needed(self) -> None:
-        """Request movement from the Engine if there are target floors"""
+        """Set elevator to move if there are target floors and doors are closed."""
         if self.task_queue:
             self._determine_direction()
             if self.direction and self.door_state == DoorState.CLOSED:
-                # Send move request to Engine instead of changing state directly
-                move_request = MoveRequest(
-                    self.id, self.direction
-                )  # self.direction is now MoveDirection
-                self.world.engine.request_movement(move_request)
+                # Directly set moving state instead of sending request to Engine
+                self.set_moving_state(self.direction.value)
         else:
-            self.state = ElevatorState.IDLE
+            if self.state != ElevatorState.IDLE: # Ensure it becomes IDLE if no tasks
+                self.state = ElevatorState.IDLE
+                self.moving_since = None # Clear moving_since when becoming IDLE
+                self.last_state_change = time.time()
+
 
     def set_floor(self, new_floor: int) -> None:
-        """Called by Engine to update the elevator's floor position"""
+        """Called internally to update the elevator's floor position"""
         if self.current_floor != new_floor:
             self.previous_floor = self.current_floor
             self.current_floor = new_floor
             self.floor_changed = True  # Set flag to process floor change in next update
-            self.moving_since = time.time()  # Reset moving timer for next floor
-            # Don't update last_state_change here - it's updated in update() when floor_changed is processed
+            self.moving_since = time.time()  # Reset moving timer for next floor travel segment
+            # last_state_change is updated in update() when floor_changed is processed or state changes
 
-    def set_moving_state(self, direction: str) -> None:
-        """Called by Engine to set the elevator's moving state"""
-        if direction == MoveDirection.UP.value:  # Use MoveDirection enum value
-            self.state = ElevatorState.MOVING_UP
-        elif direction == MoveDirection.DOWN.value:  # Use MoveDirection enum value
-            self.state = ElevatorState.MOVING_DOWN
-        else:
-            self.state = ElevatorState.IDLE
-        self.moving_since = time.time()
-        self.last_state_change = self.moving_since
+    def set_moving_state(self, direction_value: str) -> None:
+        """Called internally to set the elevator's moving state"""
+        new_state = ElevatorState.IDLE
+        if direction_value == MoveDirection.UP.value:
+            new_state = ElevatorState.MOVING_UP
+        elif direction_value == MoveDirection.DOWN.value:
+            new_state = ElevatorState.MOVING_DOWN
+        
+        current_time = time.time() # Get current time for state change
+        if self.state != new_state or new_state == ElevatorState.IDLE: # Update if state changes OR if it's set to IDLE (even if already IDLE)
+            self.state = new_state
+            self.moving_since = current_time
+            self.last_state_change = self.moving_since
+            if new_state == ElevatorState.IDLE:
+                self.moving_since = None # Clear if becoming IDLE
 
     def is_moving(self) -> bool:
         """Check if elevator is in a moving state"""
