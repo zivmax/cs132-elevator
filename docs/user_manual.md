@@ -1,10 +1,10 @@
-# CS132 Elevator Simulation System - User Manual
+# User Manual
 
 ---
 
 ## Table of Contents
 
-- [CS132 Elevator Simulation System - User Manual](#cs132-elevator-simulation-system---user-manual)
+- [User Manual](#user-manual)
   - [Table of Contents](#table-of-contents)
   - [System Requirements](#system-requirements)
     - [Minimum System Requirements](#minimum-system-requirements)

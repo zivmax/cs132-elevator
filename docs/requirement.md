@@ -1,8 +1,8 @@
-# Elevator System Requirements Documentation
+# Requirements Documentation
 
 ## Table of Contents
 
-- [Elevator System Requirements Documentation](#elevator-system-requirements-documentation)
+- [Requirements Documentation](#requirements-documentation)
   - [Table of Contents](#table-of-contents)
   - [System Overview](#system-overview)
     - [Key System Components:](#key-system-components)
@@ -10,13 +10,9 @@
     - [Use Case Descriptions:](#use-case-descriptions)
   - [Class Diagram](#class-diagram)
     - [Class Descriptions:](#class-descriptions)
-  - [Activity Diagrams](#activity-diagrams)
-    - [1. Elevator Call Processing Workflow](#1-elevator-call-processing-workflow)
-    - [2. Door Operation Workflow](#2-door-operation-workflow)
   - [Sequence Diagrams](#sequence-diagrams)
     - [1. External System Elevator Call Sequence](#1-external-system-elevator-call-sequence)
-    - [2. Frontend Floor Selection Sequence](#2-frontend-floor-selection-sequence)
-    - [3. System State Synchronization Sequence](#3-system-state-synchronization-sequence)  - [Functional Requirements](#functional-requirements)
+  - [Functional Requirements](#functional-requirements)
     - [FR1: Elevator Movement Management](#fr1-elevator-movement-management)
     - [FR2: Door Operation Management](#fr2-door-operation-management)
     - [FR3: Call Dispatching System](#fr3-call-dispatching-system)

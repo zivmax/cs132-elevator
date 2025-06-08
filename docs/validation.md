@@ -1,5 +1,81 @@
 # Validation Documentation
 
+## Table of Contents
+
+- [Validation Documentation](#validation-documentation)
+  - [Table of Contents](#table-of-contents)
+  - [1. Unit Tests](#1-unit-tests)
+    - [1.1 Branch Coverage Analysis](#11-branch-coverage-analysis)
+      - [1.1.1 Dispatcher Class (`dispatcher.py`)](#111-dispatcher-class-dispatcherpy)
+        - [Function: `add_call(self, floor: int, direction: str)`](#function-add_callself-floor-int-direction-str)
+        - [Function: `_process_pending_calls(self)`](#function-_process_pending_callsself)
+        - [Function: `assign_task(self, elevator_idx: int, floor: int, call_id: Optional[str])`](#function-assign_taskself-elevator_idx-int-floor-int-call_id-optionalstr)
+        - [Function: `_optimize_task_queue(self, elevator: "Elevator")`](#function-_optimize_task_queueself-elevator-elevator)
+        - [Function: `_can_elevator_serve_call(self, elevator: "Elevator", floor: int, direction: Optional[MoveDirection])`](#function-_can_elevator_serve_callself-elevator-elevator-floor-int-direction-optionalmovedirection)
+      - [1.1.2 Elevator Class (`elevator.py`)](#112-elevator-class-elevatorpy)
+        - [Function: `update(self)`](#function-updateself)
+        - [Function: `_determine_direction(self)`](#function-_determine_directionself)
+        - [Function: `calculate_estimated_time(self, floor: int, direction: Optional[MoveDirection])`](#function-calculate_estimated_timeself-floor-int-direction-optionalmovedirection)
+        - [Function: `open_door(self)` and `close_door(self)`](#function-open_doorself-and-close_doorself)
+      - [1.1.3 ElevatorAPI Class (`api/core.py`)](#113-elevatorapi-class-apicorepy)
+        - [Function: `_parse_and_execute(self, command: str)`](#function-_parse_and_executeself-command-str)
+        - [Function: `_handle_call_elevator(self, floor: int, direction: str)`](#function-_handle_call_elevatorself-floor-int-direction-str)
+        - [Function: `_handle_select_floor(self, floor: int, elevator_id: int)`](#function-_handle_select_floorself-floor-int-elevator_id-int)
+        - [Function: `_handle_open_door(self, elevator_id: int)` and `_handle_close_door(self, elevator_id: int)`](#function-_handle_open_doorself-elevator_id-int-and-_handle_close_doorself-elevator_id-int)
+        - [Function: `fetch_states(self)`](#function-fetch_statesself)
+      - [1.1.4 Models (`models.py`)](#114-models-modelspy)
+        - [Function: `Call.assign_to_elevator(self, elevator_idx: int)`](#function-callassign_to_elevatorself-elevator_idx-int)
+        - [Function: `Call.complete(self)`](#function-callcompleteself)
+        - [Function: `Call.is_pending(self) -> bool`](#function-callis_pendingself---bool)
+        - [Function: `Call.is_assigned(self) -> bool`](#function-callis_assignedself---bool)
+        - [Function: `Call.is_completed(self) -> bool`](#function-callis_completedself---bool)
+        - [Function: `Task.is_outside_call(self) -> bool`](#function-taskis_outside_callself---bool)
+        - [Function: `validate_floor(floor: int) -> bool`](#function-validate_floorfloor-int---bool)
+        - [Function: `validate_elevator_id(elevator_id: int) -> bool`](#function-validate_elevator_idelevator_id-int---bool)
+        - [Function: `validate_direction(direction: str) -> bool`](#function-validate_directiondirection-str---bool)
+      - [1.1.5 Simulator Class (`simulator.py`)](#115-simulator-class-simulatorpy)
+        - [Function: `set_api_and_initialize_components(self, api: "ElevatorAPI")`](#function-set_api_and_initialize_componentsself-api-elevatorapi)
+        - [Function: `update(self)`](#function-updateself-1)
+    - [1.2 Branch Coverage Results (Actuals from Pytest)](#12-branch-coverage-results-actuals-from-pytest)
+    - [1.3 Test Implementation Strategy](#13-test-implementation-strategy)
+      - [1.3.1 Test File Structure](#131-test-file-structure)
+      - [1.3.2 Test Categories](#132-test-categories)
+      - [1.3.3 Mock Objects and Fixtures](#133-mock-objects-and-fixtures)
+      - [1.3.4 Assertion Strategy](#134-assertion-strategy)
+    - [1.4 Test Execution Requirements](#14-test-execution-requirements)
+      - [1.4.1 Prerequisites](#141-prerequisites)
+      - [1.4.2 Execution Commands](#142-execution-commands)
+      - [1.4.3 Success Criteria](#143-success-criteria)
+    - [1.5 Maintenance and Updates](#15-maintenance-and-updates)
+      - [1.5.1 Test Consistency](#151-test-consistency)
+      - [1.5.2 Documentation Updates](#152-documentation-updates)
+      - [1.5.3 Regression Prevention](#153-regression-prevention)
+  - [1.2 Integration Tests](#12-integration-tests)
+      - [1.2.1 Component Interaction Identification](#121-component-interaction-identification)
+      - [1.2.2 Test Coverage Items (Equivalent Partitioning)](#122-test-coverage-items-equivalent-partitioning)
+      - [1.2.3 Test Cases Design](#123-test-cases-design)
+      - [1.2.4 Test Implementation](#124-test-implementation)
+  - [1.3 System Tests](#13-system-tests)
+      - [1.3.1 Common Workflows](#131-common-workflows)
+      - [1.3.2 Rare Workflows and Edge Cases](#132-rare-workflows-and-edge-cases)
+      - [1.3.3 Test Implementation](#133-test-implementation)
+  - [2. Model Checking](#2-model-checking)
+    - [2.1 System Model](#21-system-model)
+    - [2.2 Environment Model](#22-environment-model)
+    - [2.3 Verification Queries](#23-verification-queries)
+  - [3. Risk Management](#3-risk-management)
+    - [3.1 Risk Analysis](#31-risk-analysis)
+      - [3.1.1 Passenger Service Risks](#311-passenger-service-risks)
+      - [3.1.2 System Reliability Risks](#312-system-reliability-risks)
+      - [3.1.3 Performance and Efficiency Risks](#313-performance-and-efficiency-risks)
+      - [3.1.4 Communication and Interface Risks](#314-communication-and-interface-risks)
+    - [3.2 Risk Mitigation](#32-risk-mitigation)
+      - [3.2.1 Passenger Service Risk Mitigation](#321-passenger-service-risk-mitigation)
+      - [3.2.2 System Reliability Risk Mitigation](#322-system-reliability-risk-mitigation)
+      - [3.2.3 Performance Risk Mitigation](#323-performance-risk-mitigation)
+      - [3.2.4 Communication Risk Mitigation](#324-communication-risk-mitigation)
+
+
 ## 1. Unit Tests
 
 ### 1.1 Branch Coverage Analysis
@@ -314,16 +390,51 @@ This section identifies all functions with branching logic in the elevator syste
 - **TC114**: Initialize simulator with a dispatcher and call update.
 - **TC115**: Initialize simulator without a dispatcher (or set to None) and call update.
 
-### 1.2 Branch Coverage Results
+### 1.2 Branch Coverage Results (Actuals from Pytest)
 
-**Target Coverage:** 100% branch coverage across all identified functions
+The following branch coverage results were obtained from running `python -m pytest src/test/units/ --cov=src/backend --cov-branch --cov-report=term-missing` on June 8, 2025.
 
-**Total Branches Identified:** 115 unique branches (TC1-TC115)
+**Core Component Branch Coverage:**
 
-**Coverage Calculation:**
-- Total branches covered: 115/115 = 100%
-- Functions with complete coverage: 26/26 = 100%
-- Critical path coverage: 100%
+*   **`src/backend/dispatcher.py`**:
+    *   Branches: 76
+    *   Missed: 5
+    *   Coverage: (76-5)/76 = 71/76 = **93.42%**
+*   **`src/backend/elevator.py`**:
+    *   Branches: 122
+    *   Missed: 25
+    *   Coverage: (122-25)/122 = 97/122 = **79.51%**
+*   **`src/backend/models.py`**:
+    *   Branches: 0
+    *   Missed: 0
+    *   Coverage: **100%** (No branches to miss)
+*   **`src/backend/simulator.py`**:
+    *   Branches: 8
+    *   Missed: 1
+    *   Coverage: (8-1)/8 = 7/8 = **87.50%**
+
+**Overall Branch Coverage for Core Components:**
+
+*   Total Branches (core): 76 + 122 + 0 + 8 = 206
+*   Total Missed Branches (core): 5 + 25 + 0 + 1 = 31
+*   Overall Coverage (core): (206 - 31) / 206 = 175 / 206 = **84.95%**
+
+
+**Detailed Coverage Report:**
+```
+Name                        Stmts   Miss Branch BrPart  Cover   Missing
+-----------------------------------------------------------------------
+src\backend\__init__.py         6      0      0      0   100%
+src\backend\api\core.py       222     79     76      8    64%   22, 51, 89, 108, 125, 141, 149, 282, 294-301, 305-319, 329-333, 343-351, 355-356, 360-361, 365-380, 384-401, 405-415, 419-429
+src\backend\api\zmq.py        125    101     24      0    16%   19-38, 42-56, 60-63, 67, 71-74, 78, 82-83, 87-90, 94-105, 109-164, 168, 172-184, 188-189
+src\backend\dispatcher.py     136     33     76      5    71%   8-9, 57->27, 71, 77-79, 92->97, 174, 178-179, 188-225
+src\backend\elevator.py       238     19    122     25    87%   8-9, 74, 102->exit, 109->exit, 117, 121->exit, 137->exit, 164->171, 168-169, 180->exit, 184->exit, 191->exit, 209->exit, 294, 296, 359-360, 367-372, 401->434, 413->434, 420-431, 436->494, 450-456, 459->491, 470->491, 477-488
+src\backend\models.py          61      4      0      0    93%   53, 78-79, 96
+src\backend\simulator.py       28      4      8      1    86%   10, 51-53
+src\backend\utility.py         24     17     10      1    24%   6->10, 16-34, 48-59
+-----------------------------------------------------------------------
+TOTAL                         840    257    316     40    67%
+```
 
 ### 1.3 Test Implementation Strategy
 

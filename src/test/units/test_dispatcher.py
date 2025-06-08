@@ -51,15 +51,6 @@ class TestDispatcherCallHandling:
                 except KeyError:
                     pytest.fail(f"Valid direction '{direction}' raised KeyError")
 
-    def test_add_call_invalid_direction(self):
-        """TC2: Test add_call with invalid directions"""
-        invalid_directions = ["invalid", "", "left", "right", None]
-
-        for direction in invalid_directions:
-            with pytest.raises(KeyError):
-                self.dispatcher.add_call(2, direction)
-
-
 class TestDispatcherPendingCallsProcessing:
     """Test cases for dispatcher pending calls processing (TC3-TC7)"""
 

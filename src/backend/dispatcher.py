@@ -15,13 +15,21 @@ class Dispatcher:
         self.world: "Simulator" = world
         self.api: "ElevatorAPI" = api  # Store API instance
         self.pending_calls: Dict[str, Call] = {}  # {call_id: Call}
+        self.all_calls_log: Dict[str, Call] = {} # Log of all calls
 
-    def add_call(self, floor: int, direction: str) -> None:
-        if direction is None or direction == "":
-            raise KeyError(f"Invalid direction: {direction}")
-        move_direction = MoveDirection[direction.upper()]
+    def add_call(self, floor: int, direction: str) -> str: # Return call_id, raise on error
+        try:
+            # This will raise AttributeError if direction is not a string (e.g., None)
+            # This will raise KeyError if direction.upper() is not 'UP' or 'DOWN'
+            move_direction = MoveDirection[direction.upper()]
+        except AttributeError:
+             raise ValueError("Direction must be a string.")
+        except KeyError:
+             raise ValueError(f"Invalid direction value: '{direction}'. Must be 'UP' or 'DOWN'.")
+
         call_id = self.add_outside_call(floor, move_direction)
-        self._process_pending_calls()
+        self._process_pending_calls() # This might complete and pop the call from pending_calls
+        return call_id
 
     def _process_pending_calls(self) -> None:
         for call_id, call in list(self.pending_calls.items()):
@@ -62,7 +70,9 @@ class Dispatcher:
     def add_outside_call(self, floor: int, direction: Optional[MoveDirection]) -> str:
         """Add an outside call and return its call_id."""
         call_id = str(uuid4())
-        self.pending_calls[call_id] = Call(call_id, floor, direction)
+        call = Call(call_id, floor, direction) # Create Call object
+        self.pending_calls[call_id] = call
+        self.all_calls_log[call_id] = call # Store in the log
         return call_id
 
     def get_call_direction(self, call_id: str) -> Optional[MoveDirection]:
