@@ -7,35 +7,27 @@
 - [CS132 Elevator Simulation System - User Manual](#cs132-elevator-simulation-system---user-manual)
   - [Table of Contents](#table-of-contents)
   - [System Requirements](#system-requirements)
-  - - [Minimum System Requirements](#minimum-system-requirements)
-    - [Recommended System Requirements](#recommended-system-requirements)
+    - [Minimum System Requirements](#minimum-system-requirements)
   - [Installation \& Setup](#installation--setup)
-
     - [Packaged Version Installation (Recommended)](#packaged-version-installation-recommended)
-    - [First-Time Setup](#first-time-setup)
+    - [Source Code Version (For Developers)](#source-code-version-for-developers)
   - [Getting Started](#getting-started)
-
     - [Launching the Application](#launching-the-application)
     - [Understanding the Initial State](#understanding-the-initial-state)
     - [Quick Start Tutorial](#quick-start-tutorial)
   - [User Interface Overview](#user-interface-overview)
-
     - [Main Window Layout](#main-window-layout)
     - [Building Visualization Details](#building-visualization-details)
     - [Control Panel Features](#control-panel-features)
     - [Debug Information Panel](#debug-information-panel)
   - [Basic Operations](#basic-operations)
-
     - [Calling an Elevator](#calling-an-elevator)
     - [Selecting Your Destination](#selecting-your-destination)
     - [Manual Door Control](#manual-door-control)
-    - [Understanding Elevator Behavior](#understanding-elevator-behavior)
   - [Command Line Options](#command-line-options)
-
     - [Basic Command Line Usage](#basic-command-line-usage)
     - [Available Options](#available-options)
-    - [Common Command Line Examples
-      ](#common-command-line-examples)
+    - [Common Command Line Examples](#common-command-line-examples)
 
 ---
 
@@ -43,10 +35,8 @@
 
 ### Minimum System Requirements
 
-**Operating System:**
-
-- Windows 10 or later (64-bit)
-- Windows 11 (recommended)
+- Windows with WebView2 Supported
+- `uv` installed
 
 ## Installation & Setup
 
@@ -70,6 +60,31 @@
 ![alt text](images/explorer_view.png)
 
 
+### Source Code Version (For Developers)
+1. **Clone the Repository**
+
+   - Use Git to clone the repository:
+     ```
+     git clone <repository_url>
+     ```
+
+2. **Install Dependencies**
+   - Navigate to the project directory:
+     ```
+     cd <repository_directory>/system
+     ```
+   - Install required packages using `uv`:
+     ```
+     uv sync
+     ```
+
+3. **Check Installation**
+   - Ensure all dependencies are installed correctly
+   - Run the application using:
+     ```
+     uv run main.py
+     ```
+     
 ---
 
 ## Getting Started

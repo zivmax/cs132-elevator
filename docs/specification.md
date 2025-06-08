@@ -22,6 +22,7 @@
       - [`reset(self) -> None`](#resetself---none)
     - [ElevatorAPI Class](#elevatorapi-class)
       - [`__init__(self, world: Optional[Simulator], zmq_ip: str = "127.0.0.1", zmq_port: str = "19982") -> None`](#__init__self-world-optionalsimulator-zmq_ip-str--127001-zmq_port-str--19982---none)
+      - [`stop(self) -> None`](#stopsself---none)
       - [`_parse_and_execute(self, command: str) -> Optional[str]`](#_parse_and_executeself-command-str---optionalstr)
       - [`_handle_call_elevator(self, floor: int, direction: str) -> Dict[str, Any]`](#_handle_call_elevatorself-floor-int-direction-str---dictstr-any)
       - [`_handle_select_floor(self, floor: int, elevator_id: int) -> Dict[str, Any]`](#_handle_select_floorself-floor-int-elevator_id-int---dictstr-any)
@@ -30,7 +31,13 @@
       - [`send_door_opened_message(self, elevator_id: int) -> None`](#send_door_opened_messageself-elevator_id-int---none)
       - [`send_door_closed_message(self, elevator_id: int) -> None`](#send_door_closed_messageself-elevator_id-int---none)
       - [`send_floor_arrived_message(self, elevator_id: int, floor: int, direction: Optional[MoveDirection]) -> None`](#send_floor_arrived_messageself-elevator_id-int-floor-int-direction-optionalmovedirection---none)
-      - [`fetch_states(self) -> Dict[str, Any]`](#fetch_statesself---dictstr-any)
+      - [`fetch_states(self) -> List[Dict[str, Any]]`](#fetch_statesself---listdictstr-any)
+      - [`set_world(self, world: Simulator) -> None`](#set_worldself-world-simulator---none)
+      - [`stop(self) -> None`](#stopsself---none)
+      - [`ui_call_elevator(self, data: Dict[str, Any]) -> str`](#ui_call_elevatorself-data-dictstr-any---str)
+      - [`ui_select_floor(self, data: Dict[str, Any]) -> str`](#ui_select_floorself-data-dictstr-any---str)
+      - [`ui_open_door(self, data: Dict[str, Any]) -> str`](#ui_open_doorself-data-dictstr-any---str)
+      - [`ui_close_door(self, data: Dict[str, Any]) -> str`](#ui_close_doorself-data-dictstr-any---str)
     - [Dispatcher Class](#dispatcher-class)
       - [`__init__(self, world: Simulator, api: ElevatorAPI) -> None`](#__init__self-world-simulator-api-elevatorapi---none)
       - [`add_call(self, floor: int, direction: str) -> None`](#add_callself-floor-int-direction-str---none)
@@ -102,8 +109,9 @@ classDiagram
     class ElevatorAPI {
         +Optional~Simulator~ world
         +ZmqClientThread zmq_client
-        +__init__(world: Simulator, zmq_ip: str, zmq_port: str) void
+        +__init__(world: Optional~Simulator~, zmq_ip: str, zmq_port: str) void
         +set_world(world: Simulator) void
+        +stop() void
         +_parse_and_execute(command: str) Optional~str~
         +_handle_call_elevator(floor: int, direction: str) Dict~str, Any~
         +_handle_select_floor(floor: int, elevator_id: int) Dict~str, Any~
@@ -113,7 +121,11 @@ classDiagram
         +send_door_opened_message(elevator_id: int) void
         +send_door_closed_message(elevator_id: int) void
         +send_floor_arrived_message(elevator_id: int, floor: int, direction: Optional~MoveDirection~) void
-        +fetch_states() Dict~str, Any~
+        +fetch_states() List~Dict~str, Any~~
+        +ui_call_elevator(data: Dict~str, Any~) str
+        +ui_select_floor(data: Dict~str, Any~) str
+        +ui_open_door(data: Dict~str, Any~) str
+        +ui_close_door(data: Dict~str, Any~) str
     }
 
     class Dispatcher {
@@ -272,10 +284,13 @@ Represents individual elevator units with autonomous operation including movemen
 #### `__init__(self, world: Optional[Simulator], zmq_ip: str = "127.0.0.1", zmq_port: str = "19982") -> None`
 **Functional Description:** Initializes the API with ZMQ communication thread and world reference.
 
+#### `stop(self) -> None`
+**Functional Description:** Stops the ZMQ communication thread and performs any necessary cleanup.
+
 #### `_parse_and_execute(self, command: str) -> Optional[str]`
 **Functional Description:** Parses incoming ZMQ commands and delegates to appropriate handler methods.
-- Supports: `call_up@floor`, `call_down@floor`, `select_floor@floor#elevator_id`, `open_door#elevator_id`, `close_door#elevator_id`, `reset`
-- Returns error messages for invalid commands or None for successful operations
+- Supports: `call_up@floor`, `call_down@floor`, `select_floor@floor#elevator_id`, `open_door@elevator_id` (e.g., `open_door@1` or `open_door@#1`), `close_door@elevator_id` (e.g., `close_door@1` or `close_door@#1`), `reset`
+- Returns error messages for invalid commands. For successful `open_door` and `close_door` operations, it returns a confirmation message (e.g., `door_opened#elevator_id`). For other successful operations like calls, floor selections, or reset, it typically returns `None` if no error occurred that would prevent a standard ZMQ confirmation (if any is expected beyond the action itself).
 
 #### `_handle_call_elevator(self, floor: int, direction: str) -> Dict[str, Any]`
 **Functional Description:** Processes elevator call requests from floors by delegating to dispatcher.
@@ -297,11 +312,29 @@ Represents individual elevator units with autonomous operation including movemen
 
 #### `send_floor_arrived_message(self, elevator_id: int, floor: int, direction: Optional[MoveDirection]) -> None`
 **Functional Description:** Sends floor arrival messages with appropriate direction prefix.
-- Format: `{direction_prefix}floor_{floor}_arrived#elevator_id`
+- Format: `{direction_prefix}floor_arrived@{floor}#{elevator_id}`
 - Direction prefix: "up_", "down_", or empty
 
-#### `fetch_states(self) -> Dict[str, Any]`
-**Functional Description:** Returns current state of all elevators for external monitoring and debugging.
+#### `fetch_states(self) -> List[Dict[str, Any]]`
+**Functional Description:** Returns current state of all elevators for frontend synchronization. Each dictionary in the list represents an elevator and contains keys such as `elevator_id`, `floor`, `state` (e.g., "IDLE", "MOVING_UP"), `door_state` (e.g., "OPEN", "CLOSED"), `direction` (e.g., "UP", "DOWN", "none"), `target_floors` (a list of floor numbers), and `target_floors_origin` (a dictionary mapping floor numbers to "outside" or "inside").
+
+#### `set_world(self, world: Simulator) -> None`
+**Functional Description:** Updates the world reference in the API instance. This is useful if the Simulator instance is not available at the time of ElevatorAPI initialization.
+
+#### `stop(self) -> None`
+**Functional Description:** Stops the ZMQ client thread gracefully, ensuring all connections are closed and resources are released. This is typically called during application shutdown.
+
+#### `ui_call_elevator(self, data: Dict[str, Any]) -> str`
+**Functional Description:** Handles 'call elevator' requests originating from the UI (likely via WebSocketBridge). Parses `floor` and `direction` from the `data` dictionary and delegates to the internal `_handle_call_elevator` method. Returns a JSON string indicating the outcome of the operation (success or error).
+
+#### `ui_select_floor(self, data: Dict[str, Any]) -> str`
+**Functional Description:** Handles 'select floor' requests originating from the UI. Parses `floor` and `elevatorId` from the `data` dictionary and delegates to the internal `_handle_select_floor` method. Returns a JSON string indicating the outcome.
+
+#### `ui_open_door(self, data: Dict[str, Any]) -> str`
+**Functional Description:** Handles 'open door' requests originating from the UI. Parses `elevatorId` from the `data` dictionary and delegates to the internal `_handle_open_door` method. Returns a JSON string indicating the outcome.
+
+#### `ui_close_door(self, data: Dict[str, Any]) -> str`
+**Functional Description:** Handles 'close door' requests originating from the UI. Parses `elevatorId` from the `data` dictionary and delegates to the internal `_handle_close_door` method. Returns a JSON string indicating the outcome.
 
 ### Dispatcher Class
 

@@ -56,7 +56,22 @@ class Elevator:
             self.arrival_time = current_time
             self.floor_arrival_announced = False
             self.serviced_current_arrival = False  # Reset serviced flag on floor change
-            self.last_state_change = current_time
+            self.last_state_change = current_time  # Handle floor announcements (regardless of movement state)
+        if (
+            self.arrival_time  # This is set when floor_changed is true
+            and not self.floor_arrival_announced
+            and current_time - self.arrival_time
+            >= 0.5  # Original delay for announcement
+        ):
+            self.floor_arrival_announced = True
+
+            # Check if we've reached a target floor in the task_queue (only when moving)
+            if (
+                self._is_moving()
+                and self.task_queue
+                and self.current_floor == self.task_queue[0].floor
+            ):
+                self._handle_arrival_at_target_floor(current_time)
 
         # First, check if elevator is moving
         if self._is_moving():
@@ -70,19 +85,6 @@ class Elevator:
                 if next_floor == 0:  # Skip floor 0
                     next_floor += current_direction_value
                 self._set_floor(next_floor)  # This will set floor_changed = True
-
-            # While moving, also handle floor announcements (original logic)
-            if (
-                self.arrival_time  # This is set when floor_changed is true
-                and not self.floor_arrival_announced
-                and current_time - self.arrival_time
-                >= 0.5  # Original delay for announcement
-            ):
-                self.floor_arrival_announced = True
-
-                # Check if we've reached a target floor in the task_queue
-                if self.task_queue and self.current_floor == self.task_queue[0].floor:
-                    self._handle_arrival_at_target_floor(current_time)
 
             return  # Skip other processing while moving or just after floor change
 
@@ -117,9 +119,7 @@ class Elevator:
         elif self.door_state == DoorState.OPEN:
             # Auto-close doors after timeout
             if current_time - self.last_door_change > self.door_timeout:
-                self.close_door()
-
-        # If idle with closed doors, check if we arrived at a target floor
+                self.close_door()  # If idle with closed doors, check if we arrived at a target floor
         elif (
             self.state == ElevatorState.IDLE
             and self.door_state == DoorState.CLOSED
@@ -127,6 +127,8 @@ class Elevator:
             and not self.serviced_current_arrival
         ):
             if self.task_queue and self.current_floor == self.task_queue[0].floor:
+                # Handle arrival at target floor
+                self._handle_arrival_at_target_floor(current_time)
                 # Open doors for target floor
                 self.open_door()
                 self.serviced_current_arrival = True
