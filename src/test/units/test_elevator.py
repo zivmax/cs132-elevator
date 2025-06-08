@@ -74,6 +74,9 @@ class TestElevatorUpdate:
         elevator.floor_arrival_announced = False
         elevator.task_queue = [Task(floor=2, call_id="test")]
         elevator.current_floor = 2
+        # Ensure the elevator is in a state where it would announce arrival
+        elevator.state = ElevatorState.IDLE
+        elevator.serviced_current_arrival = False
 
         with patch("time.time", return_value=current_time):
             with patch.object(
@@ -89,7 +92,13 @@ class TestElevatorUpdate:
         elevator.task_queue = [Task(floor=3, call_id="test")]
         elevator.current_floor = 3
         elevator.arrival_time = time.time() - 0.6
-        elevator.floor_arrival_announced = False
+        elevator.floor_arrival_announced = (
+            True  # Should be true to trigger _handle_arrival_at_target_floor
+        )
+        elevator.state = (
+            ElevatorState.IDLE
+        )  # Ensure elevator is IDLE to trigger handler
+        elevator.serviced_current_arrival = False  # Ensure not already serviced
 
         with patch.object(elevator, "_handle_arrival_at_target_floor") as mock_handle:
             elevator.update()

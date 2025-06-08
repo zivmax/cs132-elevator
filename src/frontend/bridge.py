@@ -85,7 +85,9 @@ class WebSocketBridge:
 
             arg_names = func_param_map[func_name]
 
-            if not arg_names:  # For functions like fetch_states that expect no arguments from client
+            if (
+                not arg_names
+            ):  # For functions like fetch_states that expect no arguments from client
                 json_response_from_api = func()
             else:
                 # For UI functions that expect a 'params' dictionary
@@ -101,7 +103,7 @@ class WebSocketBridge:
                     if request_id:
                         error_response["requestId"] = request_id
                     return json.dumps(error_response)
-                
+
                 # Call the function with the 'params' dictionary itself
                 json_response_from_api = func(params)
 

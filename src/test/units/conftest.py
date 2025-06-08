@@ -27,6 +27,20 @@ from backend.dispatcher import Dispatcher
 from backend.simulator import Simulator
 from backend.api.core import ElevatorAPI
 
+# Keep track of API instances that need cleanup
+_api_instances = []
+
+
+def pytest_sessionfinish(session, exitstatus):
+    """Clean up all API instances after all tests are done"""
+    for api in _api_instances:
+        try:
+            if hasattr(api, "zmq_client") and api.zmq_client:
+                api.stop()
+        except Exception as e:
+            print(f"Warning: Error during API cleanup: {e}")
+    _api_instances.clear()
+
 
 @pytest.fixture
 def mock_world():
@@ -45,22 +59,38 @@ def mock_api():
     return api
 
 
-@pytest.fixture  
+@pytest.fixture
 def api_without_zmq():
     """ElevatorAPI instance without ZMQ for unit testing"""
     # Create a mock ZMQ client to avoid actual network connections
     from unittest.mock import patch
-    
-    with patch('backend.api.core.ZmqClientThread') as mock_zmq:
+
+    with patch("backend.api.core.ZmqClientThread") as mock_zmq:
         mock_client = Mock()
         mock_client.connect_and_start = Mock()
         mock_client.stop = Mock()
+        mock_client.join = Mock()  # Add join method for thread cleanup
         mock_client.is_alive = Mock(return_value=False)
         mock_zmq.return_value = mock_client
-        
+
         api = ElevatorAPI(world=None)
         api.zmq_client = mock_client
-        yield api
+
+        # Register API instance for cleanup
+        _api_instances.append(api)
+
+        try:
+            yield api
+        finally:
+            # Ensure proper cleanup after each test
+            if hasattr(api, "zmq_client") and api.zmq_client:
+                try:
+                    api.stop()  # This will call zmq_client.stop() and zmq_client.join()
+                except Exception as e:
+                    print(f"Warning: Error during API cleanup in test: {e}")
+            # Remove from cleanup list since we handled it
+            if api in _api_instances:
+                _api_instances.remove(api)
 
 
 @pytest.fixture
@@ -128,7 +158,7 @@ def elevator_api():
     api = ElevatorAPI(world=None)
     yield api
     # Cleanup ZMQ thread to prevent hanging
-    if hasattr(api, 'zmq_client') and api.zmq_client:
+    if hasattr(api, "zmq_client") and api.zmq_client:
         api.zmq_client.stop()
         if api.zmq_client.is_alive():
             api.zmq_client.join(timeout=1.0)  # Wait up to 1 second for thread to stop

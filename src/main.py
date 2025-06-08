@@ -242,7 +242,9 @@ class ElevatorApp:
                 self.http_port = self._initial_http_port
                 print(f"Using user-specified HTTP port: {self.http_port}")
         else:  # Headless mode - HTTP server is now default
-            if self._initial_http_port is None or self._initial_http_port == 0:  # if port not specified or 0, find available
+            if (
+                self._initial_http_port is None or self._initial_http_port == 0
+            ):  # if port not specified or 0, find available
                 print(
                     "HTTP port not specified or set to 0 for headless mode, attempting to find an available port starting from 19090..."
                 )

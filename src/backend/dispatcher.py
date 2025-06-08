@@ -17,14 +17,11 @@ class Dispatcher:
         self.pending_calls: Dict[str, Call] = {}  # {call_id: Call}
 
     def add_call(self, floor: int, direction: str) -> None:
-        try:
-            move_direction = MoveDirection[direction.upper()]
-            call_id = self.add_outside_call(floor, move_direction)
-            self._process_pending_calls()
-        except KeyError:
-            # Invalid direction, handle gracefully
-            call_id = self.add_outside_call(floor, None)
-            self._process_pending_calls()
+        if direction is None or direction == "":
+            raise KeyError(f"Invalid direction: {direction}")
+        move_direction = MoveDirection[direction.upper()]
+        call_id = self.add_outside_call(floor, move_direction)
+        self._process_pending_calls()
 
     def _process_pending_calls(self) -> None:
         for call_id, call in list(self.pending_calls.items()):
