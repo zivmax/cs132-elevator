@@ -1,8 +1,19 @@
 {
     "cSpell.words": [
+        "conftest",
+        "deque",
+        "DISP",
+        "elif",
+        "hasattr",
         "headlessly",
         "imgs",
+        "MTTD",
+        "MTTR",
+        "pytest",
+        "pywebview",
         "pyzmq",
-        "UPPAAL"
+        "startswith",
+        "UPPAAL",
+        "UPPAUL"
     ]
 }
