@@ -241,26 +241,27 @@ class ElevatorApp:
             else:
                 self.http_port = self._initial_http_port
                 print(f"Using user-specified HTTP port: {self.http_port}")
-        else:  # Headless mode - HTTP server is optional
-            if self._initial_http_port is not None:
-                if self._initial_http_port == 0:  # 0 means find available port
-                    found_http_port = find_available_port(HOST, 19090, 19190)
-                    if found_http_port is None:
-                        print(
-                            "ElevatorApp: Warning - Could not find an available HTTP port for headless mode."
-                        )
-                        self.http_port = None  # Disable HTTP server
-                    else:
-                        self.http_port = found_http_port
-                        print(
-                            f"ElevatorApp: Auto-selected HTTP port {self.http_port} for headless mode"
-                        )
+        else:  # Headless mode - HTTP server is now default
+            if self._initial_http_port is None or self._initial_http_port == 0:  # if port not specified or 0, find available
+                print(
+                    "HTTP port not specified or set to 0 for headless mode, attempting to find an available port starting from 19090..."
+                )
+                found_http_port = find_available_port(HOST, 19090, 19190)
+                if found_http_port is None:
+                    print(
+                        "ElevatorApp: Warning - Could not find an available HTTP port for headless mode. HTTP server will not start.",
+                    )
+                    self.http_port = None
                 else:
-                    self.http_port = self._initial_http_port
-                    print(f"Using user-specified HTTP port: {self.http_port}")
-            else:
-                self.http_port = None
-                print("ElevatorApp: No HTTP server for headless mode")
+                    self.http_port = found_http_port
+                    print(
+                        f"ElevatorApp: Auto-selected HTTP port {self.http_port} for headless mode"
+                    )
+            else:  # User specified a specific port
+                self.http_port = self._initial_http_port
+                print(
+                    f"Using user-specified HTTP port: {self.http_port} for headless mode"
+                )
 
 
 if __name__ == "__main__":
