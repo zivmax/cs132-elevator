@@ -52,13 +52,9 @@
       - [`_get_movement_direction(self) -> int`](#_get_movement_directionself---int)
       - [`open_door(self) -> None`](#open_doorself---none)
       - [`close_door(self) -> None`](#close_doorself---none)
-      - [`_determine_direction(self) -> None`](#_determine_directionself---none)
-      - [`calculate_estimated_time(self, floor: int, direction: Optional[MoveDirection]) -> float`](#calculate_estimated_timeself-floor-int-direction-optionalmovedirection---float)
+      - [`_determine_direction(self) -> None`](#_determine_directionself---none)      - [`calculate_estimated_time(self, floor: int, direction: Optional[MoveDirection]) -> float`](#calculate_estimated_timeself-floor-int-direction-optionalmovedirection---float)
       - [`_handle_arrival_at_target_floor(self, current_time: float) -> None`](#_handle_arrival_at_target_floorself-current_time-float---none)
       - [`reset(self) -> None`](#resetself---none-1)
-    - [WebSocketBridge Class](#websocketbridge-class)
-      - [`__init__(self, backend_api: ElevatorAPI, host: str = "127.0.0.1", port: int = 18675) -> None`](#__init__self-backend_api-elevatorapi-host-str--127001-port-int--18675---none)
-      - [`_handle_message(self, message: str) -> str`](#_handle_messageself-message-str---str)
     - [Task Class](#task-class)
       - [`__init__(self, floor: int, call_id: Optional[str]) -> None`](#__init__self-floor-int-call_id-optionalstr---none)
       - [`is_outside_call(self) -> bool`](#is_outside_callself---bool)
@@ -87,11 +83,7 @@ The system follows a layered architecture with clear separation of concerns:
 - **Models**: Data structures and enumerations
 
 ### Communication Layer
-- **WebSocket Bridge**: Real-time frontend communication
-- **ZMQ Interface**: External test server communication
-
-### Frontend Layer
-- **Web UI**: HTML/CSS/JavaScript interface for visualization and interaction
+- **ZMQ Interface**: External test server communication for headless operation
 
 ## Class Diagram
 
@@ -172,18 +164,7 @@ classDiagram
         -_get_movement_direction() int
         -_determine_direction() void
         -_handle_arrival_at_target_floor(current_time: float) void
-    }
-
-    class WebSocketBridge {
-        +ElevatorAPI backend_api
-        +WebSocketServer server
-        +__init__(backend_api: ElevatorAPI, host: str, port: int) void
-        -_handle_message(message: str) str
-        +broadcast_state_update() void
-        +cleanup() void
-    }
-
-    class Task {
+    }    class Task {
         +int floor
         +Optional~str~ call_id
         +__init__(floor: int, call_id: Optional~str~) void
@@ -246,12 +227,9 @@ classDiagram
     Elevator --> ElevatorState : state
     Elevator --> DoorState : door_state
     Elevator --> MoveDirection : direction
-    
-    Task --> Call : references via call_id
+      Task --> Call : references via call_id
     Call --> MoveDirection : direction
     Call --> CallState : state
-    
-    WebSocketBridge o-- ElevatorAPI : backend_api
     
     ElevatorAPI o-- Simulator : world reference
 ```
@@ -262,7 +240,7 @@ classDiagram
 The central orchestrator that manages all simulation entities and coordinates the main update loop.
 
 ### ElevatorAPI  
-Central interface handling all external communication (ZMQ and WebSocket) and delegating commands to appropriate components.
+Central interface handling external ZMQ communication and delegating commands to appropriate components.
 
 ### Dispatcher
 Manages elevator call assignment using efficiency algorithms and optimizes task queues for each elevator.
@@ -323,7 +301,7 @@ Represents individual elevator units with autonomous operation including movemen
 - Direction prefix: "up_", "down_", or empty
 
 #### `fetch_states(self) -> Dict[str, Any]`
-**Functional Description:** Returns current state of all elevators for frontend synchronization.
+**Functional Description:** Returns current state of all elevators for external monitoring and debugging.
 
 ### Dispatcher Class
 
@@ -460,7 +438,7 @@ sequenceDiagram
             end
             E->>E: Check if arrived at target
             alt Arrived and announcement delay passed
-                E->>E: _handle_arrival_at_target_floor()
+                E->>E: _handle_arrival_at_target_floors()
                 E->>API: send_floor_arrived_message()
                 API->>ZMQ: floor_arrived message
             end
@@ -562,53 +540,164 @@ sequenceDiagram
 #### `reset(self) -> None`
 **Functional Description:** Resets elevator to initial state (floor 1, idle, doors closed, empty task queue).
 
-### WebSocketBridge Class
-
-#### `__init__(self, backend_api: ElevatorAPI, host: str = "127.0.0.1", port: int = 18675) -> None`
-**Functional Description:** Initializes WebSocket bridge with backend API reference and starts WebSocket server.
-
-#### `_handle_message(self, message: str) -> str`
-**Functional Description:** Parses JSON messages from frontend and delegates to appropriate API methods.
-- Supports UI functions: `ui_call_elevator`, `ui_select_floor`, `ui_open_door`, `ui_close_door`
-- Returns JSON responses with state updates
-
 ### Task Class
 
 #### `__init__(self, floor: int, call_id: Optional[str]) -> None`
-**Functional Description:** Initializes a Task object.
-- `floor`: The target floor for this task.
-- `call_id`: An optional identifier linking this task to an external call (e.g., a `Call` object). If `None`, it's an internal task (e.g., floor selection from within the elevator).
+**Functional Description:** Initializes a task with target floor and optional call ID for outside calls.
 
 #### `is_outside_call(self) -> bool`
-**Functional Description:** Determines if the task originated from an outside call (i.e., has an associated `call_id`).
-- Returns `True` if `call_id` is not `None`, `False` otherwise.
+**Functional Description:** Returns True if task represents an outside call (has call_id), False for inside calls.
 
 ### Call Class
 
 #### `__init__(self, call_id: str, floor: int, direction: Optional[MoveDirection]) -> None`
-**Functional Description:** Initializes a Call object representing a request from a floor.
-- `call_id`: A unique identifier for the call.
-- `floor`: The floor from which the call was made.
-- `direction`: The desired direction of travel (UP or DOWN). Can be `None` if not specified, though typically present for floor calls.
-- Initializes `state` to `PENDING` and `assigned_elevator` to `None`.
+**Functional Description:** Initializes a call with unique ID, target floor, and direction.
 
 #### `assign_to_elevator(self, elevator_idx: int) -> None`
-**Functional Description:** Assigns the call to a specific elevator.
-- Sets `assigned_elevator` to the provided `elevator_idx`.
-- Updates the call `state` to `ASSIGNED`.
+**Functional Description:** Assigns call to specified elevator and updates state to ASSIGNED.
 
 #### `complete(self) -> None`
-**Functional Description:** Marks the call as completed.
-- Updates the call `state` to `COMPLETED`.
+**Functional Description:** Marks call as completed.
 
 #### `is_pending(self) -> bool`
-**Functional Description:** Checks if the call state is `PENDING`.
-- Returns `True` if `state` is `CallState.PENDING`, `False` otherwise.
+**Functional Description:** Returns True if call state is PENDING.
 
 #### `is_assigned(self) -> bool`
-**Functional Description:** Checks if the call state is `ASSIGNED`.
-- Returns `True` if `state` is `CallState.ASSIGNED`, `False` otherwise.
+**Functional Description:** Returns True if call state is ASSIGNED.
 
 #### `is_completed(self) -> bool`
-**Functional Description:** Checks if the call state is `COMPLETED`.
-- Returns `True` if `state` is `CallState.COMPLETED`, `False` otherwise.
+**Functional Description:** Returns True if call state is COMPLETED.
+
+## Components Specifications
+
+### S1: Target Floor Implementation
+
+This part here will explain the implementation and click event of floor button in detail.
+
+#### S1.1 Target floor state Logic Implementation
+
+- The *floor button* can be selected during **all** elevator states, the elevator will head to the target floor after concluding the current business and enter **MOVING_UP** or **MOVING_DOWN** state.
+- The different *floor button* can be stacked, the `Dispatcher` will organize the optimal route to stop at all target floors.
+
+#### S1.2 Click Event
+
+Once being clicked, the *floor button* is considered `'activated'` in **red** and will not respond to further clicking until the elevator has reached the target floor and the button turns back to the `'idle'` in **blue**.
+
+#### S1.3 Backend Command
+
+User Operation:
+**"select_floor"**: ["-1#1", "-1#2", "1#1", "1#2", "2#1", "2#2", "3#1", "3#2"]
+
+select_floor@i#k means a user in elevator #k selects to go to the i-th floor.
+
+Corresponding System Events:
+**"floor_arrived"**:["up","down",""],["-1","1","2","3"],["#1", "#2"]
+
+"up_floor_i_arrived#k"， indicating that elevator #k has arrived at the i-th floor while moving upwards. "floor_i_arrived#k",indicating that elevator #k has stopped at the i-th floor.
+
+### S2：Call Up/Down Implementation
+
+This part here will explain the implementation and click event of *call up/down button* in detail.
+
+#### S2.1: Click Event
+
+Same as floor button, the **call up/down** button is `'activated'` in **red** and will not respond until the elevator has arrived at the passenger's floor, the button will then turn back to `'idle'` in **blue**.
+
+#### S2.2: Backend Command
+
+User Operations:
+**"call_down"**: ["3", "2", "1"]
+**"call_up"**: ["-1", "1", "2"]
+
+call_up/call_down@i signifies the user at floor i pressing the button to call the elevator to go upwards/downwards.
+
+### S3：Door Open/Close Implementation
+
+This part here will explain the implementation and click event of *door open/close button* in detail.
+
+#### S3.1 OPEN/CLOSE state Logic Implementation
+
+**S3.1.1 Open Button**:
+
+- The *Open Button* will only function when the elevator is in **IDLE** state and will not respond if pressed when elevator is in the state of **MOVING_UP** or **MOVING_DOWN**.
+- When functioning properly, the door will enter the state of **OPENING**.
+- After **1s** of animation playing, the door will enter the state of **OPEN**.
+- If no external action is posed when the door is in **OPEN** state, after **3s**, the door wil automatically close, the **CLOSING** state detailed will be explained in *Close Button* section.
+- Pressing the *Open Button* when the door is already in the **OPEN** state has no effect on the auto-close timer based on the current backend implementation; the door will still auto-close after the standard 3-second timeout if no other actions are taken.
+
+**S3.1.2 Close Button**:
+
+- The *Close Button* will only function when the door is in the **OPEN** state and the elevator is not moving. It will not respond if the door is already **CLOSED**, **CLOSING**, or **OPENING**, or if the elevator is moving.
+- When functioning properly, the door will enter the state of **CLOSING**.
+- After **1s** of animation playing, the door will enter the state of **CLOSED**.
+
+#### S3.2 Click event
+
+The specific click event of the `Open/Close button` will be presented in the UML sequence diagram below.
+
+#### S3.3 Backend Command
+
+User Operations:
+**"open_door"**: ["#1", "#2"]
+**"close_door"**: ["#1", "#2"]
+open_door/close_door#i means open/close the doors of elevator #i
+
+Corresponding System Events
+**"door_opened"**: ["#1", "#2"]
+**"door_closed"**: ["#1", "#2"]
+
+door_opened/door_closed#i means the doors of elevator #i have opened/closed
+
+### S4: Dispatcher Implementation
+
+This section describes how the Dispatcher efficiently manages elevator operations, handling user requests and assigning them to the most suitable elevator based on real-time conditions.
+
+#### S4.1 Dispatching Logic
+
+The `Dispatcher` is responsible for managing and assigning outside floor calls (e.g., call up/down from a landing) to the most suitable elevator. It calculates estimated service times and uses this to assign calls. For all assigned tasks, including internal floor selections made by passengers inside an elevator, the `Dispatcher` optimizes the elevator's task queue to ensure an efficient travel path. Manual door open/close requests, however, are handled directly by the `Elevator` objects (via the `ElevatorAPI`) and do not involve the `Dispatcher`'s assignment or optimization logic.
+
+#### S4.2 Elevator Assignment Strategy
+
+When a passenger calls an elevator from a floor:
+
+1. The `Dispatcher` calculates an estimated service time for each elevator.
+2. The elevator with the shortest estimated time is assigned to the request.
+3. The requested floor is added to that elevator's queue.
+4. The sequence of target floors is optimized according to the elevator's current direction and position.
+
+#### S4.3 Sequence Optimization Strategy
+
+The `Dispatcher` employs a modified SCAN algorithm (elevator algorithm) to minimize wait times and reduce unnecessary direction changes:
+
+- **MOVING_UP**: Serves floors above the current floor first in ascending order, then floors below in ascending order.
+- **MOVING_DOWN**: Serves floors below the current floor first in descending order, then floors above in ascending order.
+- **IDLE**: Chooses the nearest floor first, then proceeds through subsequent stops in an optimal sequence.
+
+### S5: State Update Implementation
+
+This section will show how each elevator's state is updated in real-time, managing movement progress, door operations, and transitions to ensure they stay in sync with user interactions and operational logic.
+
+#### S5.1 Timed Movement
+
+The `Elevator` object's `update` method, called periodically by the `Simulator`, manages the elevator's movement. It tracks the time elapsed since movement started and, once a single-floor travel time is complete, updates the elevator's current floor. This process ensures the elevator's position and movement status are accurately reflected in the simulation.
+
+#### S5.2 Door and State Transitions
+
+- When door operations are initiated: The door transitions from **CLOSED** to **OPENING** if an open command is valid. It transitions from **OPEN** to **CLOSING** if a close command is valid (e.g., close button pressed while open and idle) or if the auto-close timer for an open door expires.
+- If subsequent calls or target floors exist, the elevator switches to **MOVING_UP** or **MOVING_DOWN** until all destinations are served, ultimately returning to **IDLE**.
+
+### Summary Table: Backend Commands and Events
+
+| Command/Event         | Description/When Emitted                                 |
+|----------------------|----------------------------------------------------------|
+| select_floor@i#k     | User in elevator #k selects floor i                      |
+| call_up@i            | User at floor i calls elevator up                        |
+| call_down@i          | User at floor i calls elevator down                      |
+| open_door#k          | User requests to open door of elevator #k                |
+| close_door#k         | User requests to close door of elevator #k               |
+| reset                | System reset to initial state                            |
+| floor_arrived@i#k    | Elevator #k arrived at floor i                           |
+| up_floor_arrived@i#k | Elevator #k arrived at floor i moving up                 |
+| down_floor_arrived@i#k| Elevator #k arrived at floor i moving down              |
+| door_opened#k        | Elevator #k door opened                                  |
+| door_closed#k        | Elevator #k door closed                                  |

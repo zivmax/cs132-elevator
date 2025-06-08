@@ -53,7 +53,7 @@ This document establishes complete traceability from high-level requirements thr
 - **REQ-R4.x**: Visual component requirements
 
 ### Use Cases (UC)
-- **UC-01** through **UC-10**: System use cases
+- **UC-01** through **UC-09**: System use cases
 
 ### Specifications (SPEC)
 - **SPEC-S1.x**: Target floor implementation
@@ -127,7 +127,6 @@ This document establishes complete traceability from high-level requirements thr
 | UC-07 | Move Elevator              | System                  | ✅ Implemented |
 | UC-08 | Auto Door Operations       | System                  | ✅ Implemented |
 | UC-09 | State Synchronization      | System                  | ✅ Implemented |
-| UC-10 | External API Communication | System, External System | ✅ Implemented |
 
 ---
 
@@ -270,7 +269,7 @@ This document establishes complete traceability from high-level requirements thr
 | TEST-ST.4 | System reset functionality      | Complete state restoration                     | UC-05                             |
 | TEST-ST.5 | Concurrent multi-user scenarios | Load testing and race conditions               | All use cases                     |
 | TEST-ST.6 | Edge case handling              | Boundary conditions and error cases            | All use cases                     |
-| TEST-ST.7 | Multi-interface commands        | ZMQ and WebSocket simultaneous use             | UC-10, UC-09                      |
+| TEST-ST.7 | Multi-interface commands        | ZMQ and WebSocket simultaneous use             | UC-09                      |
 | TEST-ST.8 | Long-duration operation         | System stability over time                     | All use cases                     |
 
 ---
@@ -286,7 +285,7 @@ This document establishes complete traceability from high-level requirements thr
 | REQ-R2.1    | UC-02, UC-03, UC-04 | SPEC-S1.2, SPEC-S2.2, SPEC-S3.2 | CODE-C1.1, CODE-C2.1 | TEST-UT.1, TEST-UT.2 | TEST-IT.3            | TEST-ST.1   | ✅      |
 | REQ-R2.2    | UC-08               | SPEC-S3.2, SPEC-S3.3, SPEC-S3.4 | CODE-C1.1            | TEST-UT.1            | TEST-IT.3            | TEST-ST.3   | ✅      |
 | REQ-R2.3    | UC-07               | SPEC-S4.1, SPEC-S4.2, SPEC-S4.3 | CODE-C1.1            | TEST-UT.3            | TEST-IT.2            | TEST-ST.1   | ✅      |
-| REQ-R3.1    | UC-06, UC-10        | SPEC-S2.4, SPEC-S6.2, SPEC-S6.3 | CODE-C2.1, CODE-C2.3 | TEST-UT.5            | TEST-IT.5            | TEST-ST.7   | ✅      |
+| REQ-R3.1    | UC-06               | SPEC-S2.4, SPEC-S6.2, SPEC-S6.3 | CODE-C2.1, CODE-C2.3 | TEST-UT.5            | TEST-IT.5            | TEST-ST.7   | ✅      |
 | REQ-R3.2    | UC-06               | SPEC-S5.1, SPEC-S5.4            | CODE-C1.2            | TEST-UT.4            | TEST-IT.1            | TEST-ST.5   | ✅      |
 | REQ-R3.3    | UC-06, UC-07        | SPEC-S5.2, SPEC-S4.2            | CODE-C1.2, CODE-C1.1 | TEST-UT.4, TEST-UT.3 | TEST-IT.1, TEST-IT.2 | TEST-ST.2   | ✅      |
 | REQ-R3.4    | UC-06               | SPEC-S5.1, SPEC-S5.3            | CODE-C1.2            | TEST-UT.4            | TEST-IT.1            | TEST-ST.1   | ✅      |
