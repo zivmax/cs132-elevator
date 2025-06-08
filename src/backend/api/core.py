@@ -1,28 +1,23 @@
 import json
-from typing import TYPE_CHECKING, Dict, Any, Optional, List, Union  # Added Union
+from typing import Dict, Any, Optional, List
 
-from backend.models import MoveDirection
-
+from backend.models import (
+    MoveDirection,
+)  # Assuming this is the correct import for MoveDirection
 from ..models import (
     validate_floor,
     validate_elevator_id,
-    validate_direction,
     MIN_FLOOR,
     MAX_FLOOR,
 )
 from .zmq import (
-    ZmqCoordinator,
-    BaseCommand,
-    CallCommand,
-    SelectFloorCommand,
-    OpenDoorCommand,
-    CloseDoorCommand,
-    ResetCommand,
-    ParseError,
-)  # Import new command/error types
+    ZmqClientThread,
+)  # Changed from ZmqCoordinator and other specific command/error types
 
 
-# ZMQ client now provided by World; no direct instantiation needed
+# TYPE_CHECKING import for Simulator can remain if used elsewhere, or be removed if not.
+from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from backend.simulator import Simulator
 
@@ -30,10 +25,24 @@ if TYPE_CHECKING:
 class ElevatorAPI:
     """API for interacting with the elevator backend"""
 
-    def __init__(self, world: Optional["Simulator"], zmq_coordinator: "ZmqCoordinator"):
+    def __init__(
+        self,
+        world: Optional["Simulator"],
+        zmq_ip: str = "127.0.0.1",
+        zmq_port: str = "19982",
+    ):
         self.world = world
-        self.zmq_coordinator = zmq_coordinator  # Changed from zmq_manager
-        print("ElevatorAPI: Initialized with ZmqCoordinator.")
+        # Initialize ZmqClientThread directly, passing self for message processing
+        self.zmq_client = ZmqClientThread(
+            serverIp=zmq_ip,
+            port=zmq_port,
+            api_instance=self,  # Pass the API instance itself
+        )
+        # Start the ZMQ client connection and listening thread
+        self.zmq_client.connect_and_start()
+        print(
+            "ElevatorAPI: Initialized with ZmqClientThread for automatic message processing."
+        )
 
     def set_world(
         self, world: "Simulator"
@@ -41,113 +50,147 @@ class ElevatorAPI:
         """Update the world reference"""
         self.world = world
 
-    # Removed set_client method
-
-    # Removed update(self) method as ZMQ message polling is now handled by World via ZmqManager
-
-    # Methods to receive and parse messages from frontend/clients (WebSocket) or ZMQ (via World)
-    def parse_and_handle_message(
-        self, command_or_error: Union[BaseCommand, ParseError]
-    ) -> None:
-        """Handles a parsed command object or a ParseError from ZmqCoordinator.
-        Passes resulting data or error information to ZmqCoordinator for formatting and sending.
+    # _parse_and_execute will be called by ZmqClientThread when a message is received.
+    def _parse_and_execute(self, command: str) -> Optional[str]:
         """
-        print(f"API received command/error object: {command_or_error}")
+        Parses a command string (from ZMQ) and executes it.
+        Returns a response string to be sent back to the ZMQ server, or None.
+
+        ZMQ Command Format Examples:
+        - call_up@1 / call_down@1
+        - select_floor@3#1 (floor 3, elevator 1)
+        - open_door#1
+        - close_door#1
+        - reset
+        """
+        print(f"API: Received command: {command}")
 
         if not self.world:
-            # Prepare error data for ZmqCoordinator to format and send
-            error_info = {"type": "world_not_initialized_error"}
-            print(f"API Error: World not initialized.")
-            self.zmq_coordinator.send_formatted_message_to_server(error_info)
-            return
-
-        response_data_from_handler: Optional[Dict[str, Any]] = None
-        command_context_str: str = ""
-        parsed_elevator_id_for_response: Optional[int] = None
-
-        if isinstance(command_or_error, ParseError):
-            # Pass ParseError details to ZmqCoordinator for formatting
-            error_info = {
-                "type": "parse_error",
-                "error_type": command_or_error.error_type,
-                "detail": command_or_error.detail,
-            }
             print(
-                f"API received ParseError: type='{command_or_error.error_type}', detail='{command_or_error.detail}'"
+                f"API Error: World not initialized. Cannot process command: {command}"
             )
-            self.zmq_coordinator.send_formatted_message_to_server(
-                error_info, command_context_str=command_or_error.original_message
-            )
-            return
+            # Format error for ZMQ as per spec (e.g., error:world_not_initialized)
+            return "error:world_not_initialized"
 
-        command_context_str = command_or_error.original_message
+        parts = command.strip().split("@")
+        operation_full = parts[0]
+        args_str = parts[1] if len(parts) > 1 else ""
 
         try:
-            if isinstance(command_or_error, CallCommand):
-                response_data_from_handler = self._handle_call_elevator(
-                    command_or_error.floor, command_or_error.direction
-                )
-            elif isinstance(command_or_error, SelectFloorCommand):
-                response_data_from_handler = self._handle_select_floor(
-                    command_or_error.floor, command_or_error.elevator_id
-                )
-            elif isinstance(command_or_error, OpenDoorCommand):
-                parsed_elevator_id_for_response = command_or_error.elevator_id
-                response_data_from_handler = self._handle_open_door(
-                    command_or_error.elevator_id
-                )
-            elif isinstance(command_or_error, CloseDoorCommand):
-                parsed_elevator_id_for_response = command_or_error.elevator_id
-                response_data_from_handler = self._handle_close_door(
-                    command_or_error.elevator_id
-                )
-            elif isinstance(command_or_error, ResetCommand):
-                response_data_from_handler = self._handle_reset()
+            if operation_full.startswith("call_"):
+                direction = operation_full.split("_")[1]  # up or down
+                if not args_str:  # Ensure floor number is provided
+                    return self._format_failure_for_zmq(
+                        command, "Missing floor for call command"
+                    )
+                floor = int(args_str)
+                response_dict = self._handle_call_elevator(floor, direction)
+                if response_dict.get("status") == "error":
+                    return self._format_failure_for_zmq(
+                        command, response_dict.get("message", "call_failed")
+                    )
+                return None  # Or a specific success ack if defined by a new spec
+
+            elif operation_full == "select_floor":
+                if (
+                    not args_str or "#" not in args_str
+                ):  # Ensure args are present and correct format
+                    return self._format_failure_for_zmq(
+                        command,
+                        "Invalid format for select_floor. Expected: select_floor@FLOOR#ELEVATOR_ID",
+                    )
+                floor_str, elevator_id_str = args_str.split("#")
+                floor = int(floor_str)
+                elevator_id = int(elevator_id_str)
+                response_dict = self._handle_select_floor(floor, elevator_id)
+                # Similar to call, select_floor success might not need a direct ZMQ response unless an error occurs.
+                if response_dict.get("status") == "error":
+                    return self._format_failure_for_zmq(
+                        command, response_dict.get("message", "select_floor_failed")
+                    )
+                return None  # Or a specific success ack
+
+            elif operation_full == "open_door":
+                if not args_str:  # Ensure elevator ID is provided
+                    return self._format_failure_for_zmq(
+                        command, "Missing elevator ID for open_door"
+                    )
+                elevator_id = int(
+                    args_str.replace("#", "")
+                )  # Allow open_door#1 or open_door@1
+                response_dict = self._handle_open_door(elevator_id)
+                if response_dict.get("status") == "success":
+                    return f"door_opened#{elevator_id}"
+                else:
+                    return self._format_failure_for_zmq(
+                        command, response_dict.get("message", "open_door_failed")
+                    )
+
+            elif operation_full == "close_door":
+                if not args_str:  # Ensure elevator ID is provided
+                    return self._format_failure_for_zmq(
+                        command, "Missing elevator ID for close_door"
+                    )
+                elevator_id = int(
+                    args_str.replace("#", "")
+                )  # Allow close_door#1 or close_door@1
+                response_dict = self._handle_close_door(elevator_id)
+                if response_dict.get("status") == "success":
+                    return f"door_closed#{elevator_id}"
+                else:
+                    return self._format_failure_for_zmq(
+                        command, response_dict.get("message", "close_door_failed")
+                    )
+
+            elif operation_full == "reset":
+                response_dict = self._handle_reset()
+                # Reset success might not need a direct ZMQ response unless an error occurs.
+                if response_dict.get("status") == "error":
+                    return self._format_failure_for_zmq(
+                        command, response_dict.get("message", "reset_failed")
+                    )
+                # The spec implies reset is acknowledged by the system resetting, not a specific message.
+                # However, if a success message is desired: return "system_reset_acknowledged" or similar.
+                return None
+
             else:
-                error_info = {
-                    "type": "unknown_command_type_error",
-                    "detail": command_context_str,
-                }
-                print(f"API Error: Unknown command type for '{command_context_str}'")
-                self.zmq_coordinator.send_formatted_message_to_server(
-                    error_info, command_context_str=command_context_str
+                return self._format_failure_for_zmq(
+                    command, f"Unknown operation: {operation_full}"
                 )
-                return
 
-        except Exception as e:  # Catch errors from internal handlers
-            error_info = {
-                "type": "handler_processing_error",
-                "error_type": "handler_exception",  # Generic slug for this type of error
-                "detail": f"{command_context_str}:{str(e)}",
-            }
-            print(
-                f"API Error during handler execution for '{command_context_str}': {str(e)}"
+        except ValueError as ve:
+            # Error during parsing arguments (e.g., int conversion)
+            return self._format_failure_for_zmq(
+                command, f"Invalid argument value: {ve}"
             )
-            self.zmq_coordinator.send_formatted_message_to_server(
-                error_info, command_context_str=command_context_str
-            )
-            return
+        except Exception as e:
+            # Catch-all for other unexpected errors during command processing
+            print(f"API Error executing command '{command}': {e}")
+            return self._format_failure_for_zmq(command, "internal_error")
 
-        # Pass response from internal handlers to ZmqCoordinator for formatting and sending
-        if response_data_from_handler:
-            self.zmq_coordinator.send_formatted_message_to_server(
-                response_data_from_handler,
-                command_context_str=command_context_str,
-                parsed_elevator_id_for_response=parsed_elevator_id_for_response,
-            )
-        else:
-            # This case should ideally be covered by handlers always returning a dict,
-            # or specific error handling above.
-            error_info = {
-                "type": "internal_processing_error",
-                "detail": command_context_str,
-            }
-            print(
-                f"API Warning: No response data from handler for command '{command_context_str}'"
-            )
-            self.zmq_coordinator.send_formatted_message_to_server(
-                error_info, command_context_str=command_context_str
-            )
+    def _format_failure_for_zmq(self, operation_string: str, reason: str) -> str:
+        """Formats a failure message for ZMQ.
+        Example: error:call_up@1_failed:invalid_floor
+        The exact format might need to align with a specific spec if provided.
+        A common pattern is error:original_command:reason_slug
+        """
+        reason_slug = reason.lower().replace(" ", "_").replace("'", "")
+        action_type = operation_string.split("@")[0].split("#")[
+            0
+        ]  # get base action like call_up, select_floor, open_door
+
+        formatted_error = f"error:{action_type}_failed:{reason_slug}"
+        print(
+            f"API: Operation '{operation_string}' failed. Sending ZMQ error: {formatted_error}"
+        )
+        return formatted_error
+
+    def stop(self):
+        """Stops the ZMQ client thread gracefully."""
+        print("Elevator: Stopping ZMQ client...")
+        self.zmq_client.stop()
+        self.zmq_client.join()  # Wait for the thread to finish
+        print("Elevator: ZMQ client stopped.")
 
     # Internal handlers, previously part of Dispatcher or direct calls from old API methods
     # Modified to return Dict instead of JSON string
@@ -265,8 +308,8 @@ class ElevatorAPI:
         try:
             for elevator in self.world.elevators:
                 elevator.reset()
-            # Potentially reset dispatcher or other world states if necessary
-            # self.world.dispatcher.reset() # If dispatcher has a reset method
+            if self.world.dispatcher:
+                self.world.dispatcher.reset()  # Assuming dispatcher has a reset method
             return {
                 "status": "success",
                 "action": "reset",
@@ -276,34 +319,33 @@ class ElevatorAPI:
             return {
                 "status": "error",
                 "message": f"Failed to reset simulation: {str(e)}",
-            }  # Methods to send messages/updates to the ZMQ client (test server)
+            }
 
+    # Methods to send messages/updates to the ZMQ client (test server)
+    # These are now called by the ZmqClientThread directly if _parse_and_execute returns a message,
+    # or can be called by other parts of the system (e.g. Simulator for floor_arrived)
     def _send_message_to_client(self, message: str) -> None:
-        """Sends a generic raw message to the ZMQ client via ZmqCoordinator.
-        This is now primarily for messages not originating from parse_and_handle_message flow,
-        like floor_arrived.
-        """
-        if self.zmq_coordinator:
-            self.zmq_coordinator.send_message_to_server(
-                message
-            )  # Direct send, no formatting here
+        """Sends a generic raw message to the ZMQ client via ZmqClientThread's send_msg method."""
+        if self.zmq_client:
+            self.zmq_client.send_msg(message)
             print(f"API: Sent ZMQ message: {message}")
         else:
             print(
-                f"API: ZmqCoordinator not available. Cannot send ZMQ message: {message}"
+                f"API: ZmqClientThread not available. Cannot send ZMQ message: {message}"
             )
 
     def send_floor_arrived_message(
         self, elevator_id: int, floor: int, direction: Optional[MoveDirection]
     ) -> None:
         """Sends a floor arrival message in the format: {direction_prefix}floor_arrived@{floor_number}#{elevator_id}
-        e.g., up_floor_arrived@1#1, floor_arrived@2#2
+        e.g., up_floor_arrived@1#1, floor_arrived@2#2 (no direction if IDLE/target reached)
         """
         prefix = ""
         if direction == MoveDirection.UP:
             prefix = "up_"
         elif direction == MoveDirection.DOWN:
             prefix = "down_"
+        # If direction is None or IDLE, no prefix is used, as per spec for arrival at target.
 
         message = f"{prefix}floor_arrived@{floor}#{elevator_id}"
         self._send_message_to_client(message)
@@ -317,12 +359,6 @@ class ElevatorAPI:
         """Sends a door closed message."""
         message = f"door_closed#{elevator_id}"
         self._send_message_to_client(message)
-
-    # Existing methods that are called by the frontend (e.g., via webserver)
-    # These will now use the internal handlers or directly call world/dispatcher methods.
-    # Their return type might change if they are expected to return the raw dict now,
-    # or they can still return JSON if the webserver part expects JSON.
-    # For now, let's assume they still need to return JSON for the webserver.
 
     def ui_call_elevator(self, data: Dict[str, Any]) -> str:
         """Handle call elevator request from frontend"""
@@ -392,7 +428,7 @@ class ElevatorAPI:
             print(f"Error in close_door: {e}")
             return json.dumps({"status": "error", "message": str(e)})
 
-    def ui_fetch_states(self) -> List[Dict[str, Any]]:
+    def fetch_states(self) -> List[Dict[str, Any]]:
         """Get updated elevator states from the backend"""
         elevator_states = []
 

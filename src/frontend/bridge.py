@@ -2,11 +2,8 @@ import json
 from typing import TYPE_CHECKING, Optional
 
 from backend.api.core import ElevatorAPI
-from backend.api.server import WebSocketServer  # WebSocketServer is still in server.py
+from backend.api.server import WebSocketServer
 from backend.models import MoveDirection
-
-if TYPE_CHECKING:
-    from backend.simulator import Simulator
 
 
 class WebSocketBridge:
@@ -14,23 +11,20 @@ class WebSocketBridge:
 
     def __init__(
         self,
-        world: "Simulator",
-        api: ElevatorAPI,  # Added api parameter
+        backend_api: ElevatorAPI,
         host: str = "127.0.0.1",
         port: int = 18675,
     ):
-        # World object should provide access to its ZmqCoordinator instance
-        if not world or not hasattr(world, "zmq_coordinator"):
-            raise ValueError(
-                "World object with a ZmqCoordinator instance is required for WebSocketBridge."
-            )
-        self.api = api  # Use the passed-in ElevatorAPI instance
+        # The ElevatorAPI instance now manages ZMQ communication internally.
+        # WebSocketBridge primarily interacts with ElevatorAPI for data and commands.
+        self.backend_api = backend_api
         self.server = WebSocketServer(
             host=host, port=port, message_handler=self._handle_message
         )
 
         # Start the WebSocket server
         self.server.start()
+        print("WebSocketBridge: Initialized and WebSocket server started.")
 
     def _handle_message(self, message: str) -> str:
         """Parse JSON message, call API function, and return result as JSON string"""
@@ -43,71 +37,56 @@ class WebSocketBridge:
                     {"status": "error", "message": "Missing 'function' in request"}
                 )
 
-            # Get the function from ElevatorAPI by its string name
-            func = getattr(self.api, func_name, None)
+            func = getattr(self.backend_api, func_name, None)
 
             if not func or not callable(func):
+                print(
+                    f"WebSocketBridge: No such API function or function not callable: {func_name}"
+                )
                 return json.dumps(
-                    {"status": "error", "message": f"No such API function: {func_name}"}
+                    {
+                        "status": "error",
+                        "message": f"No such API function or function not callable: {func_name}",
+                    }
                 )
 
-            # Call the function with params
-            # The API functions are expected to handle the params dictionary directly
-            result = func(params)
+            # Call the function. Ensure it's designed to be called this way.
+            result = func(
+                params
+            )  # Assuming API methods like ui_call_elevator take params dict
 
-            # Ensure the result is a JSON string before returning
             if not isinstance(result, str):
-                # If api returned a dict, dump it to json string
-                return json.dumps(result)
-            return result
+                return json.dumps(result)  # If API returns dict, convert to JSON string
+            return result  # If API already returns JSON string
+
         except Exception as e:
+            print(f"WebSocketBridge: Error handling message: {e}")
             return json.dumps({"status": "error", "message": str(e)})
 
-    def _sync_elevator_state(
-        self,
-        elevator_id: int,
-        floor: int,
-        state: str,
-        door_state: str,
-        direction: Optional[MoveDirection],  # Change type to Optional[MoveDirection]
-        target_floors: list,
-        target_floors_origin: dict = None,
-    ):
-        """Send elevator state update to frontend"""
-        direction_value = None
-        if isinstance(direction, MoveDirection):
-            direction_value = direction.value
-        elif direction is None:
-            direction_value = None
-
-        data = {
-            "id": elevator_id,
-            "floor": floor,
-            "state": state,
-            "doorState": door_state,
-            "direction": direction_value,
-            "targetFloors": target_floors,
-            "targetFloorsOrigin": target_floors_origin or {},
-        }
-        if self.server.is_running:
-            self.server.send_elevator_states(data)
-
     def sync_backend(self):
-        """Update the UI based on backend state"""
+        """Update the UI based on backend state by merging elevator state sync and backend fetching."""
         # Get elevator states from the API
-        elevator_states = self.api.ui_fetch_states()
+        elevator_states = self.backend_api.fetch_states()
 
         # Update the UI for each elevator
         for elevator_state in elevator_states:
-            self._sync_elevator_state(
-                elevator_id=elevator_state["elevator_id"],
-                floor=elevator_state["floor"],
-                state=elevator_state["state"],
-                door_state=elevator_state["door_state"],
-                direction=elevator_state["direction"],
-                target_floors=elevator_state["target_floors"],
-                target_floors_origin=elevator_state.get("target_floors_origin", {}),
-            )
+            direction = elevator_state["direction"]
+            if isinstance(direction, MoveDirection):
+                direction_value = direction.value
+            else:
+                direction_value = None
+
+            data = {
+                "id": elevator_state["elevator_id"],
+                "floor": elevator_state["floor"],
+                "state": elevator_state["state"],
+                "doorState": elevator_state["door_state"],
+                "direction": direction_value,
+                "targetFloors": elevator_state["target_floors"],
+                "targetFloorsOrigin": elevator_state.get("target_floors_origin", {}),
+            }
+            if self.server.is_running:
+                self.server.send_elevator_states(data)
 
     def stop(self):
         """Stop the WebSocket server"""

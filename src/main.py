@@ -35,12 +35,11 @@ class ElevatorApp:
         signal.signal(signal.SIGINT, self._signal_handler)
         signal.signal(signal.SIGTERM, self._signal_handler)
 
-        self.backend = Simulator(zmq_port=zmq_port)
-        self.elevator_api = ElevatorAPI(self.backend, self.backend.zmq_coordinator)
+        self.backend = Simulator()
+        self.elevator_api = ElevatorAPI(self.backend, zmq_port=zmq_port)
         self.backend.set_api_and_initialize_components(self.elevator_api)
         self.bridge = WebSocketBridge(
-            world=self.backend,
-            api=self.elevator_api,
+            backend_api=self.elevator_api,
             port=self.ws_port,
         )
 
@@ -97,41 +96,34 @@ class ElevatorApp:
         self.running = False  # Ensure all loops are signaled to stop
 
         # Stop frontend if it exists and was initialized
-        if hasattr(self, "frontend") and self.frontend:
-            try:
-                print("Stopping frontend...")
-                self.frontend.stop()
-                print("Frontend stopped.")
-            except Exception as e:
-                print(f"Error stopping frontend: {e}")
+        try:
+            print("Stopping frontend...")
+            self.frontend.stop()
+            print("Frontend stopped.")
+        except Exception as e:
+            print(f"Error stopping frontend: {e}")
 
         # Stop WebSocket bridge
-        if hasattr(self, "bridge") and self.bridge:
-            try:
-                self.bridge.stop()
-                print("WebSocket bridge stopped.")
-            except Exception as e:
-                print(f"Error stopping WebSocket bridge: {e}")
+        try:
+            self.bridge.stop()
+            print("WebSocket bridge stopped.")
+        except Exception as e:
+            print(f"Error stopping WebSocket bridge: {e}")
 
         # Stop HTTP server if running
-        if hasattr(self, "http_server") and self.http_server:
-            try:
-                self.http_server.stop()
-                print("HTTP server stopped.")
-            except Exception as e:
-                print(f"Error stopping HTTP server: {e}")
+        try:
+            self.http_server.stop()
+            print("HTTP server stopped.")
+        except Exception as e:
+            print(f"Error stopping HTTP server: {e}")
 
-        # Stop backend ZMQ coordinator
-        if (
-            hasattr(self, "backend")
-            and self.backend
-            and hasattr(self.backend, "zmq_coordinator")
-        ):
-            try:
-                self.backend.zmq_coordinator.stop()
-                print("ZMQ coordinator stopped.")
-            except Exception as e:
-                print(f"Error stopping ZMQ coordinator: {e}")
+        # Stop the backend simulator
+        try:
+            print("Stopping backend simulator...")
+            self.backend.stop()  # Assuming backend has a stop method that handles its own threads
+            print("Backend simulator stopped.")
+        except Exception as e:
+            print(f"Error stopping backend simulator: {e}")
 
         # Join the backend thread if it's running
         if self.backend_thread and self.backend_thread.is_alive():
@@ -146,23 +138,6 @@ class ElevatorApp:
         """Update the backend state and process messages"""
         current_time = time.time()
         if current_time - self.last_update_time >= 0.1:  # Update 10 times per second
-            # Removed self.frontend.update() as pywebview handles its own rendering
-            # based on WebSocket messages.
-
-            if (
-                self.backend
-                and hasattr(self.backend, "zmq_coordinator")
-                and hasattr(self.backend.zmq_coordinator, "has_queued_messages")
-                and hasattr(self.backend.zmq_coordinator, "get_next_msg_for_processing")
-                and hasattr(self.backend, "api")
-            ):
-                zmq_coord = self.backend.zmq_coordinator
-                while zmq_coord.has_queued_messages():
-                    command_or_error_obj, timestamp = (
-                        zmq_coord.get_next_msg_for_processing()
-                    )
-                    if command_or_error_obj:
-                        self.backend.api.parse_and_handle_message(command_or_error_obj)
 
             self.backend.update()
             self.bridge.sync_backend()

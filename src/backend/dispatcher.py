@@ -176,6 +176,11 @@ class Dispatcher:
         """Process all pending calls and assign them to the most suitable elevators."""
         self._process_pending_calls()
 
+    def reset(self) -> None:
+        """Resets the dispatcher state, clearing all pending calls."""
+        self.pending_calls.clear()
+        print("Dispatcher: Reset successful, all pending calls cleared.")
+
     def _get_elevator_committed_direction(
         self, elevator: "Elevator"
     ) -> Optional[MoveDirection]:
