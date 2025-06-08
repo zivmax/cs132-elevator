@@ -73,24 +73,32 @@
       - [`is_assigned(self) -> bool`](#is_assignedself---bool)
       - [`is_completed(self) -> bool`](#is_completedself---bool)
   - [Components Specifications](#components-specifications)
+    - [G1: Overall GUI Design](#g1-overall-gui-design)
+      - [G1.1 Main Interface Layout](#g11-main-interface-layout)
+      - [G1.2 Visual Design Elements](#g12-visual-design-elements)
     - [S1: Target Floor Implementation](#s1-target-floor-implementation)
-      - [S1.1 Target floor state Logic Implementation](#s11-target-floor-state-logic-implementation)
-      - [S1.2 Click Event](#s12-click-event)
-      - [S1.3 Backend Command](#s13-backend-command)
+      - [S1.1 GUI](#s11-gui)
+      - [S1.2 Target floor state Logic Implementation](#s12-target-floor-state-logic-implementation)
+      - [S1.3 Click Event](#s13-click-event)
+      - [S1.4 Backend Command](#s14-backend-command)
     - [S2：Call Up/Down Implementation](#s2call-updown-implementation)
-      - [S2.1: Click Event](#s21-click-event)
-      - [S2.2: Backend Command](#s22-backend-command)
+      - [S2.1: GUI](#s21-gui)
+      - [S2.2: Click Event](#s22-click-event)
+      - [S2.3: Backend Command](#s23-backend-command)
     - [S3：Door Open/Close Implementation](#s3door-openclose-implementation)
-      - [S3.1 OPEN/CLOSE state Logic Implementation](#s31-openclose-state-logic-implementation)
-      - [S3.2 Click event](#s32-click-event)
-      - [S3.3 Backend Command](#s33-backend-command)
+      - [S3.1 GUI](#s31-gui)
+      - [S3.2 OPEN/CLOSE state Logic Implementation](#s32-openclose-state-logic-implementation)
+      - [S3.3 Click event](#s33-click-event)
+      - [S3.4 Backend Command](#s34-backend-command)
     - [S4: Dispatcher Implementation](#s4-dispatcher-implementation)
-      - [S4.1 Dispatching Logic](#s41-dispatching-logic)
-      - [S4.2 Elevator Assignment Strategy](#s42-elevator-assignment-strategy)
-      - [S4.3 Sequence Optimization Strategy](#s43-sequence-optimization-strategy)
+      - [S4.1 GUI Visualization](#s41-gui-visualization)
+      - [S4.2 Dispatching Logic](#s42-dispatching-logic)
+      - [S4.3 Elevator Assignment Strategy](#s43-elevator-assignment-strategy)
+      - [S4.4 Sequence Optimization Strategy](#s44-sequence-optimization-strategy)
     - [S5: State Update Implementation](#s5-state-update-implementation)
-      - [S5.1 Timed Movement](#s51-timed-movement)
-      - [S5.2 Door and State Transitions](#s52-door-and-state-transitions)
+      - [S5.1 GUI State Visualization](#s51-gui-state-visualization)
+      - [S5.2 Timed Movement](#s52-timed-movement)
+      - [S5.3 Door and State Transitions](#s53-door-and-state-transitions)
     - [Summary Table: Backend Commands and Events](#summary-table-backend-commands-and-events)
 
 
@@ -623,20 +631,60 @@ sequenceDiagram
 
 ## Components Specifications
 
+### G1: Overall GUI Design
+
+This section describes the graphical user interface design and layout of the elevator system.
+
+#### G1.1 Main Interface Layout
+
+The elevator system features a comprehensive control panel that displays both elevators and all floor controls in a single view:
+
+<div align=center>
+<img src="./imgs/GUIs/panel.png" width="800"/>
+</div>
+
+The interface includes:
+- Two elevator shafts (Elevator #1 and Elevator #2) with visual representation of elevator cars
+- Floor call buttons (up/down) positioned on each floor
+- Internal elevator control panels with floor selection buttons
+- Door open/close controls within each elevator
+- Real-time status indicators showing elevator position and state
+
+#### G1.2 Visual Design Elements
+
+The interface uses a consistent color scheme and visual language:
+- **Pale Blue**: Default state for inactive buttons
+- **Red**: Active/selected state for pressed buttons
+- **Dark Gray**: Pressed state for door control buttons
+- **Elevator Cars**: Animated representation showing current floor position
+- **Door Animation**: Visual feedback for door opening/closing operations
+
 ### S1: Target Floor Implementation
 
-This part here will explain the implementation and click event of floor button in detail.
+This part here will explain the implementation and click event of floor button in detail along with its graphical user interface.
 
-#### S1.1 Target floor state Logic Implementation
+#### S1.1 GUI
+
+The four available floors are arranged symmetrically and are all initially **pale blue**, once a passenger selects the target floor, it highlights in **red** as shown below:
+
+<div align=center>
+<img src="./imgs/GUIs/target_floor.png" width="400"/>
+</div>
+
+#### S1.2 Target floor state Logic Implementation
 
 - The *floor button* can be selected during **all** elevator states, the elevator will head to the target floor after concluding the current business and enter **MOVING_UP** or **MOVING_DOWN** state.
 - The different *floor button* can be stacked, the `Dispatcher` will organize the optimal route to stop at all target floors.
 
-#### S1.2 Click Event
+#### S1.3 Click Event
 
-Once being clicked, the *floor button* is considered `'activated'` in **red** and will not respond to further clicking until the elevator has reached the target floor and the button turns back to the `'idle'` in **blue**.
+Once being clicked, the *floor button* is considered `'activated'` in **red** and will not respond to further clicking until the elevator has reached the target floor and the button turns back to the `'idle'` in **blue**, the specific click event will be presented in the UML sequence diagram below:
 
-#### S1.3 Backend Command
+<div align=center>
+<img src="./imgs/seqs/floor_button_seq.png" width="600"/>
+</div>
+
+#### S1.4 Backend Command
 
 User Operation:
 **"select_floor"**: ["-1#1", "-1#2", "1#1", "1#2", "2#1", "2#2", "3#1", "3#2"]
@@ -650,13 +698,25 @@ Corresponding System Events:
 
 ### S2：Call Up/Down Implementation
 
-This part here will explain the implementation and click event of *call up/down button* in detail.
+This part here will explain the implementation and click event of *call up/down button* in detail along with its graphical user interface.
 
-#### S2.1: Click Event
+#### S2.1: GUI
 
-Same as floor button, the **call up/down** button is `'activated'` in **red** and will not respond until the elevator has arrived at the passenger's floor, the button will then turn back to `'idle'` in **blue**.
+Floor 1 and 2 have both call up and down button while floor 3 only has call down and floor -1 only has call up. All buttons are initially **pale blue**, once a passenger presses, it highlights in **red** as shown below:
 
-#### S2.2: Backend Command
+<div align=center>
+<img src="./imgs/GUIs/call.png" width="200"/>
+</div>
+
+#### S2.2: Click Event
+
+Same as floor button, the **call up/down** button is `'activated'` in **red** and will not respond until the elevator has arrived at the passenger's floor, the button will then turn back to `'idle'` in **blue**, the specific click event will be presented in the UML sequence diagram below:
+
+<div align=center>
+<img src="./imgs/seqs/call_up_button_seq.png" width="600"/>
+</div>
+
+#### S2.3: Backend Command
 
 User Operations:
 **"call_down"**: ["3", "2", "1"]
@@ -666,9 +726,24 @@ call_up/call_down@i signifies the user at floor i pressing the button to call th
 
 ### S3：Door Open/Close Implementation
 
-This part here will explain the implementation and click event of *door open/close button* in detail.
+This part here will explain the implementation and click event of *door open/close button* in detail along with its graphical user interface.
 
-#### S3.1 OPEN/CLOSE state Logic Implementation
+#### S3.1 GUI
+
+The Animation of door Open/Close will be played after received functioning signals.
+
+<div align=center>
+<img src="./imgs/GUIs/ele_door.png" width="400"/>
+</div>
+
+**Open/Close** door buttons are placed inside Elevator 1 and 2,
+the icon will **darken** once being pressed and begin to function.
+
+<div align=center>
+<img src="./imgs/GUIs/door.png" width="400"/>
+</div>
+
+#### S3.2 OPEN/CLOSE state Logic Implementation
 
 **S3.1.1 Open Button**:
 
@@ -684,11 +759,15 @@ This part here will explain the implementation and click event of *door open/clo
 - When functioning properly, the door will enter the state of **CLOSING**.
 - After **1s** of animation playing, the door will enter the state of **CLOSED**.
 
-#### S3.2 Click event
+#### S3.3 Click event
 
-The specific click event of the `Open/Close button` will be presented in the UML sequence diagram below.
+The specific click event of the `Open/Close button` will be presented in the UML sequence diagram below:
 
-#### S3.3 Backend Command
+<div align=center>
+<img src="./imgs/seqs/door_open_seq.png" width="600"/>
+</div>
+
+#### S3.4 Backend Command
 
 User Operations:
 **"open_door"**: ["#1", "#2"]
@@ -703,13 +782,24 @@ door_opened/door_closed#i means the doors of elevator #i have opened/closed
 
 ### S4: Dispatcher Implementation
 
-This section describes how the Dispatcher efficiently manages elevator operations, handling user requests and assigning them to the most suitable elevator based on real-time conditions.
+This section describes how the Dispatcher efficiently manages elevator operations, handling user requests and assigning them to the most suitable elevator based on real-time conditions, along with its visual representation in the GUI.
 
-#### S4.1 Dispatching Logic
+#### S4.1 GUI Visualization
+
+The dispatcher's decision-making process is visualized through the elevator system's real-time display. Users can observe:
+
+- **Elevator Position**: Real-time visual representation of each elevator's current floor
+- **Direction Indicators**: Visual cues showing elevator movement direction (up/down arrows)
+- **Active Calls**: Highlighted call buttons showing pending requests
+- **Queue Status**: Floor buttons inside elevators showing selected destinations
+
+The interface provides immediate visual feedback when the dispatcher assigns calls to elevators, with button states changing to reflect the assignment.
+
+#### S4.2 Dispatching Logic
 
 The `Dispatcher` is responsible for managing and assigning outside floor calls (e.g., call up/down from a landing) to the most suitable elevator. It calculates estimated service times and uses this to assign calls. For all assigned tasks, including internal floor selections made by passengers inside an elevator, the `Dispatcher` optimizes the elevator's task queue to ensure an efficient travel path. Manual door open/close requests, however, are handled directly by the `Elevator` objects (via the `ElevatorAPI`) and do not involve the `Dispatcher`'s assignment or optimization logic.
 
-#### S4.2 Elevator Assignment Strategy
+#### S4.3 Elevator Assignment Strategy
 
 When a passenger calls an elevator from a floor:
 
@@ -718,7 +808,7 @@ When a passenger calls an elevator from a floor:
 3. The requested floor is added to that elevator's queue.
 4. The sequence of target floors is optimized according to the elevator's current direction and position.
 
-#### S4.3 Sequence Optimization Strategy
+#### S4.4 Sequence Optimization Strategy
 
 The `Dispatcher` employs a modified SCAN algorithm (elevator algorithm) to minimize wait times and reduce unnecessary direction changes:
 
@@ -728,16 +818,27 @@ The `Dispatcher` employs a modified SCAN algorithm (elevator algorithm) to minim
 
 ### S5: State Update Implementation
 
-This section will show how each elevator's state is updated in real-time, managing movement progress, door operations, and transitions to ensure they stay in sync with user interactions and operational logic.
+This section will show how each elevator's state is updated in real-time, managing movement progress, door operations, and transitions to ensure they stay in sync with user interactions and operational logic, along with their visual representation.
 
-#### S5.1 Timed Movement
+#### S5.1 GUI State Visualization
+
+The elevator system provides comprehensive visual feedback for all state changes:
+
+- **Elevator Movement**: Smooth animation of elevator cars moving between floors
+- **Door States**: Animated door opening/closing with visual indicators
+- **Button States**: Real-time color changes reflecting button activation and completion
+- **Floor Indicators**: Current floor highlighting and direction arrows
+- **Queue Display**: Visual representation of pending floor requests within each elevator
+
+#### S5.2 Timed Movement
 
 The `Elevator` object's `update` method, called periodically by the `Simulator`, manages the elevator's movement. It tracks the time elapsed since movement started and, once a single-floor travel time is complete, updates the elevator's current floor. This process ensures the elevator's position and movement status are accurately reflected in the simulation.
 
-#### S5.2 Door and State Transitions
+#### S5.3 Door and State Transitions
 
 - When door operations are initiated: The door transitions from **CLOSED** to **OPENING** if an open command is valid. It transitions from **OPEN** to **CLOSING** if a close command is valid (e.g., close button pressed while open and idle) or if the auto-close timer for an open door expires.
 - If subsequent calls or target floors exist, the elevator switches to **MOVING_UP** or **MOVING_DOWN** until all destinations are served, ultimately returning to **IDLE**.
+
 
 ### Summary Table: Backend Commands and Events
 
