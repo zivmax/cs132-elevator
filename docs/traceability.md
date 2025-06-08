@@ -79,121 +79,145 @@ This document establishes complete traceability from high-level requirements thr
 
 ## Requirements Traceability
 
-### REQ-R1: Passenger Perspective Requirements
+Based on the functional requirements from requirement.md, the following requirements have been identified:
 
-| ID       | Description                                            | Priority | Status        |
-| -------- | ------------------------------------------------------ | -------- | ------------- |
-| REQ-R1.1 | See elevator's current movement direction and location | High     | ✅ Implemented |
-| REQ-R1.2 | Request elevator service by pressing up/down buttons   | High     | ✅ Implemented |
-| REQ-R1.3 | Control doors manually (open/close buttons)            | Medium   | ✅ Implemented |
-| REQ-R1.4 | Select destination floor using internal panel          | High     | ✅ Implemented |
+### FR1: Elevator Movement Management
 
-### REQ-R2: Elevator Compartment Requirements
+| ID      | Description                                                    | Priority | Status        | Source    |
+| ------- | -------------------------------------------------------------- | -------- | ------------- | --------- |
+| FR1.1   | System shall operate two elevators independently across floors -1, 1, 2, and 3 | High | ✅ Implemented | FR1.1 |
+| FR1.2   | Each elevator shall move at a rate of one floor per 2 seconds | High     | ✅ Implemented | FR1.2     |
+| FR1.3   | System shall skip floor 0 during movement calculations        | High     | ✅ Implemented | FR1.3     |
+| FR1.4   | Elevators shall announce arrival at each floor with directional context | Medium | ✅ Implemented | FR1.4 |
 
-| ID       | Description                                               | Priority | Status        |
-| -------- | --------------------------------------------------------- | -------- | ------------- |
-| REQ-R2.1 | Receive commands from passengers through buttons          | High     | ✅ Implemented |
-| REQ-R2.2 | Automatically close/open doors when passengers enter/exit | High     | ✅ Implemented |
-| REQ-R2.3 | Take orders from control system and move to target floor  | High     | ✅ Implemented |
+### FR2: Door Operation Management
 
-### REQ-R3: Elevator Control System Requirements
+| ID      | Description                                                    | Priority | Status        | Source    |
+| ------- | -------------------------------------------------------------- | -------- | ------------- | --------- |
+| FR2.1   | Elevator doors shall automatically open upon arrival at target floors | High | ✅ Implemented | FR2.1 |
+| FR2.2   | Doors shall remain open for 3 seconds before automatically closing | High | ✅ Implemented | FR2.2 |
+| FR2.3   | Users shall be able to manually open and close doors         | Medium   | ✅ Implemented | FR2.3     |
+| FR2.4   | Door operations (opening/closing) shall take 1 second each   | Medium   | ✅ Implemented | FR2.4     |
+| FR2.5   | System shall prevent movement while doors are not fully closed | High   | ✅ Implemented | FR2.5     |
 
-| ID       | Description                                                | Priority | Status        |
-| -------- | ---------------------------------------------------------- | -------- | ------------- |
-| REQ-R3.1 | Receive signals from elevator compartments                 | High     | ✅ Implemented |
-| REQ-R3.2 | Resolve conflicts when multiple passengers request service | High     | ✅ Implemented |
-| REQ-R3.3 | Arrange optimal elevator route scheduling                  | High     | ✅ Implemented |
-| REQ-R3.4 | Dispatch the closest elevator                              | High     | ✅ Implemented |
+### FR3: Call Dispatching System
 
-### REQ-R4: Visual Component Requirements
+| ID      | Description                                                    | Priority | Status        | Source    |
+| ------- | -------------------------------------------------------------- | -------- | ------------- | --------- |
+| FR3.1   | System shall accept floor calls with directional preference (up/down) | High | ✅ Implemented | FR3.1 |
+| FR3.2   | Dispatcher shall assign calls to the elevator with minimum estimated service time | High | ✅ Implemented | FR3.2 |
+| FR3.3   | System shall handle multiple simultaneous calls efficiently  | High     | ✅ Implemented | FR3.3     |
+| FR3.4   | Inside elevator calls shall take priority over outside calls for the same elevator | Medium | ✅ Implemented | FR3.4 |
 
-| ID       | Description                                        | Priority | Status        |
-| -------- | -------------------------------------------------- | -------- | ------------- |
-| REQ-R4.1 | Display door status and current floor location     | High     | ✅ Implemented |
-| REQ-R4.2 | Provide visual feedback for pressed buttons        | Medium   | ✅ Implemented |
-| REQ-R4.3 | Offer intuitive user interface with clear labeling | Medium   | ✅ Implemented |
-| REQ-R4.4 | Show real-time updates of elevator status          | High     | ✅ Implemented |
+### FR4: User Interface Requirements
+
+| ID      | Description                                                    | Priority | Status        | Source    |
+| ------- | -------------------------------------------------------------- | -------- | ------------- | --------- |
+| FR4.1   | Web interface shall provide real-time elevator status updates | High     | ✅ Implemented | FR4.1     |
+| FR4.2   | Users shall be able to call elevators from any floor         | High     | ✅ Implemented | FR4.2     |
+| FR4.3   | Users shall be able to select destination floors from inside elevators | High | ✅ Implemented | FR4.3 |
+| FR4.4   | System shall provide visual feedback for all user interactions | Medium  | ✅ Implemented | FR4.4     |
+| FR4.5   | Debug panel shall display detailed elevator states when enabled | Low    | ✅ Implemented | FR4.5     |
 
 ### Use Cases
 
-| ID    | Description                | Actors                  | Status        |
-| ----- | -------------------------- | ----------------------- | ------------- |
-| UC-01 | Call Elevator from Floor   | User, External System   | ✅ Implemented |
-| UC-02 | Select Destination Floor   | User, External System   | ✅ Implemented |
-| UC-03 | Open Door Manually         | User, External System   | ✅ Implemented |
-| UC-04 | Close Door Manually        | User, External System   | ✅ Implemented |
-| UC-05 | Reset System               | Admin, External System  | ✅ Implemented |
-| UC-06 | Dispatch Elevator          | System                  | ✅ Implemented |
-| UC-07 | Move Elevator              | System                  | ✅ Implemented |
-| UC-08 | Auto Door Operations       | System                  | ✅ Implemented |
-| UC-09 | State Synchronization      | System                  | ✅ Implemented |
+Based on the use case descriptions from requirement.md:
+
+| ID    | Description                | Actors                  | Priority | Status        | Source |
+| ----- | -------------------------- | ----------------------- | -------- | ------------- | ------ |
+| UC-01 | Call Elevator from Floor   | User, External System   | High     | ✅ Implemented | UC1    |
+| UC-02 | Select Destination Floor   | User, External System   | High     | ✅ Implemented | UC2    |
+| UC-03 | Open Door Manually         | User, External System   | Medium   | ✅ Implemented | UC3    |
+| UC-04 | Close Door Manually        | User, External System   | Medium   | ✅ Implemented | UC4    |
+| UC-05 | Reset System               | Admin, External System  | Low      | ✅ Implemented | UC5    |
+| UC-06 | Dispatch Elevator          | System                  | High     | ✅ Implemented | UC6    |
+| UC-07 | Move Elevator              | System                  | High     | ✅ Implemented | UC7    |
+| UC-08 | Auto Door Operations       | System                  | High     | ✅ Implemented | UC8    |
+| UC-09 | State Synchronization      | System                  | High     | ✅ Implemented | UC9    |
 
 ---
 
 ## Specifications Traceability
 
-### SPEC-S1: Target Floor Implementation
+Based on the method specifications from specification.md:
 
-| ID        | Description                             | Related Requirements | Status        |
-| --------- | --------------------------------------- | -------------------- | ------------- |
-| SPEC-S1.1 | Floor button GUI design and states      | REQ-R1.4, REQ-R4.2   | ✅ Implemented |
-| SPEC-S1.2 | Floor button state logic implementation | REQ-R1.4, REQ-R2.1   | ✅ Implemented |
-| SPEC-S1.3 | Multiple floor selection stacking       | REQ-R3.3             | ✅ Implemented |
-| SPEC-S1.4 | Backend command processing              | REQ-R2.1, REQ-R3.1   | ✅ Implemented |
+### SPEC-S1: Simulator Implementation
 
-### SPEC-S2: Call Up/Down Implementation
+| ID        | Description                                  | Related Requirements | Status        | Methods |
+| --------- | -------------------------------------------- | -------------------- | ------------- | ------- |
+| SPEC-S1.1 | Initialize simulation with empty references  | FR1.1                | ✅ Implemented | `Simulator.__init__()` |
+| SPEC-S1.2 | Set API reference and initialize components  | FR1.1, FR3.1         | ✅ Implemented | `Simulator.set_api_and_initialize_components()` |
+| SPEC-S1.3 | Main update loop for simulation state       | FR1.1, FR4.1         | ✅ Implemented | `Simulator.update()` |
+| SPEC-S1.4 | Reset all simulation components to initial state | UC-05             | ✅ Implemented | `Simulator.reset()` |
 
-| ID        | Description                        | Related Requirements | Status        |
-| --------- | ---------------------------------- | -------------------- | ------------- |
-| SPEC-S2.1 | Call button GUI design             | REQ-R1.2, REQ-R4.2   | ✅ Implemented |
-| SPEC-S2.2 | Call button click event handling   | REQ-R1.2, REQ-R2.1   | ✅ Implemented |
-| SPEC-S2.3 | Direction-based floor restrictions | REQ-R1.2             | ✅ Implemented |
-| SPEC-S2.4 | Backend call processing            | REQ-R3.1, REQ-R3.4   | ✅ Implemented |
+### SPEC-S2: ElevatorAPI Implementation
 
-### SPEC-S3: Door Control Implementation
+| ID        | Description                                  | Related Requirements | Status        | Methods |
+| --------- | -------------------------------------------- | -------------------- | ------------- | ------- |
+| SPEC-S2.1 | Initialize API with ZMQ communication       | FR3.1                | ✅ Implemented | `ElevatorAPI.__init__()` |
+| SPEC-S2.2 | Parse and execute incoming ZMQ commands     | FR3.1, FR4.2, FR4.3  | ✅ Implemented | `ElevatorAPI._parse_and_execute()` |
+| SPEC-S2.3 | Handle elevator call requests from floors   | FR3.1, FR4.2         | ✅ Implemented | `ElevatorAPI._handle_call_elevator()` |
+| SPEC-S2.4 | Handle floor selection from within elevators | FR4.3               | ✅ Implemented | `ElevatorAPI._handle_select_floor()` |
+| SPEC-S2.5 | Manual door open operations                  | FR2.3                | ✅ Implemented | `ElevatorAPI._handle_open_door()` |
+| SPEC-S2.6 | Manual door close operations                 | FR2.3                | ✅ Implemented | `ElevatorAPI._handle_close_door()` |
+| SPEC-S2.7 | Send door opened messages via ZMQ           | FR1.4                | ✅ Implemented | `ElevatorAPI.send_door_opened_message()` |
+| SPEC-S2.8 | Send door closed messages via ZMQ           | FR1.4                | ✅ Implemented | `ElevatorAPI.send_door_closed_message()` |
+| SPEC-S2.9 | Send floor arrival messages with direction  | FR1.4                | ✅ Implemented | `ElevatorAPI.send_floor_arrived_message()` |
+| SPEC-S2.10| Fetch current state of all elevators        | FR4.1                | ✅ Implemented | `ElevatorAPI.fetch_states()` |
+| SPEC-S2.11| Handle UI-originated call elevator requests | FR4.2                | ✅ Implemented | `ElevatorAPI.ui_call_elevator()` |
+| SPEC-S2.12| Handle UI-originated floor selection        | FR4.3                | ✅ Implemented | `ElevatorAPI.ui_select_floor()` |
+| SPEC-S2.13| Handle UI-originated door open requests     | FR2.3                | ✅ Implemented | `ElevatorAPI.ui_open_door()` |
+| SPEC-S2.14| Handle UI-originated door close requests    | FR2.3                | ✅ Implemented | `ElevatorAPI.ui_close_door()` |
 
-| ID        | Description                   | Related Requirements | Status        |
-| --------- | ----------------------------- | -------------------- | ------------- |
-| SPEC-S3.1 | Manual door control interface | REQ-R1.3, REQ-R4.1   | ✅ Implemented |
-| SPEC-S3.2 | Automatic door operations     | REQ-R2.2             | ✅ Implemented |
-| SPEC-S3.3 | Door state management         | REQ-R2.2, REQ-R4.1   | ✅ Implemented |
-| SPEC-S3.4 | Door timeout and auto-close   | REQ-R2.2             | ✅ Implemented |
+### SPEC-S3: Dispatcher Implementation
 
-### SPEC-S4: Movement Control Implementation
+| ID        | Description                                  | Related Requirements | Status        | Methods |
+| --------- | -------------------------------------------- | -------------------- | ------------- | ------- |
+| SPEC-S3.1 | Initialize dispatcher with world and API refs| FR3.1               | ✅ Implemented | `Dispatcher.__init__()` |
+| SPEC-S3.2 | Add outside call request and process queue   | FR3.1, FR3.2         | ✅ Implemented | `Dispatcher.add_call()` |
+| SPEC-S3.3 | Create new call object with unique ID       | FR3.1                | ✅ Implemented | `Dispatcher.add_outside_call()` |
+| SPEC-S3.4 | Assign task to specific elevator            | FR3.2, FR3.4         | ✅ Implemented | `Dispatcher.assign_task()` |
+| SPEC-S3.5 | Retrieve direction for pending call by ID   | FR3.1                | ✅ Implemented | `Dispatcher.get_call_direction()` |
+| SPEC-S3.6 | Mark call as completed and remove from queue| FR3.3                | ✅ Implemented | `Dispatcher.complete_call()` |
+| SPEC-S3.7 | Process all pending calls with optimization | FR3.2, FR3.3         | ✅ Implemented | `Dispatcher._process_pending_calls()` |
+| SPEC-S3.8 | Optimize elevator task queue using SCAN     | FR3.2, FR3.3         | ✅ Implemented | `Dispatcher._optimize_task_queue()` |
 
-| ID        | Description                        | Related Requirements | Status        |
-| --------- | ---------------------------------- | -------------------- | ------------- |
-| SPEC-S4.1 | Elevator movement states           | REQ-R2.3, REQ-R4.1   | ✅ Implemented |
-| SPEC-S4.2 | Direction determination logic      | REQ-R3.3             | ✅ Implemented |
-| SPEC-S4.3 | Floor-by-floor movement simulation | REQ-R2.3             | ✅ Implemented |
-| SPEC-S4.4 | Movement request handling          | REQ-R2.3, REQ-R3.1   | ✅ Implemented |
+### SPEC-S4: Elevator Control and Movement
 
-### SPEC-S5: Dispatcher Implementation
+| ID        | Description                                  | Related Requirements | Status        | Source |
+| --------- | -------------------------------------------- | -------------------- | ------------- | ------ |
+| SPEC-S4.1 | Elevator movement states and transitions    | FR1.2, FR1.3, FR2.5  | ✅ Implemented | Elevator class |
+| SPEC-S4.2 | Direction determination logic               | FR1.2, FR3.2         | ✅ Implemented | Elevator class |
+| SPEC-S4.3 | Floor-by-floor movement simulation         | FR1.2, FR1.3         | ✅ Implemented | Elevator class |
+| SPEC-S4.4 | Movement request handling and validation    | FR2.5                | ✅ Implemented | Elevator class |
 
-| ID        | Description                     | Related Requirements | Status        |
-| --------- | ------------------------------- | -------------------- | ------------- |
-| SPEC-S5.1 | Call assignment algorithm       | REQ-R3.2, REQ-R3.4   | ✅ Implemented |
-| SPEC-S5.2 | Task queue optimization         | REQ-R3.3             | ✅ Implemented |
-| SPEC-S5.3 | Elevator suitability evaluation | REQ-R3.4             | ✅ Implemented |
-| SPEC-S5.4 | Conflict resolution             | REQ-R3.2             | ✅ Implemented |
+### SPEC-S5: Door Control Implementation
+
+| ID        | Description                                  | Related Requirements | Status        | Source |
+| --------- | -------------------------------------------- | -------------------- | ------------- | ------ |
+| SPEC-S5.1 | Automatic door operations on arrival       | FR2.1                | ✅ Implemented | Elevator class |
+| SPEC-S5.2 | Door timeout and auto-close mechanism      | FR2.2                | ✅ Implemented | Elevator class |
+| SPEC-S5.3 | Manual door control interface               | FR2.3                | ✅ Implemented | API + Elevator |
+| SPEC-S5.4 | Door operation timing (1 second each)      | FR2.4                | ✅ Implemented | Elevator class |
+| SPEC-S5.5 | Door state management and validation        | FR2.5                | ✅ Implemented | Elevator class |
 
 ### SPEC-S6: Communication Protocols
 
-| ID        | Description                      | Related Requirements | Status        |
-| --------- | -------------------------------- | -------------------- | ------------- |
-| SPEC-S6.1 | WebSocket frontend communication | REQ-R4.4             | ✅ Implemented |
-| SPEC-S6.2 | ZMQ external API communication   | REQ-R3.1             | ✅ Implemented |
-| SPEC-S6.3 | Message formatting and parsing   | REQ-R3.1             | ✅ Implemented |
-| SPEC-S6.4 | Real-time state synchronization  | REQ-R4.4             | ✅ Implemented |
+| ID        | Description                                  | Related Requirements | Status        | Source |
+| --------- | -------------------------------------------- | -------------------- | ------------- | ------ |
+| SPEC-S6.1 | ZMQ external API communication              | FR3.1                | ✅ Implemented | ElevatorAPI + ZMQ |
+| SPEC-S6.2 | WebSocket frontend communication            | FR4.1                | ✅ Implemented | WebSocketBridge |
+| SPEC-S6.3 | Message formatting and parsing              | FR3.1, FR4.1         | ✅ Implemented | ElevatorAPI |
+| SPEC-S6.4 | Real-time state synchronization             | FR4.1                | ✅ Implemented | WebSocketBridge |
 
-### SPEC-S7: State Update Implementation
+### SPEC-S7: User Interface Implementation
 
-| ID        | Description                  | Related Requirements | Status        |
-| --------- | ---------------------------- | -------------------- | ------------- |
-| SPEC-S7.1 | Timed movement updates       | REQ-R2.3             | ✅ Implemented |
-| SPEC-S7.2 | Door and state transitions   | REQ-R2.2, REQ-R4.1   | ✅ Implemented |
-| SPEC-S7.3 | Event notification system    | REQ-R4.4             | ✅ Implemented |
-| SPEC-S7.4 | State consistency management | REQ-R4.4             | ✅ Implemented |
+| ID        | Description                                  | Related Requirements | Status        | Source |
+| --------- | -------------------------------------------- | -------------------- | ------------- | ------ |
+| SPEC-S7.1 | Web interface for real-time status updates  | FR4.1, FR4.4         | ✅ Implemented | Frontend |
+| SPEC-S7.2 | Floor call buttons and visual feedback      | FR4.2, FR4.4         | ✅ Implemented | Frontend |
+| SPEC-S7.3 | Destination floor selection interface       | FR4.3, FR4.4         | ✅ Implemented | Frontend |
+| SPEC-S7.4 | Debug panel for detailed elevator states    | FR4.5                | ✅ Implemented | Frontend |
 
 ---
 
